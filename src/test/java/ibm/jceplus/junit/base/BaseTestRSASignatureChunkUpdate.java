@@ -10,6 +10,7 @@ package ibm.jceplus.junit.base;
 
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
 import java.security.Signature;
 import java.security.SignatureException;
 
@@ -38,7 +39,17 @@ public class BaseTestRSASignatureChunkUpdate extends BaseTestSignature {
     public void tearDown() throws Exception {}
 
     public void testSignatureChunks() throws Exception {
-        testSignatureChunkUpdate(1024, "SHA1WithRSA", 100);
+        try {
+            testSignatureChunkUpdate(1024, "SHA1WithRSA", 100);
+        } catch (NoSuchAlgorithmException nsae) {
+            if (providerName.contains("FIPS")) {
+                assertEquals("no such algorithm: SHA1WithRSA for provider OpenJCEPlusFIPS", nsae.getMessage());
+                return;
+            } else {
+                throw nsae;
+            }
+        }
+        
         testSignatureChunkUpdate(1024, "SHA256WithRSA", 100);
         testSignatureChunkUpdate2(1024, "SHA1WithRSA", 100); // Test signing failure with OpenJCEPlusFIPS
     }
