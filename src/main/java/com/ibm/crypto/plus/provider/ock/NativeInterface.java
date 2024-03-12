@@ -325,19 +325,15 @@ final class NativeInterface {
             //
             try {
                 System.load(libraryName);
-                if (debugLoad) {
-                    System.out.println("Loaded : " + libraryName);
-                }
+                System.out.println("Loaded : " + libraryName);
                 return true;
             } catch (Throwable t) {
-                if (debugLoad) {
-                    System.out.println("Failed to load : " + libraryName);
-                }
+                System.out.println("Failed to load : " + libraryName);
+                System.out.println(t.toString());
+                t.printStackTrace();
             }
         } else {
-            if (debugLoad) {
-                System.out.println("Skipping load of " + libraryName);
-            }
+            System.out.println("Skipping load of " + libraryName);
         }
         return false;
     }
