@@ -124,9 +124,9 @@ final class NativeInterface {
             jgskitPath = javaHome + File.separator + "lib";
         }
 
-        if (debugLoad) {
+
             System.out.println("Loading jgskit library using value: " + jgskitPath);
-        }
+
         return jgskitPath;
     }
 
@@ -325,19 +325,19 @@ final class NativeInterface {
             //
             try {
                 System.load(libraryName);
-                if (debugLoad) {
+
                     System.out.println("Loaded : " + libraryName);
-                }
+
                 return true;
             } catch (Throwable t) {
-                if (debugLoad) {
+
                     System.out.println("Failed to load : " + libraryName);
-                }
+
             }
         } else {
-            if (debugLoad) {
+
                 System.out.println("Skipping load of " + libraryName);
-            }
+
         }
         return false;
     }
@@ -356,10 +356,10 @@ final class NativeInterface {
             String ockLoadPath = new File(getOCKLoadPath()).getCanonicalPath();
             String ockInstallPath = new File(context.getOCKInstallPath()).getCanonicalPath();
 
-            if (debugLoad) {
+
                 System.out.println("dependent library load path : " + ockLoadPath);
                 System.out.println("dependent library install path : " + ockInstallPath);
-            }
+
 
             if (ockInstallPath.startsWith(ockLoadPath) == false) {
                 String exceptionMessage = "Dependent library was loaded from an external location";
