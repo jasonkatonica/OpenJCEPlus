@@ -20,7 +20,7 @@ import com.ibm.misc.Debug;
 @SuppressWarnings({"removal", "deprecation"})
 final class NativeInterface {
 
-    private static final boolean debugLoad = false;
+    private static final boolean debugLoad = true;
 
     // User enabled debugging
     private static Debug debug = Debug.getInstance("jceplus");
