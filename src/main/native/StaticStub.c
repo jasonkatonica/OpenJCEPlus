@@ -39,6 +39,25 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
       gslogFunctionEntry(functionName);
       gslogMessage("isFIPS=%s", isFIPS ? "true" : "false");
     }
+    printf("isFIPS=%s", isFIPS ? "true" : "false");
+    fflush(stdout);
+
+int MAX_TRIES_LOAD = 100000;
+for (int loopload = 1; loopload <= MAX_TRIES_LOAD; loopload++) {
+
+    printf("Try: %d\n", loopload);
+    fflush(stdout);
+
+    if (ockCtx != NULL) {
+      printf("Cleanup ockCtx with ICC_Cleanup.\n");
+      ICC_Cleanup(ockCtx,&status);
+      printf("Nullify ockCtx.\n");
+      printf("Nullify status.\n");
+      ockCtx = NULL;
+    } else {
+      printf("No cleanup required for ockCtx.\n");
+    }
+    fflush(stdout);
 
     ockCtx= ICC_Init(&status, NULL);
     if( ockCtx == NULL ) {
@@ -52,6 +71,7 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
     if( debug ) {
       gslogMessage("ICC_Status mode: %d", status.mode);
     }
+
 #ifdef __MVS__
   #pragma convert("ISO8859-1")
 #endif
@@ -59,7 +79,16 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
 #ifdef __MVS__
   #pragma convert(pop)
 #endif
+
+    printf("The retcode from ICC_SetValue: %d\n", retcode);
+    printf("The status.majRC code from ICC_SetValue: %d\n", status.majRC);
+    printf("The ICC_FAILURE value: %d\n", ICC_FAILURE);
+    printf("The ICC_OK value: %d\n", ICC_OK);
+
     if( (retcode == ICC_FAILURE) || (ICC_OK != status.majRC) ) {
+      if (loopload != MAX_TRIES_LOAD) {
+        continue;
+      }
       throwOCKException(env, 0, "Could not set ICC_FIPS_APPROVED_MODE");
       if( debug ) {
         gslogFunctionExit(functionName);
@@ -68,7 +97,14 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
     }
 
     retcode = ICC_Attach(ockCtx, &status);
+    printf("The retcode from ICC_Attach: %d\n", retcode);
+    printf("The ICC_OSSL_SUCCESS value: %d\n", ICC_OSSL_SUCCESS);
+    fflush(stdout);
+
     if( retcode != ICC_OSSL_SUCCESS ) {
+      if (loopload != MAX_TRIES_LOAD) {
+        continue;
+      }
       throwOCKException(env, GKR_OCK_ATTACH_FAILED, NULL);
       if( debug ) {
         gslogFunctionExit(functionName);
@@ -77,7 +113,14 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
     }
 
     retcode = ICC_GetStatus(ockCtx, &status);
+    printf("The retcode from ICC_GetStatus: %d\n", retcode);
+    printf("The ICC_OSSL_SUCCESS value: %d\n", ICC_OSSL_SUCCESS);
+    fflush(stdout);
+
     if( retcode != ICC_OSSL_SUCCESS ) {
+      if (loopload != MAX_TRIES_LOAD) {
+        continue;
+      }
       throwOCKException(env, 0, "ICC_GetStatus failed");
       if( debug ) {
         gslogFunctionExit(functionName);
@@ -85,23 +128,43 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_in
       return 0;
     }
 
+    printf("The status.mode before checking if Context is FIPS or not: %d\n", status.mode);
+    printf("The ICC_FIPS_FLAG before checking if Context is FIPS or not: %d\n", ICC_FIPS_FLAG);
+    fflush(stdout);
     if( isFIPS ) {
       if(!(status.mode & ICC_FIPS_FLAG)) {
-        throwOCKException(env, 0, "Context is not in FIPS mode");
+        printf("Context is not in FIPS mode, try number %d.\n", loopload);
+        fflush(stdout);
+        if (loopload != MAX_TRIES_LOAD) {
+          continue;
+        }
+        throwOCKException(env, 0, "Context is not in FIPS mode.");
         if( debug ) {
           gslogFunctionExit(functionName);
         }
         return 0;
+      }  else {
+        printf("We are in correct FIPS mode, we did it!\n");
+        fflush(stdout);
+        break;
       }
     } else {
       if( status.mode & ICC_FIPS_FLAG ) {
+        if (loopload != MAX_TRIES_LOAD) {
+          continue;
+        }
         throwOCKException(env, 0, "Context is in FIPS mode");
         if( debug ) {
           gslogFunctionExit(functionName);
         }
         return 0;
+      } else {
+        printf("We are in correct NON FIPS mode, we did it!\n");
+        fflush(stdout);
+        break;
       }
     }
+} //for loop for loading
 
     if( debug ) {
       if( status.mode & ICC_FIPS_FLAG ) {
