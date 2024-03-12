@@ -74,15 +74,12 @@ final class NativeInterface {
     static String getOCKLoadPath() {
         String ockOverridePath = System.getProperty("ock.library.path");
         if (ockOverridePath != null) {
-            if (debugLoad) {
+
                 System.out.println("Loading ock library using value in property ock.library.path: "
                         + ockOverridePath);
-            }
             return ockOverridePath;
         }
-        if (debugLoad) {
             System.out.println("Library path not found for ock, use java home directory.");
-        }
 
         String javaHome = System.getProperty("java.home");
         osName = System.getProperty("os.name");
@@ -94,25 +91,19 @@ final class NativeInterface {
             ockPath = javaHome + File.separator + "lib";
         }
 
-        if (debugLoad) {
             System.out.println("Loading ock library using value: " + ockPath);
-        }
         return ockPath;
     }
 
     static String getJGskitLoadPath() {
         String jgskitOverridePath = System.getProperty("jgskit.library.path");
         if (jgskitOverridePath != null) {
-            if (debugLoad) {
                 System.out.println(
                         "Loading jgskit library using value in property jgskit.library.path: "
                                 + jgskitOverridePath);
-            }
             return jgskitOverridePath;
         }
-        if (debugLoad) {
             System.out.println("Libpath not found for jgskit, use java home directory.");
-        }
 
         String javaHome = System.getProperty("java.home");
         osName = System.getProperty("os.name");
