@@ -43,16 +43,35 @@ jobs:
       - name: List files in the repository
         run: |
           tree ${{ github.workspace }}
-      - name: Set up Visual Studio shell
-        uses: egor-tensin/vs-shell@v2
+#      - name: Set up Visual Studio shell
+#        uses: egor-tensin/vs-shell@v2
+#        with:
+#          arch: x64
+
+      - name: 'Checkout Open Cryptography Kit C'
+        uses: actions/checkout@v3
         with:
-          arch: x64         
+          repository: IBM/OpenCryptographyKitC
+          ref: a1dcebb20bdc2fed3e40af2eed67fbe899cb1d68 # main branch on March 18th 2024.
+          path: ${{ github.workspace }}/OpenCryptographyKitC
+      - name: Compile Open Cryptography Kit C
+        run: |
+          cd ${{ github.workspace }}/OpenCryptographyKitC/icc
+          make -k OPSYS=AMD64_LINUX CONFIG=release create_all
+          export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitC/openssl-1.1.1/
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release show_config
+          cd ..
+          cd iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          cd ${{ github.workspace }}
       - name: Extract OCK SDK and Binary Tar File
         run: |
           mkdir ${{ github.workspace }}/OCK
           cd ${{ github.workspace }}/OCK
-          curl -H "Authorization: Bearer ${{ secrets.OCKTARTOKEN }}" -H "Accept: application/octet-stream" -L https://api.github.com/repos/jasonkatonica/OpenICCBinaries/releases/assets/132177365 --output jgsk_crypto.tar
-          curl -H "Authorization: Bearer ${{ secrets.OCKTARTOKEN }}" -H "Accept: application/octet-stream" -L https://api.github.com/repos/jasonkatonica/OpenICCBinaries/releases/assets/132177348 --output jgsk_crypto_sdk.tar
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
           ls -al
           tree
           tar -xvf jgsk_crypto.tar
@@ -69,8 +88,8 @@ jobs:
       # - name: List Files In Entire Runner
       #   run: |
       #     tree ${{ matrix.github_actions_runner_root }}
-      - name: Execute Maven Install Target
-        run: mvn --batch-mode '-Dock.library.path=${{ github.workspace }}/OCK/' install
+      - name: Execute Maven Install Target And OpenJCEPlus Provider Tests
+        run: mvn --batch-mode '-Dock.library.path=${{ github.workspace }}/OCK/' -Dtest=ibm.jceplus.junit.openjceplus.TestAll install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
           #GSKIT_64_HOME: ${{ github.workspace }}\OCK\jgsk_sdk # Used by windows build.
