@@ -34,21 +34,33 @@ public class BaseTestRSASignature extends BaseTestSignature {
     static final byte[] origMsg = "this is the original message to be signed".getBytes();
     int keySize = 1024;
 
-    static final BigInteger N = new BigInteger(
+    static final BigInteger MODULUS = new BigInteger(
             "116231208661367609700141079576488663663527180869991078124978203037949869"
                     + "312762870627991319537001781149083155962615105864954367253799351549459177"
                     + "839995715202060014346744789001273681801687605044315560723525700773069112"
                     + "214443196787519930666193675297582113726306864236010438506452172563580739"
                     + "994193451997175316921");
 
-    static final BigInteger E = BigInteger.valueOf(65537);
+    static final BigInteger PUBLIC_EXPONENT = BigInteger.valueOf(65537);
 
-    static final BigInteger D = new BigInteger(
+    static final BigInteger PRIVATE_EXPONENT = new BigInteger(
             "528278531576995741358027120152717979850387435582102361125581844437708890"
                     + "736418759997555187916546691958396015481089485084669078137376029510618510"
                     + "203389286674134146181629472813419906337170366867244770096128371742241254"
                     + "843638089774095747779777512895029847721754360216404183209801002443859648"
                     + "26168432372077852785");
+
+
+
+    int fipsKeySize = 2048;
+    static final BigInteger FIPS_MODULUS = new BigInteger(
+        "30053296514616521384759132975238889123887353026254309059602149088974764865713704408921990939329179850301571846403333228631834974710660252573165460605288878358510392197540642428049683657857536204466548921030657505610890751553092471664223388918461213913249717518408273237035634650005210132010376866260080832624902458146275779551655913947962530507300627437949278213539051502824877034575269862957087910687436609773166217443118687828707463085203119534534330254433642574651300415189328443026032211252258955192978135346027464792776719312112894687583726707335091444843467614228418910937336729548833402715241198389526965903689");
+
+    static final BigInteger FIPS_PUBLIC_EXPONENT = BigInteger.valueOf(65537);
+
+    static final BigInteger FIPS_PRIVATE_EXPONENT = new BigInteger(
+        "1206153518738576763847333712378077850956020420484694087370776090472189378336565161993485613747510189683014317851021060234812151032740499707502150735570152315523627249913503436934520659186105323737707559081753618629675532893976249654314716399938700396651129430745889507937698979785101605958775863290669051223137120832938053592519357121389354119745384871229070584665591786888504988705722281795194188086593677114258895825402643008920460731102486099666907623973911677897175335467932421711141036738455113727524100269842832932511429771837661330842863182009206096773393004848149194925548274522698165003931667948375709811685");
+
 
     //--------------------------------------------------------------------------
     //
@@ -80,27 +92,30 @@ public class BaseTestRSASignature extends BaseTestSignature {
     //
     public void tearDown() throws Exception {}
 
-    //--------------------------------------------------------------------------
-    //
-    //
     public void testRSAPlainKeySignature() throws Exception {
 
         KeyFactory kf;
-
-        if (providerName.equals("OpenJCEPlusFIPS")) {
-            //FIPS does not support plain keys
-            return;
-        }
+        BigInteger myModulus = null;
+        BigInteger myPublicExponent = null;
+        BigInteger myPrivateExponent = null;
 
         kf = KeyFactory.getInstance("RSA", providerName);
-
-        RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(N, E);
+        if (providerName.equals("OpenJCEPlusFIPS")) {
+            myModulus = FIPS_MODULUS;
+            myPublicExponent = FIPS_PUBLIC_EXPONENT;
+            myPrivateExponent = FIPS_PRIVATE_EXPONENT;
+        } else {
+            myModulus = MODULUS;
+            myPublicExponent = PUBLIC_EXPONENT;
+            myPrivateExponent = PRIVATE_EXPONENT;
+        }
+        RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(myModulus, myPublicExponent);
         PublicKey publicKey = kf.generatePublic(pubSpec);
 
-        RSAPrivateKeySpec privSpec = new RSAPrivateKeySpec(N, D);
+        RSAPrivateKeySpec privSpec = new RSAPrivateKeySpec(myModulus, myPrivateExponent);
         PrivateKey privateKey = kf.generatePrivate(privSpec);
 
-        doSignVerify("SHA1withRSA", origMsg, privateKey, publicKey);
+        doSignVerify("SHA2withRSA", origMsg, privateKey, publicKey);
     }
 
     //--------------------------------------------------------------------------
@@ -117,10 +132,10 @@ public class BaseTestRSASignature extends BaseTestSignature {
 
         kf = KeyFactory.getInstance("RSA", providerName);
 
-        RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(N, E);
+        RSAPublicKeySpec pubSpec = new RSAPublicKeySpec(MODULUS, PUBLIC_EXPONENT);
         PublicKey publicKey = kf.generatePublic(pubSpec);
 
-        RSAPrivateKeySpec privSpec = new RSAPrivateKeySpec(N, D);
+        RSAPrivateKeySpec privSpec = new RSAPrivateKeySpec(MODULUS, PRIVATE_EXPONENT);
         PrivateKey privateKey = kf.generatePrivate(privSpec);
 
         doSignVerify("RSAforSSL", origMsg, privateKey, publicKey);
