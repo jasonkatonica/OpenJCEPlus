@@ -86,7 +86,7 @@ abstract class DSASignature extends SignatureSpi {
         try {
             return this.signature.sign();
         } catch (Exception e) {
-            SignatureException signatureException = new SignatureException("Could not sign data");
+            SignatureException signatureException = new SignatureException("Could not sign data", e);
             provider.setOCKExceptionCause(signatureException, e);
             throw signatureException;
         }

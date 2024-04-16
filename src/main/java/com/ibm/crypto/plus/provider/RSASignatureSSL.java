@@ -176,7 +176,7 @@ public final class RSASignatureSSL extends SignatureSpi {
                 return output;
             }
         } catch (Exception e) {
-            SignatureException signatureException = new SignatureException("Could not sign data");
+            SignatureException signatureException = new SignatureException("Could not sign data", e);
             provider.setOCKExceptionCause(signatureException, e);
             throw signatureException;
         }

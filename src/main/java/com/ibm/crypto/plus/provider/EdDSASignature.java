@@ -158,7 +158,7 @@ abstract class EdDSASignature extends SignatureSpi {
             message = null;
             return this.signature.sign(dataBytes);
         } catch (Exception e) {
-            SignatureException signatureException = new SignatureException("Could not sign data");
+            SignatureException signatureException = new SignatureException("Could not sign data", e);
             provider.setOCKExceptionCause(signatureException, e);
             throw signatureException;
         }
