@@ -98,6 +98,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterfa
 
       //Only convert key if it is a plain RSA key.
       if (convert == JNI_TRUE) {
+        gslogMessage ("Converting plain RSA key to CRT form.");
         ICC_RSA * rsaKeyPtr = ICC_EVP_PKEY_get1_RSA(ockCtx, ockPKey);
         ICC_RSA_FixEncodingZeros(ockCtx, rsaKeyPtr, NULL, 0);
         ICC_EVP_PKEY * ockPKeyConverted = ICC_EVP_PKEY_new(ockCtx);
@@ -105,6 +106,7 @@ JNIEXPORT jbyteArray JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterfa
         rc = ICC_EVP_SignFinal(ockCtx, ockDigest->mdCtx, sigBytesLocal, &outLen, ockPKeyConverted);
         ICC_EVP_PKEY_free(ockCtx, ockPKeyConverted);
       } else {
+        gslogMessage ("RSA key is already a CRT key, no need to convert."); 
         rc = ICC_EVP_SignFinal(ockCtx, ockDigest->mdCtx, sigBytesLocal, &outLen, ockPKey);
       }
 

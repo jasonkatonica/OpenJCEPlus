@@ -161,6 +161,7 @@ abstract class RSASignature extends SignatureSpi {
             throw new SignatureException("Missing private key");
         }
         try {
+            System.out.println("Running suspect signature operation: " + this.ockDigestAlgo);
             if (this.provider.toString().contains("FIPS") && this.ockDigestAlgo.contains("SHA1")) {
                 throw new SignatureException("FIPS does not support signing SHA1WithRSA");
             }

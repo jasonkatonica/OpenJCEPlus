@@ -74,6 +74,13 @@ public final class Signature {
 
         byte[] signature = null;
         try {
+            System.out.println("this.ockContext.getId(): " + this.ockContext.getId());
+            System.out.println("digest.getId(): " + digest.getId());
+            System.out.println("this.key.getPKeyId(): " + this.key.getPKeyId());
+            System.out.println("this.key.getPrivateKeyBytes(): " + toHexString(this.key.getPrivateKeyBytes()));
+            System.out.println("this.key.getPublicKeyBytes(): " + toHexString(this.key.getPublicKeyBytes()));
+            System.out.println("this.key.getAlgorithm(): " + this.key.getAlgorithm());
+            System.out.println("this.convertKey: " + this.convertKey);
             signature = NativeInterface.SIGNATURE_sign(this.ockContext.getId(), digest.getId(),
                     this.key.getPKeyId(), this.convertKey);
         } finally {
@@ -122,5 +129,30 @@ public final class Signature {
 
         //OCKDebug.Msg (debPrefix, "validId", "id :" + id);
         return (id != 0L);
+    }
+
+    /** * Converts a byte array to hex string */
+    private static String toHexString(byte[] block) {
+        if (block == null) {
+            return "Hex String is NULL";
+        }
+
+        StringBuffer buf = new StringBuffer();
+        char[] hexChars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
+                'E', 'F'};
+        int len = block.length;
+        int high = 0;
+        int low = 0;
+        for (int i = 0; i < len; i++) {
+            if (i % 16 == 0)
+                buf.append('\n');
+            high = ((block[i] & 0xf0) >> 4);
+            low = (block[i] & 0x0f);
+            buf.append(hexChars[high]);
+            buf.append(hexChars[low]);
+            buf.append(' ');
+        }
+        buf.append('\n');
+        return buf.toString();
     }
 }
