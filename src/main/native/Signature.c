@@ -96,13 +96,18 @@ JNIEXPORT jbyteArray JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterfa
       }
 #endif
 
-      //Only convert key if it is a plain RSA
-      if (convert) {
-          ICC_RSA * rsaKeyPtr = ICC_EVP_PKEY_get1_RSA(ockCtx, ockPKey);
-          ICC_RSA_FixEncodingZeros(ockCtx, rsaKeyPtr, NULL, 0);
+      //Only convert key if it is a plain RSA key.
+      if (convert == JNI_TRUE) {
+        ICC_RSA * rsaKeyPtr = ICC_EVP_PKEY_get1_RSA(ockCtx, ockPKey);
+        ICC_RSA_FixEncodingZeros(ockCtx, rsaKeyPtr, NULL, 0);
+        ICC_EVP_PKEY * ockPKeyConverted = ICC_EVP_PKEY_new(ockCtx);
+        ICC_EVP_PKEY_set1_RSA(ockCtx, ockPKeyConverted, rsaKeyPtr);
+        rc = ICC_EVP_SignFinal(ockCtx, ockDigest->mdCtx, sigBytesLocal, &outLen, ockPKeyConverted);
+        ICC_EVP_PKEY_free(ockCtx, ockPKeyConverted);
+      } else {
+        rc = ICC_EVP_SignFinal(ockCtx, ockDigest->mdCtx, sigBytesLocal, &outLen, ockPKey);
       }
 
-      rc = ICC_EVP_SignFinal(ockCtx, ockDigest->mdCtx, sigBytesLocal, &outLen, ockPKey);
       if( ICC_OSSL_SUCCESS != rc ) {
 #ifdef DEBUG_SIGNATURE_DETAIL
         if ( debug ) {
