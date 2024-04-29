@@ -377,7 +377,7 @@
                       <!--java.security.auth.debug>all</java.security.auth.debug-->
                     </systemPropertyVariables>
                     <includes>
-                        <include>**/ibm/jceplus/junit/TestAll.java,**/ibm/jceplus/junit/TestMemStressAll.java,**/ibm/jceplus/junit/TestMultithread.java,**/ibm/jceplus/junit/TestMultithreadFIPS.java</include>
+                        <include>**/ibm/jceplus/junit/openjceplus/BaseTestAESGCMCipherInputStreamExceptions.java,**/ibm/jceplus/junit/openjceplus/multithread/BaseTestAESGCMCipherInputStreamExceptions.java</include>
                     </includes>
                   </configuration>
                 </plugin>
