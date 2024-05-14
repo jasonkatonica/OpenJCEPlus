@@ -207,6 +207,11 @@ public class BaseTestECDSASignatureInterop extends BaseTestSignatureInterop {
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
     }
 
+    public void testSHA256withECDSA_512() throws Exception {
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP512r1");
+        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+    }
+
     // --------------------------------------------------------------------------
     //
     //

@@ -749,6 +749,9 @@ public class BaseTestECDSASignature extends BaseTestSignature {
         keyPair = generateKeyPair("NIST P-521");
         doSignVerify("SHA512withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
+    }
+
+    public void testSHA256withECDSA_512curves() throws Exception {
         KeyPair keyPairBrainpool = generateKeyPair("brainpoolP512r1");
         doSignVerify("SHA512withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
