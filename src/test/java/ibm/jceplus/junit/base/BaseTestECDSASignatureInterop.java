@@ -184,8 +184,12 @@ public class BaseTestECDSASignatureInterop extends BaseTestSignatureInterop {
         KeyPair keyPair = generateKeyPair(256);
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
-        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP256r1");
-        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        if (!interopProviderName.equalsIgnoreCase("SunEC")) {
+            KeyPair keyPairBrainpool = generateKeyPair("brainpoolP256r1");
+            doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        } else {
+            System.out.println("Skipping test since brainpool is not supported in SunEC to perform interopt testing.");
+        }
     }
 
     // --------------------------------------------------------------------------
@@ -195,8 +199,12 @@ public class BaseTestECDSASignatureInterop extends BaseTestSignatureInterop {
         KeyPair keyPair = generateKeyPair(384);
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
-        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP384r1");
-        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        if (!interopProviderName.equalsIgnoreCase("SunEC")) {
+            KeyPair keyPairBrainpool = generateKeyPair("brainpoolP384r1");
+            doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        } else {
+            System.out.println("Skipping test since brainpool is not supported in SunEC to perform interopt testing.");
+        }
     }
 
     // --------------------------------------------------------------------------
@@ -208,8 +216,12 @@ public class BaseTestECDSASignatureInterop extends BaseTestSignatureInterop {
     }
 
     public void testSHA256withECDSA_512() throws Exception {
-        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP512r1");
-        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        if (!interopProviderName.equalsIgnoreCase("SunEC")) {
+            KeyPair keyPairBrainpool = generateKeyPair("brainpoolP512r1");
+            doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
+        } else {
+            System.out.println("Skipping test since brainpool is not supported in SunEC to perform interopt testing.");
+        }
     }
 
     // --------------------------------------------------------------------------
