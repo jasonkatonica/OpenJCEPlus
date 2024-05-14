@@ -14,12 +14,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import org.junit.runner.JUnitCore;
-import org.junit.runner.Request;
-import org.junit.runner.Result;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
+import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
 public class TestMultithreadFIPS extends TestCase {
     private final int numThreads = 10;
@@ -105,27 +108,22 @@ public class TestMultithreadFIPS extends TestCase {
         assertTrue(message + "failed with exception(s)" + exceptions, exceptions.isEmpty());
     }
 
-    private Runnable testToRunnable(String classAndMethod) {
-        String[] classAndMethodList = classAndMethod.split("#");
-        try {
-            Request request = null;
-            if (classAndMethodList.length == 2) {
-                request = Request.method(Class.forName(classAndMethodList[0]),
-                        classAndMethodList[1]);
-            } else {
-                request = Request.aClass(Class.forName(classAndMethodList[0]));
+    private Runnable testToRunnable(String className) {
+        SummaryGeneratingListener listener = new SummaryGeneratingListener();
+        LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder.request().
+            selectors(selectClass(className)).build();
+        
+        Launcher launcher = LauncherFactory.create();
+        launcher.discover(request);
+        launcher.registerTestExecutionListeners(listener);
+
+        return new Runnable() {
+            public void run() {
+                launcher.execute(request);
+                long failureCount = listener.getSummary().getTestsFailedCount();
+                assertTrue(failureCount== 0);
             }
-            final Request myrequest = request;
-            return new Runnable() {
-                public void run() {
-                    Result result = new JUnitCore().run(myrequest);
-                    assertTrue(result.getFailureCount()== 0);
-                }
-            };
-        } catch (ClassNotFoundException ex) {
-            assertTrue("Class not Found: " + classAndMethod, false);
-        }
-        return null;
+        };
     }
 
     public void testMultithreadFIPS() {

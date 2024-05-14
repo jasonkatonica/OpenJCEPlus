@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023
+ * Copyright IBM Corp. 2023, 2024
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,6 +8,8 @@
 
 package ibm.jceplus.junit.base;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -20,37 +22,22 @@ import org.bouncycastle.crypto.params.Ed25519PublicKeyParameters;
 import org.bouncycastle.crypto.params.Ed448PublicKeyParameters;
 import org.bouncycastle.crypto.signers.Ed25519Signer;
 import org.bouncycastle.crypto.signers.Ed448Signer;
+import org.junit.jupiter.api.Test;
 
-public class BaseTestEdDSASignatureInterop extends BaseTestSignature {
+public class BaseTestEdDSASignatureInterop  extends BaseTestSignature {
 
-    // --------------------------------------------------------------------------
-    //
     static final byte[] origMsg = "this is the original message to be signed".getBytes();
+
     private static final SecureRandom RANDOM = new SecureRandom();
 
-    //--------------------------------------------------------------------------
-    //
-    //
-    public BaseTestEdDSASignatureInterop(String providerName) {
-        super(providerName);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void setUp() throws Exception {}
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void tearDown() throws Exception {}
-
+    @Test
     public void testEd25519withEdDSA() throws Exception {
         KeyPair keyPair = generateKeyPair("Ed25519");
         byte[] signedMsg = doSign("Ed25519", origMsg, keyPair.getPrivate());
         doVerifyEd25519(origMsg, signedMsg, keyPair.getPublic());
     }
 
+    @Test
     public void testEd448withEdDSA() throws Exception {
         KeyPair keyPair = generateKeyPair("Ed448");
         byte[] signedMsg = doSign("Ed448", origMsg, keyPair.getPrivate());
@@ -58,7 +45,7 @@ public class BaseTestEdDSASignatureInterop extends BaseTestSignature {
     }
 
     private KeyPair generateKeyPair(String alg) throws Exception {
-        KeyPairGenerator xecKeyPairGen = KeyPairGenerator.getInstance(alg, providerName);
+        KeyPairGenerator xecKeyPairGen = KeyPairGenerator.getInstance(alg, getProviderName());
         xecKeyPairGen.initialize(new NamedParameterSpec(alg));
         return xecKeyPairGen.generateKeyPair();
     }
@@ -68,7 +55,7 @@ public class BaseTestEdDSASignatureInterop extends BaseTestSignature {
     //
     //Sign the message with OpenJCEPlus provided EdDSA
     private byte[] doSign(String sigAlgo, byte[] message, PrivateKey privateKey) throws Exception {
-        Signature signing = Signature.getInstance(sigAlgo, providerName);
+        Signature signing = Signature.getInstance(sigAlgo, getProviderName());
         signing.initSign(privateKey);
         signing.update(message);
         byte[] signedBytes = signing.sign();
