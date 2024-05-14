@@ -720,6 +720,8 @@ public class BaseTestECDSASignature extends BaseTestSignature {
         keyPair = generateKeyPair("1.2.840.10045.3.1.7");
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP256r1");
+        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
 
     public void testSHA256withECDSA_384curves() throws Exception {
@@ -731,6 +733,9 @@ public class BaseTestECDSASignature extends BaseTestSignature {
 
         keyPair = generateKeyPair("NIST P-384");
         doSignVerify("SHA384withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
+
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP384r1");
+        doSignVerify("SHA384withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
 
     }
 
@@ -744,6 +749,8 @@ public class BaseTestECDSASignature extends BaseTestSignature {
         keyPair = generateKeyPair("NIST P-521");
         doSignVerify("SHA512withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP512r1");
+        doSignVerify("SHA512withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
 
     public void testSHA224withECDSA_160curves() throws Exception {

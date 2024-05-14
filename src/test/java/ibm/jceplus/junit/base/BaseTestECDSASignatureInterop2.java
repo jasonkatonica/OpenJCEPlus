@@ -10,6 +10,7 @@ package ibm.jceplus.junit.base;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.spec.ECGenParameterSpec;
 
 public class BaseTestECDSASignatureInterop2 extends BaseTestSignatureInterop {
 
@@ -141,6 +142,9 @@ public class BaseTestECDSASignatureInterop2 extends BaseTestSignatureInterop {
     public void testSHA256withECDSA_256() throws Exception {
         KeyPair keyPair = generateKeyPair(256);
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
+
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP256r1");
+        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
 
     // --------------------------------------------------------------------------
@@ -149,6 +153,9 @@ public class BaseTestECDSASignatureInterop2 extends BaseTestSignatureInterop {
     public void testSHA256withECDSA_384() throws Exception {
         KeyPair keyPair = generateKeyPair(384);
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
+
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP384r1");
+        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
 
     // --------------------------------------------------------------------------
@@ -157,6 +164,9 @@ public class BaseTestECDSASignatureInterop2 extends BaseTestSignatureInterop {
     public void testSHA256withECDSA_521() throws Exception {
         KeyPair keyPair = generateKeyPair(521);
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
+
+        KeyPair keyPairBrainpool = generateKeyPair("brainpoolP521r1");
+        doSignVerify("SHA256withECDSA", origMsg, keyPairBrainpool.getPrivate(), keyPairBrainpool.getPublic());
     }
 
 
@@ -399,6 +409,13 @@ public class BaseTestECDSASignatureInterop2 extends BaseTestSignatureInterop {
     private KeyPair generateKeyPair(int keysize) throws Exception {
         KeyPairGenerator ecKeyPairGen = KeyPairGenerator.getInstance("EC", providerName);
         ecKeyPairGen.initialize(keysize);
+        return ecKeyPairGen.generateKeyPair();
+    }
+
+    private KeyPair generateKeyPair(String curveName) throws Exception {
+        KeyPairGenerator ecKeyPairGen = KeyPairGenerator.getInstance("EC", providerName);
+        ECGenParameterSpec ecgenParameterSpec = new ECGenParameterSpec(curveName);
+        ecKeyPairGen.initialize(ecgenParameterSpec);
         return ecKeyPairGen.generateKeyPair();
     }
 }
