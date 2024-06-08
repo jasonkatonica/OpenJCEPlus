@@ -18,7 +18,12 @@ public class TestECDSASignature extends BaseTestECDSASignature {
 
     @BeforeAll
     public void beforeAll() {
+        try {
+        System.out.println("Running beforeAll");
         Utils.loadProviderTestSuite();
         setProviderName(Utils.TEST_SUITE_PROVIDER_NAME);
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }

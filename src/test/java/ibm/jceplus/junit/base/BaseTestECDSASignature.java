@@ -8,6 +8,7 @@
 
 package ibm.jceplus.junit.base;
 
+import static org.junit.Assert.assertTrue;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
@@ -21,12 +22,13 @@ import java.security.spec.ECGenParameterSpec;
 import java.util.Arrays;
 import org.junit.jupiter.api.Test;
 
-public class BaseTestECDSASignature extends BaseTestSignature {
+public class BaseTestECDSASignature extends BaseTestSignatureJunit5 {
 
     static final byte[] origMsg = "this is the original message to be signed".getBytes();
 
     @Test
     public void testSHA1withECDSA_192() throws Exception {
+        System.out.println("RAN TEST testSHA1withECDSA_192");
         if (getProviderName().equals("OpenJCEPlusFIPS")) {
             //FIPS no longer supports cuirve P-192. So skip test
             return;
@@ -769,7 +771,7 @@ public class BaseTestECDSASignature extends BaseTestSignature {
         }
     }
 
-    void doTestPositiveSigBytes(String keyAlg, String sigAlg, String providerName)
+    private void doTestPositiveSigBytes(String keyAlg, String sigAlg, String providerName)
             throws Exception {
         KeyPairGenerator kpg = KeyPairGenerator.getInstance(keyAlg, providerName);
         KeyPair kp = kpg.generateKeyPair();

@@ -8,32 +8,13 @@
 
 package ibm.jceplus.junit.base;
 
+import static org.junit.Assert.assertTrue;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 
-public class BaseTestSignature extends BaseTest {
+public class BaseTestSignatureJunit5  extends BaseTestJunit5 {
 
-    //--------------------------------------------------------------------------
-    //
-    //
-    public BaseTestSignature(String providerName) {
-        super(providerName);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void setUp() throws Exception {}
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void tearDown() throws Exception {}
-
-    //--------------------------------------------------------------------------
-    //
-    //
     protected void doSignVerify(String sigAlgo, byte[] message, PrivateKey privateKey,
             PublicKey publicKey) throws Exception {
         Signature signing = Signature.getInstance(sigAlgo, providerName);
