@@ -14,22 +14,13 @@ import java.security.Signature;
 
 public class BaseTestSignature extends BaseTest {
 
-    //--------------------------------------------------------------------------
-    //
-    //
+    public BaseTestSignature() {
+        super();
+    }
+
     public BaseTestSignature(String providerName) {
         super(providerName);
     }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void setUp() throws Exception {}
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public void tearDown() throws Exception {}
 
     //--------------------------------------------------------------------------
     //

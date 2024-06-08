@@ -8,38 +8,16 @@
 
 package ibm.jceplus.junit.openjceplusfips;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 
+@TestInstance(Lifecycle.PER_CLASS)
 public class TestECDSASignature extends ibm.jceplus.junit.base.BaseTestECDSASignature {
 
-    //--------------------------------------------------------------------------
-    //
-    //
-    static {
+    @BeforeAll
+    public void beforeAll() {
         Utils.loadProviderTestSuite();
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public TestECDSASignature() {
-        super(Utils.TEST_SUITE_PROVIDER_NAME);
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public static void main(String[] args) throws Exception {
-        junit.textui.TestRunner.run(suite());
-    }
-
-    //--------------------------------------------------------------------------
-    //
-    //
-    public static Test suite() {
-        TestSuite suite = new TestSuite(TestECDSASignature.class);
-        return suite;
+        setProviderName(Utils.TEST_SUITE_PROVIDER_NAME);
     }
 }
-

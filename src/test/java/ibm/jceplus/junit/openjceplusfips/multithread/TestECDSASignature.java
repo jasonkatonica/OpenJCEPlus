@@ -8,42 +8,18 @@
 
 package ibm.jceplus.junit.openjceplusfips.multithread;
 
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import ibm.jceplus.junit.base.BaseTestECDSASignature;
 import ibm.jceplus.junit.openjceplusfips.Utils;
 
+@TestInstance(Lifecycle.PER_CLASS)
 public class TestECDSASignature extends BaseTestECDSASignature {
 
-    // --------------------------------------------------------------------------
-    //
-    //
-    static {
+    @BeforeAll
+    public void beforeAll() {
         Utils.loadProviderTestSuite();
+        setProviderName(Utils.TEST_SUITE_PROVIDER_NAME);
     }
-
-    // --------------------------------------------------------------------------
-    //
-    //
-    public TestECDSASignature() {
-        super(Utils.TEST_SUITE_PROVIDER_NAME);
-    }
-
-    // --------------------------------------------------------------------------
-    //
-    //
-    public static void main(String[] args) throws Exception {
-        String[] nargs = {
-                ibm.jceplus.junit.openjceplusfips.multithread.TestECDSASignature.class.getName()};
-        junit.textui.TestRunner.main(nargs);
-    }
-
-    // --------------------------------------------------------------------------
-    //
-    //
-    public void testECDSASignature() throws Exception {
-        System.out.println("executing testECDSASignature");
-        BaseTestECDSASignature bt = new BaseTestECDSASignature(providerName);
-        bt.run();
-    }
-
-
 }
