@@ -8,6 +8,7 @@
 
 package ibm.jceplus.junit.base;
 
+import static org.junit.Assert.assertArrayEquals;
 import java.math.BigInteger;
 import java.security.InvalidParameterException;
 import java.security.KeyFactory;
@@ -168,24 +169,24 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
                     "515095759487624245475052955143775821008860566299846242602604658885545774489");
             scalar = Base64.getDecoder().decode("RtcJeC6VA0w1s2ly58eimwgmjNnIvdBQ0WwXodcOKx0=");
             actualPbk = Base64.getDecoder()
-                    .decode("MCowBQYDK2VuAyEAmU2lHYDsKSa7YoPkUeOxazej9sWb9m2hYbHEl6uIIwE=");
+                    .decode("MCwwBwYDK2VuBQADIQCZTaUdgOwpJrtig+RR47FrN6P2xZv2baFhscSXq4gjAQ==");
             actualPvk = Base64.getDecoder()
-                    .decode("MC4CAQAwBQYDK2VuBCIEIEbXCXgulQNMNbNpcufHopsIJozZyL3QUNFsF6HXDisd");
+                    .decode("MCwCAQAwBQYDK2VuBCBG1wl4LpUDTDWzaXLnx6KbCCaM2ci90FDRbBeh1w4rHQ==");
         } else if ("X448".equals(alg)) {
             u = new BigInteger(
                     "107118908792121879403264595066242232572753965363231309947133508353953425798840260547451796239712078839812016803162450215013342651330517");
             scalar = Base64.getDecoder().decode(
                     "WoCM2tS1l/nYi6+GD+j3iiSVWsL3wFEOz+wBqB/Jd+M0OeZQX4vUqFddaiy4fkGKOU/59t3qGWo=");
             actualPbk = Base64.getDecoder().decode(
-                    "MEIwBQYDK2VvAzkA1a+7mFk5GWcGvzEHTcFVNsM8G7eeuxKAvBDiwGkqEB0GcyZOEtPg7slPdRKo6vL8PEbBcHx2uiU=");
+                    "MEQwBwYDK2VvBQADOQDVr7uYWTkZZwa/MQdNwVU2wzwbt567EoC8EOLAaSoQHQZzJk4S0+DuyU91Eqjq8vw8RsFwfHa6JQ==");
             actualPvk = Base64.getDecoder().decode(
-                    "MEYCAQAwBQYDK2VvBDoEOFqAjNrUtZf52Iuvhg/o94oklVrC98BRDs/sAagfyXfjNDnmUF+L1KhXXWosuH5BijlP+fbd6hlq");
+                    "MEQCAQAwBQYDK2VvBDhagIza1LWX+diLr4YP6PeKJJVawvfAUQ7P7AGoH8l34zQ55lBfi9SoV11qLLh+QYo5T/n23eoZag==");
         } else {
             throw new InvalidParameterException(alg + " is not supported");
         }
 
         NamedParameterSpec paramSpec = new NamedParameterSpec(alg);
-        KeyFactory kf = KeyFactory.getInstance("XDH");
+        KeyFactory kf = KeyFactory.getInstance("XDH", providerName);
 
         XECPublicKeySpec xdhPublic = new XECPublicKeySpec(paramSpec, u);
         XECPrivateKeySpec xdhPrivate = new XECPrivateKeySpec(paramSpec, scalar);
@@ -193,8 +194,12 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
         PublicKey pbk = kf.generatePublic(xdhPublic);
         PrivateKey pvk = kf.generatePrivate(xdhPrivate);
 
-        assertTrue(Arrays.equals(pbk.getEncoded(), actualPbk));
-        assertTrue(Arrays.equals(pvk.getEncoded(), actualPvk));
+        System.out.println("actualPbk:        " + BaseUtils.bytesToHex(actualPbk));
+        System.out.println("pbk.getEncoded(): " + BaseUtils.bytesToHex(pbk.getEncoded()));
+        System.out.println("actualPvk:        " + BaseUtils.bytesToHex(actualPvk));
+        System.out.println("pvk.getEncoded(): " + BaseUtils.bytesToHex(pvk.getEncoded()));
+        assertArrayEquals(pbk.getEncoded(), actualPbk);
+        assertArrayEquals(pvk.getEncoded(), actualPvk);
     }
 
     /**
@@ -206,8 +211,8 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
      * @throws Exception
      */
     void createKeyPairLocalParamImport(String alg) throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(alg);
-        //        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(alg,providerName);
+        //        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH", providerName);
         NamedParameterSpec paramSpec = new NamedParameterSpec(alg);
         System.out.println("Alg = " + alg);
         kpg.initialize(paramSpec);
@@ -216,8 +221,8 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
         PrivateKey pvk = kp.getPrivate();
         PublicKey pbk = kp.getPublic();
 
-        KeyFactory kf = KeyFactory.getInstance(alg);
-        //        KeyFactory kf = KeyFactory.getInstance("XDH");
+        KeyFactory kf = KeyFactory.getInstance(alg, providerName);
+        //        KeyFactory kf = KeyFactory.getInstance("XDH", providerName);
         XECPublicKeySpec xdhPublic = kf.getKeySpec(kp.getPublic(), XECPublicKeySpec.class);
         XECPrivateKeySpec xdhPrivate = kf.getKeySpec(kp.getPrivate(), XECPrivateKeySpec.class);
 
