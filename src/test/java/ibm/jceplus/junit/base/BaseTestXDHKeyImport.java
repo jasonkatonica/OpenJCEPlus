@@ -8,7 +8,6 @@
 
 package ibm.jceplus.junit.base;
 
-import static org.junit.Assert.assertArrayEquals;
 import java.math.BigInteger;
 import java.security.InvalidParameterException;
 import java.security.KeyFactory;
@@ -108,58 +107,15 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
     }
 
     /**
-     * Use key params from OpenJDK, and make sure we produce the same encoded key as in OpenJDK.
-     * <p>
-     * Known answers were obtained from Java 17 (public and private key were generated and the params were extracted from them).
-     * <p>
-     * These values are known to be different from Java 17+ due to an optional scalar, more information below.
-     * <p>
-     * RFC 2459 section 4.1.1.2 defines an AlgorithmIdentifier as follows:
-     * <pre>
-     * AlgorithmIdentifier  ::=  SEQUENCE  {
-     *  algorithm               OBJECT IDENTIFIER,
-     *  parameters              ANY DEFINED BY algorithm OPTIONAL  }
-     * </pre>
-     * The `parameters` specified in this case are defined as OPTIONAL.
-     * <p>
-     * These values in this test are different between Java 11 and Java 17 due to the subtle difference 
-     * in the DER representation of the values.
-     * <p>
-     * Java 11 represents the DER encoding as follows for the X25519 test value below:
-     * <p>
-     * MCwwBwYDK2VuBQADIQCZTaUdgOwpJrtig+RR47FrN6P2xZv2baFhscSXq4gjAQ==
-     * <pre>
-     *     SEQUENCE {
-     *        SEQUENCE {
-     *           OBJECTIDENTIFIER 1.3.101.110
-     *           NULL
-     *        }
-     *        BITSTRING 0x994da51d80ec2926bb6283e451e3b16b37a3f6c59bf66da161b1c497ab882301 : 0 unused bit(s)
-     *     }
-     * </pre>
-     * Notice the optional `NULL` in the nested SEQUENCE. This NULL is an optional parameter as per the RFC so
-     * seems to be left up for interpretation.
-     * <p>
-     * Java 17 however represents the DER encoding as follows for the same BITSTRING value:
-     * <p>
-     * MCowBQYDK2VuAyEAmU2lHYDsKSa7YoPkUeOxazej9sWb9m2hYbHEl6uIIwE=
-     * <pre>
-     *     SEQUENCE {
-     *        SEQUENCE {
-     *           OBJECTIDENTIFIER 1.3.101.110
-     *        }
-     *        BITSTRING 0x994da51d80ec2926bb6283e451e3b16b37a3f6c59bf66da161b1c497ab882301 : 0 unused bit(s)
-     *     }
-     * </pre>
-     * Notice there is no `NULL` value for the nested sequence for the OPTIONAL `parameters` value.
+     * Use key params from OpenJDK, and make sure they produce the keys as in OpenJDK
      * 
-     * @throws Exception thrown when alg is not `X25519` or `X448`.
-     * @param alg The algorithm to test either `X25519` or `X448` value are accepted.
+     * @throws Exception
      *
      */
     public void createKeyPairXDHParamImport(String alg) throws Exception {
         //final String methodName = "testCreateKeyPairXDHParamImport";
 
+        // Numbers obtained from hotspot OpenJDK 11 (public and private key were generated and the params were extracted from them)
         BigInteger u;
         byte[] scalar;
         byte[] actualPbk;
@@ -169,24 +125,24 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
                     "515095759487624245475052955143775821008860566299846242602604658885545774489");
             scalar = Base64.getDecoder().decode("RtcJeC6VA0w1s2ly58eimwgmjNnIvdBQ0WwXodcOKx0=");
             actualPbk = Base64.getDecoder()
-                    .decode("MCwwBwYDK2VuBQADIQCZTaUdgOwpJrtig+RR47FrN6P2xZv2baFhscSXq4gjAQ==");
+                    .decode("MCowBQYDK2VuAyEAmU2lHYDsKSa7YoPkUeOxazej9sWb9m2hYbHEl6uIIwE=");
             actualPvk = Base64.getDecoder()
-                    .decode("MCwCAQAwBQYDK2VuBCBG1wl4LpUDTDWzaXLnx6KbCCaM2ci90FDRbBeh1w4rHQ==");
+                    .decode("MC4CAQAwBQYDK2VuBCIEIEbXCXgulQNMNbNpcufHopsIJozZyL3QUNFsF6HXDisd");
         } else if ("X448".equals(alg)) {
             u = new BigInteger(
                     "107118908792121879403264595066242232572753965363231309947133508353953425798840260547451796239712078839812016803162450215013342651330517");
             scalar = Base64.getDecoder().decode(
                     "WoCM2tS1l/nYi6+GD+j3iiSVWsL3wFEOz+wBqB/Jd+M0OeZQX4vUqFddaiy4fkGKOU/59t3qGWo=");
             actualPbk = Base64.getDecoder().decode(
-                    "MEQwBwYDK2VvBQADOQDVr7uYWTkZZwa/MQdNwVU2wzwbt567EoC8EOLAaSoQHQZzJk4S0+DuyU91Eqjq8vw8RsFwfHa6JQ==");
+                    "MEIwBQYDK2VvAzkA1a+7mFk5GWcGvzEHTcFVNsM8G7eeuxKAvBDiwGkqEB0GcyZOEtPg7slPdRKo6vL8PEbBcHx2uiU=");
             actualPvk = Base64.getDecoder().decode(
-                    "MEQCAQAwBQYDK2VvBDhagIza1LWX+diLr4YP6PeKJJVawvfAUQ7P7AGoH8l34zQ55lBfi9SoV11qLLh+QYo5T/n23eoZag==");
+                    "MEYCAQAwBQYDK2VvBDoEOFqAjNrUtZf52Iuvhg/o94oklVrC98BRDs/sAagfyXfjNDnmUF+L1KhXXWosuH5BijlP+fbd6hlq");
         } else {
             throw new InvalidParameterException(alg + " is not supported");
         }
 
         NamedParameterSpec paramSpec = new NamedParameterSpec(alg);
-        KeyFactory kf = KeyFactory.getInstance("XDH", providerName);
+        KeyFactory kf = KeyFactory.getInstance("XDH");
 
         XECPublicKeySpec xdhPublic = new XECPublicKeySpec(paramSpec, u);
         XECPrivateKeySpec xdhPrivate = new XECPrivateKeySpec(paramSpec, scalar);
@@ -194,12 +150,8 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
         PublicKey pbk = kf.generatePublic(xdhPublic);
         PrivateKey pvk = kf.generatePrivate(xdhPrivate);
 
-        System.out.println("actualPbk:        " + BaseUtils.bytesToHex(actualPbk));
-        System.out.println("pbk.getEncoded(): " + BaseUtils.bytesToHex(pbk.getEncoded()));
-        System.out.println("actualPvk:        " + BaseUtils.bytesToHex(actualPvk));
-        System.out.println("pvk.getEncoded(): " + BaseUtils.bytesToHex(pvk.getEncoded()));
-        assertArrayEquals(pbk.getEncoded(), actualPbk);
-        assertArrayEquals(pvk.getEncoded(), actualPvk);
+        assertTrue(Arrays.equals(pbk.getEncoded(), actualPbk));
+        assertTrue(Arrays.equals(pvk.getEncoded(), actualPvk));
     }
 
     /**
@@ -211,8 +163,8 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
      * @throws Exception
      */
     void createKeyPairLocalParamImport(String alg) throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(alg, providerName);
-        //        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH", providerName);
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(alg);
+        //        KeyPairGenerator kpg = KeyPairGenerator.getInstance("XDH");
         NamedParameterSpec paramSpec = new NamedParameterSpec(alg);
         System.out.println("Alg = " + alg);
         kpg.initialize(paramSpec);
@@ -221,8 +173,8 @@ public class BaseTestXDHKeyImport extends ibm.jceplus.junit.base.BaseTest {
         PrivateKey pvk = kp.getPrivate();
         PublicKey pbk = kp.getPublic();
 
-        KeyFactory kf = KeyFactory.getInstance(alg, providerName);
-        //        KeyFactory kf = KeyFactory.getInstance("XDH", providerName);
+        KeyFactory kf = KeyFactory.getInstance(alg);
+        //        KeyFactory kf = KeyFactory.getInstance("XDH");
         XECPublicKeySpec xdhPublic = kf.getKeySpec(kp.getPublic(), XECPublicKeySpec.class);
         XECPrivateKeySpec xdhPrivate = kf.getKeySpec(kp.getPrivate(), XECPrivateKeySpec.class);
 
