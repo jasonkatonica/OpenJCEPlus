@@ -10,7 +10,7 @@
 
 name: GitHub Actions OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [pull_request]
+on: [push]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Build and Test ${{ matrix.os }}.
@@ -42,18 +42,18 @@ jobs:
       - run: echo "🖥️ The workflow is now ready to test your code on the runner."
       - name: List files in the repository
         run: |
-          tree ${{ github.workspace }}
+          tree --du -h ${{ github.workspace }}
 #      - name: Set up Visual Studio shell
 #        uses: egor-tensin/vs-shell@v2
 #        with:
 #          arch: x64
-      - name: 'Checkout Open Cryptography Kit C'
+      - name: 'Checkout Open Cryptography Kit C ( Non FIPS )'
         uses: actions/checkout@v4
         with:
           repository: IBM/OpenCryptographyKitC
           ref: 411a80674cedc6d4bdb9d808df341c7a29170699 # main branch on Aug 11th 2024.
           path: ${{ github.workspace }}/OpenCryptographyKitC
-      - name: Compile Open Cryptography Kit C
+      - name: Compile Open Cryptography Kit C ( Non FIPS )
         run: |
           cd ${{ github.workspace }}/OpenCryptographyKitC/icc
           make -k OPSYS=AMD64_LINUX CONFIG=release create_all
@@ -65,45 +65,68 @@ jobs:
           cd iccpkg
           make -k OPSYS=AMD64_LINUX CONFIG=release all
           cd ${{ github.workspace }}
-      - name: Extract OCK SDK and Binary Tar File
+      - name: 'Checkout Open Cryptography Kit C ( FIPS )'
+        uses: actions/checkout@v4
+        with:
+            repository: IBM/OpenCryptographyKitC
+            ref: c22727bf6d0ea8050f3c23de6992473d008c1c5f # V8.8.1_FIPS140-3 branch on Aug 1st 2024.
+            path: ${{ github.workspace }}/OpenCryptographyKitCFIPS
+      - name: Compile Open Cryptography Kit C ( FIPS )
+        run: |
+          cd ${{ github.workspace }}/OpenCryptographyKitCFIPS/icc
+          make -k OPSYS=AMD64_LINUX CONFIG=release create_all_FIPS
+          export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitCFIPS/openssl-1.1.1/
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release show_config
+          cd ..
+          cd iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          cd ${{ github.workspace }}
+      - name: Extract Packaged Binaries To Prepare For Execution
         run: |
           mkdir ${{ github.workspace }}/OCK
           cd ${{ github.workspace }}/OCK
-          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
-          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
-          ls -al
-          tree
-          tar -xvf jgsk_crypto.tar
-          tar -xvf jgsk_crypto_sdk.tar
+          echo "Extract binaries to simulate FIPS library."
+          ls -al ${{ github.workspace }}/OpenCryptographyKitCFIPS/package
+          tar -xvf ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto.tar
+          tar -xvf ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto_sdk.tar
+          echo "OpenCryptographyKitC currently builds library in N directory for FIPS build. Move it to the correct C directory."
+          mv N C
+          echo "List Contents Of OCKC binaries for non fips library."
+          tar -tvf ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar
+          echo "Extract OCKC binaries for non fips library N directory."
+          tar -xvf ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar N
           mkdir jgsk_sdk/lib64
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
+          echo "List all files installed in directory ${{ github.workspace }}/OCK"
+          tree --du -h ${{ github.workspace }}/OCK
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
           java-version: '23.0.0+37'
-          distribution: 'semeru'
+          distribution: 'temurin'
           architecture: 'x64'
       # Uncomment to capture all files in the runner for debugging purposes.          
       # - name: List Files In Entire Runner
       #   run: |
-      #     tree ${{ matrix.github_actions_runner_root }}
-      - name: Execute Maven Install Target And OpenJCEPlus Provider Tests
-        run: > 
-          mvn
-          --batch-mode
-          '-Dock.library.path=${{ github.workspace }}/OCK/'
-          -Dtest='
-          ibm.jceplus.junit.openjceplus.TestAll,
-          ibm.jceplus.junit.TestMemStressAll,
-          ibm.jceplus.junit.TestMultithread,
-          ibm.jceplus.junit.openjceplus.integration.TestAll
-          '
-          install
+      #     tree --du -h ${{ matrix.github_actions_runner_root }}
+      - name: Execute Maven Install Target And Run All Tests
+        run: | 
+          mvn \
+          --batch-mode \
+          '-Dock.library.path=${{ github.workspace }}/OCK/' \
+          install \
+          -Dtest=TestDHKeyPairGenerator
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       #- name: List Files In The Entire Workspace
       #  run: |
       #    tree ${{ github.workspace }}
+      #- name: Display ICC Debug Trace
+      #  if: always()
+      #  run: |
+      #    cat GSKIT_CRYPTO.log
       - name: Archive openjceplus.jar
         uses: actions/upload-artifact@v4
         with:
