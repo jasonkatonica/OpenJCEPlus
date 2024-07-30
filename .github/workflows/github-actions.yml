@@ -10,7 +10,7 @@
 
 name: GitHub Actions OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [pull_request]
+on: [push]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Build and Test ${{ matrix.os }}.
@@ -65,18 +65,42 @@ jobs:
           cd iccpkg
           make -k OPSYS=AMD64_LINUX CONFIG=release all
           cd ${{ github.workspace }}
+      - name: 'Checkout FIPS Branch Of Open Cryptography Kit C'
+        uses: actions/checkout@v4
+        with:
+            repository: IBM/OpenCryptographyKitC
+            ref: c22727bf6d0ea8050f3c23de6992473d008c1c5f # V8.8.1_FIPS140-3 branch on Aug 1st 2024.
+            path: ${{ github.workspace }}/OpenCryptographyKitCFIPS
+      - name: Compile FIPS Branch Of Open Cryptography Kit C
+        run: |
+            cd ${{ github.workspace }}/OpenCryptographyKitCFIPS/icc
+            make -k OPSYS=AMD64_LINUX CONFIG=release create_all_FIPS
+            export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitCFIPS/openssl-1.1.1/
+            make -k OPSYS=AMD64_LINUX CONFIG=release all
+            make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+            make -k OPSYS=AMD64_LINUX CONFIG=release show_config
+            cd ..
+            cd iccpkg
+            make -k OPSYS=AMD64_LINUX CONFIG=release all
+            cd ${{ github.workspace }}
       - name: Extract OCK SDK and Binary Tar File
         run: |
           mkdir ${{ github.workspace }}/OCK
           cd ${{ github.workspace }}/OCK
+          cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto.tar .
+          tar -xvf jgsk_crypto.tar
+          mv N C
+          ln -s ${{ github.workspace }}/OCK/C/icc/icclib/libicclib.so ${{ github.workspace }}/OCK/C/icc/icclib/libicclib084.so
+          rm -rf *.tar
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
           ls -al
-          tree
           tar -xvf jgsk_crypto.tar
           tar -xvf jgsk_crypto_sdk.tar
           mkdir jgsk_sdk/lib64
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
+          rm -rf *.tar
+          tree
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
@@ -92,12 +116,6 @@ jobs:
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
-          -Dtest='
-          ibm.jceplus.junit.openjceplus.TestAll,
-          ibm.jceplus.junit.TestMemStressAll,
-          ibm.jceplus.junit.TestMultithread,
-          ibm.jceplus.junit.openjceplus.integration.TestAll
-          '
           install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
