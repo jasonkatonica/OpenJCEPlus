@@ -10,7 +10,7 @@
 
 name: GitHub Actions OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [pull_request]
+on: [push]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Build and Test ${{ matrix.os }}.
@@ -65,6 +65,24 @@ jobs:
           cd iccpkg
           make -k OPSYS=AMD64_LINUX CONFIG=release all
           cd ${{ github.workspace }}
+      - name: 'Checkout FIPS Branch Of Open Cryptography Kit C'
+        uses: actions/checkout@v4
+        with:
+            repository: IBM/OpenCryptographyKitC
+            ref: 15f5ece3956618cae560bbe085b15734b9baadfe # V8.8.1_FIPS140-3 branch on July 30th 2024.
+            path: ${{ github.workspace }}/OpenCryptographyKitCFIPS
+      - name: Compile FIPS Branch Of Open Cryptography Kit C
+        run: |
+            cd ${{ github.workspace }}/OpenCryptographyKitCFIPS/icc
+            make -k OPSYS=AMD64_LINUX CONFIG=release create_all
+            export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitCFIPS/openssl-1.1.1/
+            make -k OPSYS=AMD64_LINUX CONFIG=release all
+            make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+            make -k OPSYS=AMD64_LINUX CONFIG=release show_config
+            cd ..
+            cd iccpkg
+            make -k OPSYS=AMD64_LINUX CONFIG=release all
+            cd ${{ github.workspace }}
       - name: Extract OCK SDK and Binary Tar File
         run: |
           mkdir ${{ github.workspace }}/OCK
