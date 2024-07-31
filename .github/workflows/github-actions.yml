@@ -74,7 +74,7 @@ jobs:
       - name: Compile FIPS Branch Of Open Cryptography Kit C
         run: |
             cd ${{ github.workspace }}/OpenCryptographyKitCFIPS/icc
-            make -k OPSYS=AMD64_LINUX CONFIG=release create_all
+            make -k OPSYS=AMD64_LINUX CONFIG=release create_all_FIPS
             export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitCFIPS/openssl-1.1.1/
             make -k OPSYS=AMD64_LINUX CONFIG=release all
             make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
