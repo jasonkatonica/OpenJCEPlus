@@ -82,8 +82,8 @@ jobs:
             cd ..
             cd iccpkg
             make -k OPSYS=AMD64_LINUX CONFIG=release all
-            tree
             cd ${{ github.workspace }}
+            tree
       - name: Extract OCK SDK and Binary Tar File
         run: |
           mkdir ${{ github.workspace }}/OCK
