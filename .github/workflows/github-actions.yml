@@ -90,7 +90,8 @@ jobs:
           cd ${{ github.workspace }}/OCK
           cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto.tar .
           tar -xvf jgsk_crypto.tar
-          mv C N
+          mv N C
+          rm -rf *.tar
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
           ls -al
