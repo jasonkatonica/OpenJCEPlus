@@ -82,6 +82,7 @@ jobs:
             cd ..
             cd iccpkg
             make -k OPSYS=AMD64_LINUX CONFIG=release all
+            tree
             cd ${{ github.workspace }}
       - name: Extract OCK SDK and Binary Tar File
         run: |
@@ -94,7 +95,10 @@ jobs:
           tar -xvf jgsk_crypto.tar
           tar -xvf jgsk_crypto_sdk.tar
           mkdir jgsk_sdk/lib64
+          mkdir jgsk_crypto/C/icc/icclib
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
+          cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgskit_crypto/N/icc/icclib/* jgsk_crypto/C/icc/icclib
+          tree jgsk_crypto
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
