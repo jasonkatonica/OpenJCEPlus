@@ -88,17 +88,18 @@ jobs:
         run: |
           mkdir ${{ github.workspace }}/OCK
           cd ${{ github.workspace }}/OCK
+          cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto.tar .
+          tar -xvf jgsk_crypto.tar
+          mv C N
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
           ls -al
           tar -xvf jgsk_crypto.tar
           tar -xvf jgsk_crypto_sdk.tar
-          tree
           mkdir jgsk_sdk/lib64
-          mkdir -p C/icc/icclib
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
-          cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgskit_crypto/N/icc/icclib/* C/icc/icclib
-          tree jgsk_crypto
+          rm -rf *.tar
+          tree
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
