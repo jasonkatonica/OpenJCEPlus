@@ -83,7 +83,6 @@ jobs:
             cd iccpkg
             make -k OPSYS=AMD64_LINUX CONFIG=release all
             cd ${{ github.workspace }}
-            tree
       - name: Extract OCK SDK and Binary Tar File
         run: |
           mkdir ${{ github.workspace }}/OCK
@@ -101,7 +100,6 @@ jobs:
           mkdir jgsk_sdk/lib64
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
           rm -rf *.tar
-          tree
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
