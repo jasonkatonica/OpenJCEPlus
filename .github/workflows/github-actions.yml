@@ -100,6 +100,7 @@ jobs:
           mkdir jgsk_sdk/lib64
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
           rm -rf *.tar
+          tree
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
