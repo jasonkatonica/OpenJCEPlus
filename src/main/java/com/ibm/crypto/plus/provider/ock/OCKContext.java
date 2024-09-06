@@ -31,11 +31,31 @@ public final class OCKContext {
     private boolean isFIPS;
     private String ockVersion = unobtainedValue;
     private String ockInstallPath = unobtainedValue;
+    private static int MAXIMUM_LOAD_ATTEMPTS = 10;
 
     private static String libraryBuildDate = unobtainedValue;
 
     public static OCKContext createContext(boolean isFIPS) throws OCKException {
-        long ockContextId = NativeInterface.initializeOCK(isFIPS);
+
+        // Attempt to load the OCKC library. On occasion when running in fips mode
+        // the library fails to achieve a self verification check for FIPS entropy.
+        // In this case we should retry again to load.
+        long ockContextId = 0;
+        int maximumAttempts = isFIPS ? MAXIMUM_LOAD_ATTEMPTS : 1;
+        for (int i = 0; i < maximumAttempts; i++) {
+            try {
+                ockContextId = NativeInterface.initializeOCK(isFIPS);
+                break;
+            } catch (OCKException e) {
+                // Ignore loading issues which occasionally occur when loading the FIPS library.
+                // We should throw the exception only when we have reached the maximum attempts,
+                // we are in FIPS mode, and the exception is stating that we are not in FIPS
+                // mode.
+                if ((i + 1 == maximumAttempts) && isFIPS && (e.getMessage().toUpperCase().contains("Context is not in FIPS mode".toUpperCase()))) {
+                    throw e;
+                }
+            }
+        }
 
         OCKContext context = new OCKContext(ockContextId, isFIPS);
 
