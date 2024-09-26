@@ -27,7 +27,6 @@ import sun.security.x509.X509Key;
  * Implements the ASN.1 CertificationRequestInfo type as defined in PKCS #10.
  * This information is part of a CertificationRequest.
  *
- * <xmp>
  * CertificationRequestInfo ::= SEQUENCE {
  *    version Version,
  *    subject Name,
@@ -39,7 +38,6 @@ import sun.security.x509.X509Key;
  *    algorithm AlgorithmIdentifier,
  *    publicKey BIT STRING
  * }
- * </xmp>
  *
  * <p>
  * CertificationRequestInfo objects are immutable; they cannot be changed once

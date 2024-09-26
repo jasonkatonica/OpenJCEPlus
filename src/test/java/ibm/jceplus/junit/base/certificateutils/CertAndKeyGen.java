@@ -358,7 +358,7 @@ public final class CertAndKeyGen {
     // @ deprecated Use the new <a href =
     // "#getSelfCertificate(com.ibm.security.x509.X500Name, long)">
 
-    /***
+    /**
      * LOCKDOWN get rid of deprecated X509Cert class public X509Cert
      * getSelfCert(X500Name myname, long validity) throws InvalidKeyException,
      * SignatureException, NoSuchAlgorithmException { X509Certificate cert;
@@ -369,10 +369,7 @@ public final class CertAndKeyGen {
      * throw new NoSuchAlgorithmException(e.getMessage()); } catch (IOException
      * e) { throw new SignatureException(e.getMessage()); } } LOCKDOWN get rid
      * of deprecated X509Cert class
-     ***/
-
-    // create for KeyTool to use, to workaround the problem with PKCS11Impl
-    // provider
+     */
     public X509Certificate getSelfCert(X500Name myname, long validity)
             throws CertificateException, InvalidKeyException, SignatureException,
             NoSuchAlgorithmException, NoSuchProviderException {

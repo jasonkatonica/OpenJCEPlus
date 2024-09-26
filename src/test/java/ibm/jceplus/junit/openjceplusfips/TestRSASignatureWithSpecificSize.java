@@ -133,7 +133,7 @@ public class TestRSASignatureWithSpecificSize extends BaseTestJunit5 {
     }
 
     /**
-     * Check large size
+     * Check large size.
      * 
      * @throws Exception
      */
@@ -146,7 +146,7 @@ public class TestRSASignatureWithSpecificSize extends BaseTestJunit5 {
     }
 
     /**
-     * Check small size
+     * Check small size.
      * 
      * @throws Exception
      */
@@ -159,7 +159,7 @@ public class TestRSASignatureWithSpecificSize extends BaseTestJunit5 {
     }
 
     /**
-     * Check size not in the list
+     * Check size not in the list.
      * 
      * @throws Exception
      */
@@ -172,7 +172,7 @@ public class TestRSASignatureWithSpecificSize extends BaseTestJunit5 {
     }
 
     /**
-     * Check size not in the list
+     * Check size not in the list.
      * 
      * @throws Exception
      */

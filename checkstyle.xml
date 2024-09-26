@@ -19,6 +19,9 @@
         <module name="RedundantImport"/>
         <module name="StringLiteralEquality"/>
         <module name="GenericWhitespace"/>
+        <module name="JavadocStyle">
+            <property name="scope" value="private"/>
+        </module>
         <module name="Indentation">
             <property name="caseIndent" value="4"/>
             <property name="arrayInitIndent" value="8"/>
