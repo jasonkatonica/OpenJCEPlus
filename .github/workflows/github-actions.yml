@@ -113,7 +113,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           tree
-          mvn --batch-mode '-Dock.library.path=${{ github.workspace }}/OCK/' install
+          mvn --batch-mode install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       #- name: List Files In The Entire Workspace
