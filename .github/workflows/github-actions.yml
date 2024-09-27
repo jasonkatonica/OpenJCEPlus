@@ -98,6 +98,7 @@ jobs:
           mkdir jgsk_sdk/lib64
           cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
           rm -rf *.tar
+          tree
       - name: Setup Semeru JDK
         uses: actions/setup-java@v4
         with:
@@ -110,7 +111,8 @@ jobs:
       #     tree ${{ matrix.github_actions_runner_root }}
       - name: Execute Maven Install Target And OpenJCEPlus Provider Tests
         run: >
-          tree ${{ github.workspace }}/OCK/
+          cd ${{ github.workspace }}
+          tree
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
