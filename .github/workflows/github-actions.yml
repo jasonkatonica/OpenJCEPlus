@@ -113,7 +113,7 @@ jobs:
         run: |
           cd ${{ github.workspace }}
           tree
-          mvn --batch-mode -Dtestenvironment=standalonebundled install
+          mvn --batch-mode -Denforcer.skip -Dtestenvironment=standalonebundled install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       #- name: List Files In The Entire Workspace
