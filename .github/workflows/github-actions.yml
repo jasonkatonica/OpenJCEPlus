@@ -89,7 +89,6 @@ jobs:
           cp ${{ github.workspace }}/OpenCryptographyKitCFIPS/package/jgsk_crypto.tar .
           tar -xvf jgsk_crypto.tar
           mv N C
-          mv ${{ github.workspace }}/OCK/C/icc/icclib/libicclib.so ${{ github.workspace }}/OCK/C/icc/icclib/libicclib084.so
           rm -rf *.tar
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
           cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
