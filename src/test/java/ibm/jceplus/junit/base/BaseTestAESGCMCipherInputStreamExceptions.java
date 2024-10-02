@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023
+ * Copyright IBM Corp. 2023, 2024
  *
  * Licensed under the Apache License 2.0 (the "License").  You may not use
  * this file except in compliance with the License.  You can obtain a copy
@@ -8,15 +8,15 @@
 package ibm.jceplus.junit.base;
 
 /*
- * @test
- * @bug 8064546
- * @summary Throw exceptions during reading but not closing of a
- * CipherInputStream:
- * - Make sure authenticated algorithms continue to throwing exceptions
- *   when the authentication tag fails verification.
- * - Make sure other algorithms do not throw exceptions when the stream
- *   calls close() and only throw when read() errors.
- */
+* @test
+* @bug 8064546
+* @summary Throw exceptions during reading but not closing of a
+* CipherInputStream:
+* - Make sure authenticated algorithms continue to throwing exceptions
+*   when the authentication tag fails verification.
+* - Make sure other algorithms do not throw exceptions when the stream
+*   calls close() and only throw when read() errors.
+*/
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -27,24 +27,15 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import org.junit.jupiter.api.Test;
+import static org.junit.Assert.assertTrue;
 
-public class BaseTestAESGCMCipherInputStreamExceptions extends BaseTest {
+public class BaseTestAESGCMCipherInputStreamExceptions extends BaseTestJunit5 {
 
     static SecretKeySpec key = new SecretKeySpec(new byte[16], "AES");
     static GCMParameterSpec gcmspec = new GCMParameterSpec(128, new byte[16]);
     static IvParameterSpec iv = new IvParameterSpec(new byte[16]);
     static boolean failure = false;
-
-    /* Full read stream, check that getMoreData() is throwing an exception
-     * This test
-     *   1) Encrypt 100 bytes with AES/GCM/NoPadding
-     *   2) Changes the last byte to invalidate the authetication tag.
-     *   3) Fully reads CipherInputStream to decrypt the message and closes
-     */
-
-    public BaseTestAESGCMCipherInputStreamExceptions(String providerName) {
-        super(providerName);
-    }
 
     private void do_gcm_AEADBadTag() throws Exception {
         byte[] read = new byte[200];
@@ -366,10 +357,10 @@ public class BaseTestAESGCMCipherInputStreamExceptions extends BaseTest {
     byte[] encryptedText(String mode, byte[] pt) throws Exception {
         Cipher c;
         if (mode.compareTo("GCM") == 0) {
-            c = Cipher.getInstance("AES/GCM/NoPadding", providerName);
+            c = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
             c.init(Cipher.ENCRYPT_MODE, key, gcmspec);
         } else if (mode.compareTo("CBC") == 0) {
-            c = Cipher.getInstance("AES/CBC/NoPadding", providerName);
+            c = Cipher.getInstance("AES/CBC/NoPadding", getProviderName());
             c.init(Cipher.ENCRYPT_MODE, key, iv);
         } else {
             return null;
@@ -388,10 +379,10 @@ public class BaseTestAESGCMCipherInputStreamExceptions extends BaseTest {
         Cipher c;
 
         if (mode.compareTo("GCM") == 0) {
-            c = Cipher.getInstance("AES/GCM/NoPadding", providerName);
+            c = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
             c.init(Cipher.DECRYPT_MODE, key, gcmspec);
         } else if (mode.compareTo("CBC") == 0) {
-            c = Cipher.getInstance("AES/CBC/NoPadding", providerName);
+            c = Cipher.getInstance("AES/CBC/NoPadding", getProviderName());
             c.init(Cipher.DECRYPT_MODE, key, iv);
         } else {
             return null;
@@ -409,6 +400,7 @@ public class BaseTestAESGCMCipherInputStreamExceptions extends BaseTest {
         return ct;
     }
 
+    @Test
     public void testGCM() throws Exception {
         do_gcm_AEADBadTag();
         do_gcm_shortReadAEAD();
