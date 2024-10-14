@@ -59,7 +59,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
             byte[] output = null;
             int outputLen = -1;
             if (use_z_fast_command) {
-                output = new byte[engineGetOutputSize2(inputLen)];
+                output = new byte[getOutputSizeForZ(inputLen)];
                 outputLen = engineDoFinal(input, inputOffset, inputLen, output, 0);
             } else {
                 output = new byte[engineGetOutputSize(inputLen)];
@@ -192,7 +192,11 @@ public final class AESCipher extends CipherSpi implements AESConstants {
     @Override
     protected int engineGetOutputSize(int inputLen) {
         try {
-            return symmetricCipher.getOutputSize(inputLen);
+            if (use_z_fast_command) {
+                return getOutputSizeForZ(inputLen);
+            } else {
+                return symmetricCipher.getOutputSize(inputLen);
+            }
         } catch (Exception e) {
             throw provider.providerException("Unable to get output size", e);
         }
@@ -352,7 +356,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
             byte[] output = null;
             int outputLen = -1;
             if (use_z_fast_command) {
-                output = new byte[engineGetOutputSize2(inputLen)];
+                output = new byte[getOutputSizeForZ(inputLen)];
                 outputLen = engineUpdate(input, inputOffset, inputLen, output, 0);
             } else {
                 output = new byte[engineGetOutputSize(inputLen)];
@@ -516,7 +520,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
      * @param inputLen
      * @return
      */
-    private int engineGetOutputSize2(int inputLen) {
+    private int getOutputSizeForZ(int inputLen) {
         int totalLen = Math.addExact(buffered, inputLen);
         if (padding == Padding.NoPadding || !encrypting)
             return totalLen;
