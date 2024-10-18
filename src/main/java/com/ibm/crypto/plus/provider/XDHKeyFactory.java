@@ -102,6 +102,9 @@ class XDHKeyFactory extends KeyFactorySpi {
                 Optional<byte[]> scalar = Optional.of(privateKeySpec.getScalar());
                 return new XDHPrivateKeyImpl(provider, params, scalar);
             } else if (keySpec instanceof PKCS8EncodedKeySpec) {
+                System.out.println("-----");
+                System.out.println(toHexString(((PKCS8EncodedKeySpec) keySpec).getEncoded()));
+                System.out.println("-----");
                 return new XDHPrivateKeyImpl(provider,
                         ((PKCS8EncodedKeySpec) keySpec).getEncoded());
             } else {
@@ -115,6 +118,29 @@ class XDHKeyFactory extends KeyFactorySpi {
             e.printStackTrace();
             throw new InvalidKeySpecException("Inappropriate key specification: " + e.getMessage());
         }
+    }
+
+    /** * Converts a byte array to hex string */
+    private static String toHexString(byte[] block) {
+        StringBuffer buf = new StringBuffer();
+        char[] hexChars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
+                'E', 'F'};
+        int len = block.length;
+        int high = 0;
+        int low = 0;
+
+        for (int i = 0; i < len; i++) {
+            if (i % 16 == 0)
+                buf.append('\n');
+            high = ((block[i] & 0xf0) >> 4);
+            low = (block[i] & 0x0f);
+            buf.append(hexChars[high]);
+            buf.append(hexChars[low]);
+            buf.append(' ');
+        }
+        buf.append('\n');
+
+        return buf.toString();
     }
 
     @Override
