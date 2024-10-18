@@ -109,6 +109,7 @@ class XDHKeyFactory extends KeyFactorySpi {
             }
 
         } catch (InvalidKeyException e) {
+            e.printStackTrace();
             throw new InvalidKeySpecException("Inappropriate key specification: " + e.getMessage());
         } catch (InvalidParameterException e) {
             throw new InvalidKeySpecException("Inappropriate key specification: " + e.getMessage());
