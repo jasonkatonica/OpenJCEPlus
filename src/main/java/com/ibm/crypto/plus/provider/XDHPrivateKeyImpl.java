@@ -274,6 +274,29 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
         return oid;
     }
 
+        /** * Converts a byte array to hex string */
+        private static String toHexString(byte[] block) {
+            StringBuffer buf = new StringBuffer();
+            char[] hexChars = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D',
+                    'E', 'F'};
+            int len = block.length;
+            int high = 0;
+            int low = 0;
+    
+            for (int i = 0; i < len; i++) {
+                if (i % 16 == 0)
+                    buf.append('\n');
+                high = ((block[i] & 0xf0) >> 4);
+                low = (block[i] & 0x0f);
+                buf.append(hexChars[high]);
+                buf.append(hexChars[low]);
+                buf.append(' ');
+            }
+            buf.append('\n');
+    
+            return buf.toString();
+        }
+        
     /**
      * Takes a DER encoded key of the following format: SEQUENCE: [version (INTEGER),
      * OID (OID is inside a sequence of 1 element), private key (OCTET STRING)]
@@ -312,6 +335,7 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
 
         // Read, convert, then write private key
         byte[] keyBytes = inputValue[2].getOctetString();
+        System.out.println(toHexString(keyBytes));
         DerInputStream derStream = new DerInputStream(keyBytes);
         try {
             // XDH private key in SunEC new Java 17 design requires [octet-string[octet-string[key-bytes]]] format,
