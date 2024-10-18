@@ -102,9 +102,9 @@ class XDHKeyFactory extends KeyFactorySpi {
                 Optional<byte[]> scalar = Optional.of(privateKeySpec.getScalar());
                 return new XDHPrivateKeyImpl(provider, params, scalar);
             } else if (keySpec instanceof PKCS8EncodedKeySpec) {
-                System.out.println("-----");
-                System.out.println(toHexString(((PKCS8EncodedKeySpec) keySpec).getEncoded()));
-                System.out.println("-----");
+                //System.out.println("-----");
+                //System.out.println(toHexString(((PKCS8EncodedKeySpec) keySpec).getEncoded()));
+                //System.out.println("-----");
                 return new XDHPrivateKeyImpl(provider,
                         ((PKCS8EncodedKeySpec) keySpec).getEncoded());
             } else {

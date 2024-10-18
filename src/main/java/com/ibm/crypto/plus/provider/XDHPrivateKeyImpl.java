@@ -335,7 +335,7 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
 
         // Read, convert, then write private key
         byte[] keyBytes = inputValue[2].getOctetString();
-        System.out.println("This is too much? : " + toHexString(keyBytes));
+        //System.out.println("This is too much? : " + toHexString(keyBytes));
         try {
             // XDH private key in SunEC new Java 17 design requires [octet-string[octet-string[key-bytes]]] format,
             // otherwise, it causes interop issue.
