@@ -98,7 +98,7 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
             this.xecKey = XECKey.createPrivateKey(provider.getOCKContext(), alteredEncoded, encodingSize);
             this.scalar = Optional.of(k);
         } catch (Exception exception) {
-            e.printStackTrace();
+            exception.printStackTrace();
             InvalidKeyException ike = new InvalidKeyException("Failed to create XEC private key");
             provider.setOCKExceptionCause(ike, exception);
             throw ike;
