@@ -165,9 +165,8 @@
                       --add-opens=openjceplus/ibm.jceplus.junit.base=ALL-UNNAMED
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
-                    <perCoreThreadCount>false</perCoreThreadCount>
-                    <threadCountSuites>5</threadCountSuites>
-                    <parallel>suites</parallel>
+                    <forkCount>10</forkCount>
+                    <reuseForks>true</reuseForks>
                     <systemPropertyVariables>
                       <jgskit.library.path>${build.target.jgskitlib.dir}</jgskit.library.path>
                     </systemPropertyVariables>
