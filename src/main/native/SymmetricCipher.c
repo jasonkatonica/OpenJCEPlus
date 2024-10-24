@@ -461,6 +461,7 @@ JNIEXPORT jint JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_z_1
   // Get output buffer.
   unsigned char* outputPointer = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, output, &isCopy));
   if (NULL == outputPointer) {
+    (*env)->ReleasePrimitiveArrayCritical(env, input, inputPointer, 0);
     throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
   }
 
