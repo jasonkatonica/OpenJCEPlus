@@ -452,14 +452,14 @@ JNIEXPORT jint JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_z_1
   // Get input and output buffer
   jboolean isCopy = 0;
   jint len = 0;
-  unsigned char* inputPointer  = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, input,  &isCopy)) + inputOffset;
-  unsigned char* outputPointer = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, output, &isCopy)) + outputOffset;
+  unsigned char* inputPointer  = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, input,  &isCopy));
+  unsigned char* outputPointer = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, output, &isCopy));
 
   if( NULL == outputPointer || NULL == inputPointer ) {
     throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
   }
   else {
-      len = (jint)CIPHER_zKMC_internal(inputPointer, outputPointer, (int)inputLength, (long)paramPointer, (int)mode);
+      len = (jint)CIPHER_zKMC_internal(inputPointer + inputOffset, outputPointer + outputOffset, (int)inputLength, (long)paramPointer, (int)mode);
   }
 
   if(inputPointer != NULL) (*env)->ReleasePrimitiveArrayCritical(env, input, inputPointer, 0);
