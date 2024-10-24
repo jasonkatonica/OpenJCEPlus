@@ -449,21 +449,31 @@ JNIEXPORT int CIPHER_zKMC_internal(unsigned char* input, unsigned char* output, 
 
 JNIEXPORT jint JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_z_1kmc_1native(JNIEnv * env, jclass clazz, jbyteArray input, jint inputOffset, jbyteArray output, jint outputOffset, jlong paramPointer, jint inputLength, jint mode)
 {
-  // Get input and output buffer
   jboolean isCopy = 0;
   jint len = 0;
-  unsigned char* inputPointer  = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, input,  &isCopy));
-  unsigned char* outputPointer = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, output, &isCopy));
 
-  if( NULL == outputPointer || NULL == inputPointer ) {
+  // Get input buffer.
+  unsigned char* inputPointer  = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, input,  &isCopy));
+  if (NULL == inputPointer) {
     throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
   }
-  else {
-      len = (jint)CIPHER_zKMC_internal(inputPointer + inputOffset, outputPointer + outputOffset, (int)inputLength, (long)paramPointer, (int)mode);
+
+  // Get output buffer.
+  unsigned char* outputPointer = (unsigned char*)((*env)->GetPrimitiveArrayCritical(env, output, &isCopy));
+  if (NULL == outputPointer) {
+    throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
   }
 
-  if(inputPointer != NULL) (*env)->ReleasePrimitiveArrayCritical(env, input, inputPointer, 0);
-  if(outputPointer != NULL) (*env)->ReleasePrimitiveArrayCritical(env, output, outputPointer, 0);
+  len = (jint)CIPHER_zKMC_internal(inputPointer + inputOffset, outputPointer + outputOffset, (int)inputLength, (long)paramPointer, (int)mode);
+
+  if (inputPointer != NULL) {
+      (*env)->ReleasePrimitiveArrayCritical(env, input, inputPointer, 0);
+  }
+
+  if (outputPointer != NULL) {
+    (*env)->ReleasePrimitiveArrayCritical(env, output, outputPointer, 0);
+  }
+
   return len;
 }
 
