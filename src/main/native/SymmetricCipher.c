@@ -464,6 +464,7 @@ JNIEXPORT jint JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_z_1
     throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
   }
 
+  printf("RUNNING KMC\n")
   len = (jint)CIPHER_zKMC_internal(inputPointer + inputOffset, outputPointer + outputOffset, (int)inputLength, (long)paramPointer, (int)mode);
 
   if (inputPointer != NULL) {
