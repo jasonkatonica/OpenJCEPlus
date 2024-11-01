@@ -1,0 +1,8 @@
+// .backportrc.json
+{
+  // `targetBranch` option allows to automatically backport every PR to a specific branch without the need for labels
+  "targetBranches": ["katonica/feature/automaticbackport"],
+
+  // the branches available to backport to
+  "targetBranchChoices": ["katonica/feature/automaticbackportoutput"],
+}
