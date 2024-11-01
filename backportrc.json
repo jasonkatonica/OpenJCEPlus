@@ -1,8 +1,14 @@
 // .backportrc.json
 {
-  // `targetBranch` option allows to automatically backport every PR to a specific branch without the need for labels
-  "targetBranches": ["katonica/feature/automaticbackport"],
+  // example repo info
+  "repoOwner": "torvalds",
+  "repoName": "linux",
 
   // the branches available to backport to
-  "targetBranchChoices": ["katonica/feature/automaticbackportoutput"],
+  "targetBranchChoices": ["prmergetobranch"],
+
+  // In this case, adding the label "backport-to-production" will backport the PR to the "production" branch
+  "branchLabelMapping": {
+    "^backport-to-(.+)$": "$1"
+  }
 }
