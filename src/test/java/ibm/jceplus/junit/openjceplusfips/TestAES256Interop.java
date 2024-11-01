@@ -17,8 +17,9 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 public class TestAES256Interop extends BaseTestAESInterop {
 
     @BeforeAll
-    public void beforeAll() {
+    public void beforeAll() throws Exception {
         Utils.loadProviderTestSuite();
+        Utils.loadProviderOpenJCEPlus();
         setProviderName(Utils.TEST_SUITE_PROVIDER_NAME);
         setInteropProviderName(Utils.PROVIDER_SunJCE);
         setKeySize(256);

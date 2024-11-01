@@ -26,8 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class TestFIPSVerifyOnlyTest extends BaseTestJunit5 {
 
     @BeforeAll
-    public void beforeAll() {
+    public void beforeAll() throws Exception {
         Utils.loadProviderTestSuite();
+        Utils.loadProviderOpenJCEPlus();
         setProviderName(Utils.TEST_SUITE_PROVIDER_NAME);
     }
 
