@@ -1,0 +1,14 @@
+// .backportrc.json
+{
+  // example repo info
+  "repoOwner": "torvalds",
+  "repoName": "linux",
+
+  // the branches available to backport to
+  "targetBranchChoices": ["prmergetobranch"],
+
+  // In this case, adding the label "backport-to-production" will backport the PR to the "production" branch
+  "branchLabelMapping": {
+    "^backport-to-(.+)$": "$1"
+  }
+}
