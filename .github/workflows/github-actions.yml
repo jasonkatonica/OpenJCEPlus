@@ -105,7 +105,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '23.0.0+37'
-          distribution: 'temurin'
+          distribution: 'semeru'
           architecture: 'x64'
       # Uncomment to capture all files in the runner for debugging purposes.          
       # - name: List Files In Entire Runner
