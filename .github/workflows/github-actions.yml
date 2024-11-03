@@ -116,12 +116,19 @@ jobs:
       # fails for unknown reasons only when building OCKC from source
       # with the process within this github action.
       - name: Execute Maven Install Target And Run All Tests
-        run: | 
+        run: |
           mvn \
           --batch-mode \
           '-Dock.library.path=${{ github.workspace }}/OCK/' \
           install \
-          -Dtest=!ibm.jceplus.junit.openjceplus.TestDHKeyPairGenerator#testDHKeyGen_1024_withParams
+          -Dtest='
+          ibm.jceplus.junit.TestIntegration.java, \
+          ibm.jceplus.junit.TestAll.java, \
+          ibm.jceplus.junit.TestMemStressAll.java, \
+          ibm.jceplus.junit.TestMultithread.java, \
+          ibm.jceplus.junit.TestMultithreadFIPS.java, \
+          !ibm.jceplus.junit.openjceplus.TestDHKeyPairGenerator#testDHKeyGen_1024_withParams
+          '
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       #- name: List Files In The Entire Workspace
