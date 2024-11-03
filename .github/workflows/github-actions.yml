@@ -121,7 +121,7 @@ jobs:
           --batch-mode \
           '-Dock.library.path=${{ github.workspace }}/OCK/' \
           install \
-          -Dtest='
+          -Dtest=' \
           ibm.jceplus.junit.TestIntegration, \
           ibm.jceplus.junit.TestAll, \
           ibm.jceplus.junit.TestMemStressAll, \
