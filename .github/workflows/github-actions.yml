@@ -122,11 +122,11 @@ jobs:
           '-Dock.library.path=${{ github.workspace }}/OCK/' \
           install \
           -Dtest='
-          ibm.jceplus.junit.TestIntegration.java, \
-          ibm.jceplus.junit.TestAll.java, \
-          ibm.jceplus.junit.TestMemStressAll.java, \
-          ibm.jceplus.junit.TestMultithread.java, \
-          ibm.jceplus.junit.TestMultithreadFIPS.java, \
+          ibm.jceplus.junit.TestIntegration, \
+          ibm.jceplus.junit.TestAll, \
+          ibm.jceplus.junit.TestMemStressAll, \
+          ibm.jceplus.junit.TestMultithread, \
+          ibm.jceplus.junit.TestMultithreadFIPS, \
           !ibm.jceplus.junit.openjceplus.TestDHKeyPairGenerator#testDHKeyGen_1024_withParams
           '
         env:
