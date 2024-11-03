@@ -127,7 +127,7 @@ jobs:
           ibm.jceplus.junit.TestMemStressAll, \
           ibm.jceplus.junit.TestMultithread, \
           ibm.jceplus.junit.TestMultithreadFIPS, \
-          !ibm.jceplus.junit.openjceplus.TestDHKeyPairGenerator#testDHKeyGen_1024_withParams
+          !ibm.jceplus.junit.openjceplus.TestDHKeyPairGenerator#testDHKeyGen_1024_withParams \
           '
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
