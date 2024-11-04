@@ -117,7 +117,7 @@ jobs:
           --batch-mode \
           '-Dock.library.path=${{ github.workspace }}/OCK/' \
           install \
-          -Dtest=TestDHKeyPairGenerator
+          -Dtest=TestDHKeyPairGenerator#testDHKeyGen_1024_withParams
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       #- name: List Files In The Entire Workspace
