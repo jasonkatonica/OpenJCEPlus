@@ -7,13 +7,29 @@
  */
 
 import groovy.json.JsonOutput;
+import groovy.transform.Field
 
-// The Java version to be used.
-def java_version = params.JAVA_VERSION
-// The Java release to be used.
-def java_release = params.JAVA_RELEASE
-// The release of the OCK binaries to be used.
-def ock_release = params.OCK_RELEASE
+@Field boolean PPC64_AIX
+@Field boolean X86_64_LINUX
+@Field boolean PPC64LE_LINUX
+@Field boolean S390X_LINUX
+@Field boolean X86_64_WINDOWS
+@Field boolean AARCH64_MAC
+@Field boolean X86_64_MAC
+@Field boolean AARCH64_LINUX
+@Field OPENJCEPLUS_REPO
+@Field OPENJCEPLUS_BRANCH
+@Field JAVA_VERSION
+@Field JAVA_RELEASE
+@Field OCK_RELEASE
+@Field OCK_FULL_URL
+@Field EXECUTE_TESTS
+@Field SPECIFIC_TEST
+@Field PARALLEL_ITERATIONS
+@Field ADDITIONAL_NODE_LABELS
+@Field OVERRIDE_NODE_LABELS
+@Field ADDITIONAL_ENVARS
+@Field TIMEOUT_TIME
 
 /*
  * Checks the checkboxes to figure out the platforms
@@ -24,35 +40,35 @@ def ock_release = params.OCK_RELEASE
 def getPlatforms() {
     def platforms = []
 
-    if (params.ppc64_aix == true) {
+    if (PPC64_AIX == "true") {
         platforms.add("ppc64_aix")
     }
 
-    if (params.x86_64_linux == true) {
+    if (X86_64_LINUX == "true") {
         platforms.add("x86-64_linux")
     }
 
-    if (params.ppc64le_linux == true) {
+    if (PPC64LE_LINUX == "true") {
         platforms.add("ppc64le_linux")
     }
 
-    if (params.s390x_linux == true) {
+    if (S390X_LINUX == "true") {
         platforms.add("s390x_linux")
     }
 
-    if (params.x86_64_windows == true) {
+    if (X86_64_WINDOWS == "true") {
         platforms.add("x86-64_windows")
     }
 
-    if (params.aarch64_mac == true) {
+    if (AARCH64_MAC == "true") {
         platforms.add("aarch64_mac")
     }
 
-    if (params.x86_64_mac == true) {
+    if (X86_64_MAC == "true") {
         platforms.add("x86-64_mac")
     }
 
-    if (params.aarch64_linux == true) {
+    if (AARCH64_LINUX == "true") {
         platforms.add("aarch64_linux")
     }
 
@@ -122,15 +138,15 @@ def getOCKTarget(hardware, software) {
  * locations.
  */
 def getBinaries(hardware, software) {
-    if (ock_release == "") {
-        ock_release = "20240521_8.9.6"
+    if (OCK_RELEASE == "") {
+        OCK_RELEASE = "20240521_8.9.6"
     }
     def target = getOCKTarget(hardware, software)
-    def gskit_bin = "https://na.artifactory.swg-devops.com/artifactory/sec-gskit-javasec-generic-local/gskit8/$ock_release/$target/jgsk_crypto.tar"
-    def gskit_sdk_bin = "https://na.artifactory.swg-devops.com/artifactory/sec-gskit-javasec-generic-local/gskit8/$ock_release/$target/jgsk_crypto_sdk.tar"
+    def gskit_bin = "https://na.artifactory.swg-devops.com/artifactory/sec-gskit-javasec-generic-local/gskit8/$OCK_RELEASE/$target/jgsk_crypto.tar"
+    def gskit_sdk_bin = "https://na.artifactory.swg-devops.com/artifactory/sec-gskit-javasec-generic-local/gskit8/$OCK_RELEASE/$target/jgsk_crypto_sdk.tar"
     
     // If user has specified OCK_FULL_URL, override default location.
-    def ockUrl = params.OCK_FULL_URL
+    def ockUrl = OCK_FULL_URL
     if (ockUrl != "") {
         gskit_bin = "${ockUrl}/jgsk_crypto.tar"
         gskit_sdk_bin = "${ockUrl}/jgsk_crypto_sdk.tar"
@@ -174,10 +190,10 @@ def getJava(hardware, software) {
     }
 
     def java_link = ""
-    if (java_release == "") {
-        java_link = "https://api.adoptopenjdk.net/v3/binary/latest/${java_version}/ga/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
+    if (JAVA_RELEASE == "") {
+        java_link = "https://api.adoptopenjdk.net/v3/binary/latest/${JAVA_VERSION}/ga/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
     } else {
-        def java_release_link = java_release.replace("+", "%2B")
+        def java_release_link = JAVA_RELEASE.replace("+", "%2B")
         java_link = "https://api.adoptopenjdk.net/v3/binary/version/${java_release_link}/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
     }
     
@@ -196,7 +212,7 @@ def getJava(hardware, software) {
         sh "rm $java_file"
 
         def java_folder = sh (
-            script: "ls | grep \'jdk-${java_version}\'",
+            script: "ls | grep \'jdk-${JAVA_VERSION}\'",
             returnStdout: true
         ).trim()
         fileOperations([folderRenameOperation(destination: 'jdk', source: "$java_folder")])
@@ -217,12 +233,12 @@ def getMaven() {
  */
 def cloneOpenJCEPlus() {
     dir("openjceplus/OpenJCEPlus") {
-        if ((params.OPENJCEPLUS_REPO == "") && (params.OPENJCEPLUS_BRANCH == "")) {
+        if ((OPENJCEPLUS_REPO == "") && (OPENJCEPLUS_BRANCH == "")) {
             echo "Clone using default branch and repository."
             checkout scm
         } else {
-            echo "Clone using ${params.OPENJCEPLUS_BRANCH} from ${params.OPENJCEPLUS_REPO}"
-            git branch: "${params.OPENJCEPLUS_BRANCH}", url: "${params.OPENJCEPLUS_REPO}"
+            echo "Clone using ${OPENJCEPLUS_BRANCH} from ${OPENJCEPLUS_REPO}"
+            git branch: "${OPENJCEPLUS_BRANCH}", url: "${OPENJCEPLUS_REPO}"
         }
     }
 }
@@ -241,12 +257,12 @@ def cloneOpenJCEPlus() {
  */
 def getTestFlag(hardware, software) {
     // User requested that tests not be executed.
-    if (params.EXECUTE_TESTS == false) {
+    if (EXECUTE_TESTS == "false") {
         return " -DskipTests"
     }
 
     // User requested execution of a specific test.
-    def specificTest = params.SPECIFIC_TEST
+    def specificTest = SPECIFIC_TEST
     if (specificTest != "") {
         return " -Dtest=${specificTest}"
     }
@@ -275,7 +291,7 @@ def runOpenJCEPlus(command, software) {
             additional_exports = "export LIBPATH=$WORKSPACE/openjceplus/OCK/:$WORKSPACE/openjceplus/OCK/jgsk_sdk;"
         }
 
-        def additional_envars = params.ADDITIONAL_ENVARS
+        def additional_envars = ADDITIONAL_ENVARS
         if (additional_envars != "") {
             for (envar in additional_envars.split(",")) {
                 additional_exports += " export ${envar.trim()};"
@@ -374,22 +390,22 @@ def archive(platform) {
 
     // The OpenJCEPlus repo to be used
     def repo = "NULL"
-    if (params.OPENJCEPLUS_REPO == "") {
+    if (OPENJCEPLUS_REPO == "") {
         repo = env.GIT_URL
     } else {
-        repo = params.OPENJCEPLUS_REPO
+        repo = OPENJCEPLUS_REPO
     }
     // The OpenJCEPlus branch to be used
     def branch = "NULL"
-    if (params.OPENJCEPLUS_BRANCH == "") {
+    if (OPENJCEPLUS_BRANCH == "") {
         branch = env.GIT_BRANCH
     } else {
-        branch = params.OPENJCEPLUS_BRANCH
+        branch = OPENJCEPLUS_BRANCH
     }
     def specs = []
     def spec = ["pattern": "$fileLocation/$filename",
                 "target": "$directory/$filename",
-                "props": "java_release=$java_release;ock_release=$ock_release;repo=$repo;branch=$branch"]
+                "props": "java_release=$JAVA_RELEASE;ock_release=$OCK_RELEASE;repo=$repo;branch=$branch"]
     specs.add(spec)
 
     def uploadFiles = [files : specs]
@@ -452,10 +468,10 @@ def run(platform) {
             nodeTags += "&&!ci.role.test.fips"
 
             // Add additional labels specified by user.
-            nodeTags += (params.ADDITIONAL_NODE_LABELS) ? "&&" + params.ADDITIONAL_NODE_LABELS : ""
+            nodeTags += (ADDITIONAL_NODE_LABELS) ? "&&" + ADDITIONAL_NODE_LABELS : ""
 
             // Override labels as specified by user.
-            nodeTags = (params.OVERRIDE_NODE_LABELS) ?: nodeTags
+            nodeTags = (OVERRIDE_NODE_LABELS) ?: nodeTags
 
             echo "${nodeTags}"
 
@@ -618,16 +634,40 @@ pipeline {
             steps {
                 timestamps {
                     script {
-                        def timeoutTime = params.TIMEOUT_TIME
-                        timeout(time: "${timeoutTime}".toInteger(), unit: 'HOURS') {
+                        // Set values for various variables associated with the parameters
+                        // of the job. We set these since the default values when the job is
+                        // run the first time is not yet set without explictly setting them.
+                        PPC64_AIX = "${params.ppc64_aix}"
+                        X86_64_LINUX = "${params.x86_64_linux}"
+                        PPC64LE_LINUX="${params.ppc64le_linux}"
+                        S390X_LINUX="${params.s390x_linux}"
+                        X86_64_WINDOWS="${params.x86_64_windows}"
+                        AARCH64_MAC="${params.aarch64_mac}"
+                        X86_64_MAC="${params.x86_64_mac}"
+                        AARCH64_LINUX="${params.aarch64_linux}"
+                        OPENJCEPLUS_REPO="${params.OPENJCEPLUS_REPO}"
+                        OPENJCEPLUS_BRANCH="${params.OPENJCEPLUS_BRANCH}"
+                        JAVA_VERSION="${params.JAVA_VERSION}"
+                        JAVA_RELEASE="${params.JAVA_RELEASE}"
+                        OCK_RELEASE="${params.OCK_RELEASE}"
+                        OCK_FULL_URL="${params.OCK_FULL_URL}"
+                        EXECUTE_TESTS="${params.EXECUTE_TESTS}"
+                        SPECIFIC_TEST="${params.SPECIFIC_TEST}"
+                        PARALLEL_ITERATIONS="${params.PARALLEL_ITERATIONS}"
+                        ADDITIONAL_NODE_LABELS="${params.ADDITIONAL_NODE_LABELS}"
+                        OVERRIDE_NODE_LABELS="${params.OVERRIDE_NODE_LABELS}"
+                        ADDITIONAL_ENVARS="${params.ADDITIONAL_ENVARS}"
+                        TIMEOUT_TIME="${params.TIMEOUT_TIME}"
+
+                        timeout(time: "${TIMEOUT_TIME}".toInteger(), unit: 'HOURS') {
                             // Figure out the platforms to build on.
                             def platforms = getPlatforms()
-                            assert !((platforms.size() > 1) && (params.OCK_FULL_URL != "")) : "Cannot specify full OCK URL and multiple platforms."
-
-                            // Check whether the build has to be run multiple times in parallel.
-                            def iter = (params.PARALLEL_ITERATIONS ?: "1").toInteger()
+                            assert !((platforms.size() > 1) && (OCK_FULL_URL != "")) : "Cannot specify full OCK URL and multiple platforms."
+                             
+                             // Check whether the build has to be run multiple times in parallel.
+                            def iter = (PARALLEL_ITERATIONS ?: "1").toInteger()
                             echo "Parallel iterations to be run: ${iter}"
-                        
+
                             def mapForParallel = [:]
                             currentBuild.description = ""
                             // Create jobs for each platform, as provided by user.
