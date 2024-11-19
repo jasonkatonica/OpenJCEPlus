@@ -90,20 +90,26 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
 
     protected KeyGenerator aesKeyGen;
     protected SecretKey key;
-    protected AlgorithmParameters params = null;
+    protected AlgorithmParameters params = null; 
     protected boolean success = true;
     protected Method methodCipherUpdateAAD = null;
     protected Constructor<?> ctorGCMParameterSpec = null;
     protected Method methodGCMParameterSpecSetAAD = null;
-    protected int specifiedKeySize = 0;
     byte[] ivBytes = "123456".getBytes();
     byte[] aadBytes = new byte[16];
 
     @BeforeEach
     public void setUp() throws Exception {
         aesKeyGen = KeyGenerator.getInstance("AES", getProviderName());
-        if (specifiedKeySize > 0) {
-            aesKeyGen.init(specifiedKeySize);
+        int keySize = -1;
+        try {
+            keySize = getKeySize();
+        } catch (RuntimeException e) {
+            // Ignore exception since keysize was not set.
+            // This is OK since we intend to test the default keysize.
+        }
+        if (keySize > 0) {
+            aesKeyGen.init(keySize);
         }
         key = aesKeyGen.generateKey();
 

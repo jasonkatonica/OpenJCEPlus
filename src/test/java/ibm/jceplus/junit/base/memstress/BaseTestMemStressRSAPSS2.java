@@ -53,7 +53,6 @@ public class BaseTestMemStressRSAPSS2 extends BaseTestJunit5 {
 
     int numTimes = 100;
     boolean printheapstats = false;
-    int keysize = 2048;
 
     @BeforeAll
     public void setUp() throws Exception {
@@ -63,7 +62,6 @@ public class BaseTestMemStressRSAPSS2 extends BaseTestJunit5 {
         }
         printheapstats = Boolean
                 .valueOf(System.getProperty("com.ibm.jceplus.memstress.printheapstats"));
-        System.out.println("Testing RSAPSS keysize = " + this.keysize);
     }
 
     /**
@@ -85,7 +83,8 @@ public class BaseTestMemStressRSAPSS2 extends BaseTestJunit5 {
         long prevUsedMemory = 0;
 
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", getProviderName());
-        keyGen.initialize(this.keysize, new java.security.SecureRandom());
+        System.out.println("Testing RSAPSS keysize = " + getKeySize());
+        keyGen.initialize(getKeySize(), new java.security.SecureRandom());
         KeyPair keyPair = keyGen.genKeyPair();
         PSSParameterSpec pssparamSpec = new PSSParameterSpec("SHA-1", "MGF1",
                     MGF1ParameterSpec.SHA1, 20, 1);

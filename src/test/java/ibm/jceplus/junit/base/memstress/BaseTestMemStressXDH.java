@@ -27,7 +27,6 @@ public class BaseTestMemStressXDH extends BaseTestJunit5 {
 
     int numTimes = 100;
     boolean printheapstats = false;
-    String curveName = "X25519";
 
     @BeforeEach
     public void setUp() throws Exception {
@@ -37,7 +36,7 @@ public class BaseTestMemStressXDH extends BaseTestJunit5 {
         }
         printheapstats = Boolean
                 .valueOf(System.getProperty("com.ibm.jceplus.memstress.printheapstats"));
-        System.out.println("Testing XDH curveName=" + curveName);
+        System.out.println("Testing XDH curveName=" + getAlgorithm());
     }
 
     @Test
@@ -52,8 +51,8 @@ public class BaseTestMemStressXDH extends BaseTestJunit5 {
         long prevUsedMemory = 0;
 
         for (int i = 0; i < numTimes; i++) {
-            NamedParameterSpec nps = new NamedParameterSpec(this.curveName);
-            compute_xdh_key(curveName, nps);
+            NamedParameterSpec nps = new NamedParameterSpec(getAlgorithm());
+            compute_xdh_key(getAlgorithm(), nps);
             currentTotalMemory = rt.totalMemory();
             currentFreeMemory = rt.freeMemory();
             currentUsedMemory = currentTotalMemory - currentFreeMemory;

@@ -61,13 +61,13 @@ public class BaseTestDH extends BaseTestJunit5 {
         try {
             System.out.println("Provider name = " + provider_name);
             if (!provider_name.equals("OpenJCEPlusFIPS")) {
-                algParameterSpec_1024 = generateDHParameters_static(1024);
+                algParameterSpec_1024 = generateDHParameters(1024);
             }
-            algParameterSpec_2048 = generateDHParameters_static(2048);
-            algParameterSpec_3072 = generateDHParameters_static(3072);
-            algParameterSpec_4096 = generateDHParameters_static(4096);
-            algParameterSpec_6144 = generateDHParameters_static(6144);
-            algParameterSpec_8192 = generateDHParameters_static(8192);
+            algParameterSpec_2048 = generateDHParameters(2048);
+            algParameterSpec_3072 = generateDHParameters(3072);
+            algParameterSpec_4096 = generateDHParameters(4096);
+            algParameterSpec_6144 = generateDHParameters(6144);
+            algParameterSpec_8192 = generateDHParameters(8192);
 
             kpgA = KeyPairGenerator.getInstance("DH", provider_name);
             if (!provider_name.equals("OpenJCEPlusFIPS")) {
@@ -470,14 +470,5 @@ public class BaseTestDH extends BaseTestJunit5 {
         }
         assertTrue(assertFlag);
 
-    }
-
-    private DHParameterSpec generateDHParameters_static(int size) throws Exception {
-        AlgorithmParameterGenerator algParamGen = AlgorithmParameterGenerator.getInstance("DH",
-                getProviderName());
-        algParamGen.init(size);
-        AlgorithmParameters algParams = algParamGen.generateParameters();
-        DHParameterSpec dhps = algParams.getParameterSpec(DHParameterSpec.class);
-        return dhps;
     }
 }

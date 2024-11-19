@@ -50,7 +50,7 @@ public class BaseTestAESCCM extends BaseTestJunit5 {
 
     private static Object myMutexObject = new Object();
 
-    public static boolean printJunitTrace = false;
+    public static boolean printJunitTrace = Boolean.valueOf(System.getProperty("com.ibm.jceplus.junit.printJunitTrace"));
 
     @Test
     public void testAESCCM() throws Exception {
