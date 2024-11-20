@@ -124,6 +124,7 @@ import org.junit.platform.suite.api.Suite;
     TestSHA512_224.class,
     TestSHA512_256.class,
     TestSHA512.class,
+    TestTLSKeyGenerators.class,
     TestXDH.class,
     TestXDHInterop.class,
     TestXDHInteropBC.class,
