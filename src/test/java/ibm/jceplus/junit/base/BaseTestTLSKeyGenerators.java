@@ -11,9 +11,7 @@ package ibm.jceplus.junit.base;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
-import java.security.SecureRandom;
 import java.util.stream.Stream;
-import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
@@ -22,16 +20,19 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import sun.security.internal.spec.TlsMasterSecretParameterSpec;
 import sun.security.internal.spec.TlsPrfParameterSpec;
 import sun.security.internal.spec.TlsRsaPremasterSecretParameterSpec;
 
 /**
- * This test exercises the TLS 1.2 PRF key generator.
+ * This test exercises the TLS 1.2 PRF key generator and TLS 1.2
+ * RSA pre-master secret key generator.
+ * 
+ * Content for this test was partially found in the openjdk
+ * test named TestPRF12.java.
 */
 public class BaseTestTLSKeyGenerators extends BaseTestJunit5 {
 
-    private static Stream<Arguments> testParameters() {
+    private static Stream<Arguments> testSunTls12PrfKATParameters() {
         return Stream.of(
             Arguments.of(
             "9bbe436ba940f017b17652849a71db35",
@@ -61,8 +62,8 @@ public class BaseTestTLSKeyGenerators extends BaseTestJunit5 {
     }
 
     @ParameterizedTest
-    @MethodSource("testParameters")
-    public void testTlsSecretKeyGenerator(String prfSecret, String prfSeed, String prfLabel, int prfLength, String prfAlg, String prfOutput) throws Exception {
+    @MethodSource("testSunTls12PrfKATParameters")
+    public void testSunTls12PrfKAT(String prfSecret, String prfSeed, String prfLabel, int prfLength, String prfAlg, String prfOutput) throws Exception {
 
         System.out.println("Test " + prfAlg + ".");
         byte[] secret = BaseUtils.hexStringToByteArray(prfSecret);
@@ -110,18 +111,15 @@ public class BaseTestTLSKeyGenerators extends BaseTestJunit5 {
     }
 
     @Test 
-    public void testTLS12KeyGeneration() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
-
-        // Generate RSA Pre-Master Secret.
-        SecretKey rsaPreMasterSecret = null;
+    public void testTls12RsaPremasterSecret() throws NoSuchAlgorithmException, NoSuchProviderException, InvalidAlgorithmParameterException {
+        // Generate a RSA Pre-Master Secret.
         @SuppressWarnings("deprecation")
         TlsRsaPremasterSecretParameterSpec rsaPreMasterSecretSpec =
                 new TlsRsaPremasterSecretParameterSpec(0x0303, 0x0303);
-        {
-            KeyGenerator rsaPreMasterSecretKG = KeyGenerator.getInstance(
-                    "SunTls12RsaPremasterSecret", "SunJCE");
-            rsaPreMasterSecretKG.init(rsaPreMasterSecretSpec, null);
-            rsaPreMasterSecret = rsaPreMasterSecretKG.generateKey();
-        }
+
+        KeyGenerator rsaPreMasterSecretKG = KeyGenerator.getInstance(
+                "SunTls12RsaPremasterSecret", getProviderName());
+        rsaPreMasterSecretKG.init(rsaPreMasterSecretSpec, null);
+        rsaPreMasterSecretKG.generateKey();
     }
 }
