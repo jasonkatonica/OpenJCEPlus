@@ -168,6 +168,8 @@
                     <!-- Could add -Djava.security.auth.debug=all for debug -->
                     <argLine>
                       @{argLine}
+                      -Xmx1G
+                      -Xdump:heap:events=vmstop
                       --patch-module openjceplus="target${file.separator}classes${path.separator}target${file.separator}test-classes"
                       --add-exports=java.base/sun.security.internal.spec=openjceplus
                       --add-exports=java.base/sun.security.util=openjceplus
