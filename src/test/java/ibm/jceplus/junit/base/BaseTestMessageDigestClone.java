@@ -16,6 +16,8 @@ abstract public class BaseTestMessageDigestClone extends BaseTest {
     // message digest algorithm to be used in all tests
     final String algorithm;
 
+    private int x;
+
     final byte[] input_1 = {(byte) 0x61, (byte) 0x61, (byte) 0x61, (byte) 0x61, (byte) 0x61,
             (byte) 0x61, (byte) 0x61, (byte) 0x61, (byte) 0x61, (byte) 0x61};
 
@@ -51,16 +53,18 @@ abstract public class BaseTestMessageDigestClone extends BaseTest {
     }
 
     public void testUpdateCloneDifferentUpdate() throws Exception {
-        MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
-
-        md.update(input_1);
-
-        MessageDigest mdCopy = (MessageDigest) md.clone();
-
-        byte[] digest1 = md.digest(input_2);
-        byte[] digest2 = mdCopy.digest(input_3);
-
-        assertFalse("Digest of original matches clone's digest when it shouldn't", Arrays.equals(digest1, digest2));
+        for (int a=0;a <= 100000000; a++) {
+            MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
+    
+            md.update(input_1);
+    
+            MessageDigest mdCopy = (MessageDigest) md.clone();
+    
+            byte[] digest1 = md.digest(input_2);
+            byte[] digest2 = mdCopy.digest(input_3);
+    
+            assertFalse("Digest of original matches clone's digest when it shouldn't", Arrays.equals(digest1, digest2));
+        }
     }
 
     public void testCloneSameUpdate() throws Exception {
