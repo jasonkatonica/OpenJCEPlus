@@ -169,7 +169,6 @@
                     <!-- Could add -Xdump:heap:events=vmstop to capture heap dump on exit -->
                     <argLine>
                       @{argLine}
-                      -Xmx1G
                       --patch-module openjceplus="target${file.separator}classes${path.separator}target${file.separator}test-classes"
                       --add-exports=java.base/sun.security.internal.spec=openjceplus
                       --add-exports=java.base/sun.security.util=openjceplus
