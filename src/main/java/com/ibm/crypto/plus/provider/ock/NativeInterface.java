@@ -648,7 +648,7 @@ final class NativeInterface {
     static public native long DIGEST_create(long ockContextId, String digestAlgo)
             throws OCKException;
 
-    static public native long DIGEST_copy(long id, long destinationDigestId, long sourceDigestId)
+    static public native long DIGEST_copy(long id, long digestId)
             throws OCKException;
 
     static public native int DIGEST_update(long ockContextId, long digestId, byte[] input,
