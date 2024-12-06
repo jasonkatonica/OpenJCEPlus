@@ -343,17 +343,17 @@ public final class Digest implements Cloneable {
         return (id != 0L);
     }
 
-    @Override
-    synchronized public Object clone() throws CloneNotSupportedException {
-        Digest copy = (Digest) super.clone();
-        
-        copy.contextFromQueue = false;
+    public synchronized Object clone() throws CloneNotSupportedException {
         try {
-            copy.digestId = NativeInterface.DIGEST_copy(
-                copy.ockContext.getId(), getId());
-            if (copy.digestId == 0) {
-                throw new CloneNotSupportedException("Copy of native digest context failed.");
-            }
+            Digest copy = new Digest();
+            copy.digestLength = this.digestLength;
+            copy.algIndx = this.algIndx;
+            copy.digestAlgo = new String(this.digestAlgo);
+            copy.needsReinit = this.needsReinit;
+            copy.ockContext = this.ockContext;
+            copy.digestId = NativeInterface.DIGEST_copy(this.ockContext.getId(), this.digestId);
+            copy.contextFromQueue = this.contextFromQueue;
+
             if (copy.algIndx != -2) {
                 if (contexts[this.algIndx] == null
                         || runtimeContextNum[this.algIndx] < numContexts) {
@@ -363,6 +363,8 @@ public final class Digest implements Cloneable {
                     copy.contextFromQueue = false;
                 }
             }
+
+            return copy;
         } catch (OCKException e) {
             StackTraceElement[] stackTraceArray = e.getStackTrace();
             String stackTrace = Stream.of(stackTraceArray)
@@ -370,6 +372,5 @@ public final class Digest implements Cloneable {
                                       .collect(Collectors.joining("\n"));
             throw new CloneNotSupportedException(stackTrace);
         }
-        return copy;
     }
 }
