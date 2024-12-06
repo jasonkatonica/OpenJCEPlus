@@ -40,21 +40,24 @@ abstract public class BaseTestMessageDigestClone extends BaseTest {
     }
 
     public void testUpdateCloneSameUpdate() throws Exception {
-        MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
-
-        md.update(input_1);
-
-        MessageDigest mdCopy = (MessageDigest) md.clone();
-
-        byte[] digest1 = md.digest(input_2);
-        byte[] digest2 = mdCopy.digest(input_2);
-
-        assertArrayEquals(digest2, digest1, "Digest of original did not match clone's digest");
+        for (int a=0;a <= 100000000; a++) {
+            MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
+    
+            md.update(input_1);
+    
+            MessageDigest mdCopy = (MessageDigest) md.clone();
+    
+            byte[] digest1 = md.digest(input_2);
+            byte[] digest2 = mdCopy.digest(input_2);
+    
+            assertArrayEquals(digest2, digest1, "Digest of original did not match clone's digest");
+        }
     }
 
     public void testUpdateCloneDifferentUpdate() throws Exception {
+        MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
         for (int a=0;a <= 100000000; a++) {
-            MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
+            
     
             md.update(input_1);
     
@@ -68,24 +71,28 @@ abstract public class BaseTestMessageDigestClone extends BaseTest {
     }
 
     public void testCloneSameUpdate() throws Exception {
-        MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
-
-        MessageDigest mdCopy = (MessageDigest) md.clone();
-
-        byte[] digest1 = md.digest(input_2);
-        byte[] digest2 = mdCopy.digest(input_2);
-
-        assertArrayEquals(digest2, digest1, "Digest of original did not match clone's digest");
+        for (int a=0;a <= 100000000; a++) {
+            MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
+    
+            MessageDigest mdCopy = (MessageDigest) md.clone();
+    
+            byte[] digest1 = md.digest(input_2);
+            byte[] digest2 = mdCopy.digest(input_2);
+    
+            assertArrayEquals(digest2, digest1, "Digest of original did not match clone's digest");
+        }
     }
 
     public void testCloneDifferentUpdate() throws Exception {
-        MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
-
-        MessageDigest mdCopy = (MessageDigest) md.clone();
-
-        byte[] digest1 = md.digest(input_2);
-        byte[] digest2 = mdCopy.digest(input_3);
-
-        assertFalse("Digest of original matches clone's digest when it shouldn't", Arrays.equals(digest1, digest2));
+        for (int a=0;a <= 100000000; a++) {
+            MessageDigest md = MessageDigest.getInstance(this.algorithm, providerName);
+    
+            MessageDigest mdCopy = (MessageDigest) md.clone();
+    
+            byte[] digest1 = md.digest(input_2);
+            byte[] digest2 = mdCopy.digest(input_3);
+    
+            assertFalse("Digest of original matches clone's digest when it shouldn't", Arrays.equals(digest1, digest2));
+        }
     }
 }
