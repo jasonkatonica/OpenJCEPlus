@@ -205,7 +205,7 @@ public final class Digest implements Cloneable {
         //OCKDebug.Msg(debPrefix, methodName,  "digestAlgo :" + digestAlgo);
     }
 
-    private Digest() throws OCKException {
+    private Digest() {
     }
 
     static void throwOCKException(int errorCode) throws OCKException {
@@ -343,28 +343,30 @@ public final class Digest implements Cloneable {
         return (id != 0L);
     }
 
+    /**
+     * Clones a given Digest.
+     */
     public synchronized Object clone() throws CloneNotSupportedException {
+        // Create new Digest instance and copy all relevant fields into the copy.
+        // Clones do not make use of the cache so always set the value of
+        // contextFromQueue to false to ensure that the context is later freed
+        // correctly.
+        Digest copy = new Digest();
+        copy.digestLength = this.digestLength;
+        copy.algIndx = this.algIndx;
+        copy.digestAlgo = new String(this.digestAlgo);
+        copy.needsReinit = this.needsReinit;
+        copy.ockContext = this.ockContext;
+        copy.contextFromQueue = false;
+
+        // Allocate a new context for the digestId and copy all state information from our
+        // original context into the copy. 
         try {
-            Digest copy = new Digest();
-            copy.digestLength = this.digestLength;
-            copy.algIndx = this.algIndx;
-            copy.digestAlgo = new String(this.digestAlgo);
-            copy.needsReinit = this.needsReinit;
-            copy.ockContext = this.ockContext;
-            copy.digestId = NativeInterface.DIGEST_copy(this.ockContext.getId(), this.digestId);
-            copy.contextFromQueue = this.contextFromQueue;
-
-            if (copy.algIndx != -2) {
-                if (contexts[this.algIndx] == null
-                        || runtimeContextNum[this.algIndx] < numContexts) {
-                    copy.contextFromQueue = true;
-                    runtimeContextNum[this.algIndx]++;
-                } else {
-                    copy.contextFromQueue = false;
-                }
+            copy.digestId = NativeInterface.DIGEST_copy(
+                this.ockContext.getId(), getId());
+            if (0 == copy.digestId) {
+                throw new CloneNotSupportedException("Copy of native digest context failed.");
             }
-
-            return copy;
         } catch (OCKException e) {
             StackTraceElement[] stackTraceArray = e.getStackTrace();
             String stackTrace = Stream.of(stackTraceArray)
@@ -372,5 +374,6 @@ public final class Digest implements Cloneable {
                                       .collect(Collectors.joining("\n"));
             throw new CloneNotSupportedException(stackTrace);
         }
+        return copy;
     }
 }
