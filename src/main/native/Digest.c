@@ -149,79 +149,69 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_DI
  * Signature: (JJ)J
  */
 JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_DIGEST_1copy
-  (JNIEnv *env, jclass thisObj, jlong ockContextId, jlong digestId)
+  (JNIEnv *env, jclass thisObj, jlong ockContextId, jlong destinationDigestId, jlong sourceDigestId)
 {
   static const char * functionName = "NativeInterface.DIGEST_copy";
 
   ICC_CTX *   ockCtx = (ICC_CTX *)((intptr_t) ockContextId);
-  OCKDigest * ockDigest = (OCKDigest *)((intptr_t) digestId);
-  OCKDigest * ockDigestCopy = (OCKDigest *)malloc(sizeof(OCKDigest));
-  jlong       digestCopyId = 0;
+  OCKDigest * ockSourceDigestId = (OCKDigest *)((intptr_t) sourceDigestId);
+  OCKDigest * ockDestinationDigestId = (OCKDigest *)((intptr_t) destinationDigestId);
 
   if( debug ) {
     gslogFunctionEntry(functionName);
   }
-  if (ockDigest == NULL) {
+  if (ockCtx == NULL) {
     if( debug ) {
       gslogFunctionExit(functionName);
     }
-    return 0;
+    return -1;
   }
 #ifdef DEBUG_DIGEST_DETAIL
   if ( debug ) {
-    gslogMessage("DETAIL_DIGEST ockDigest->mdCtx=%lx digestId %lx : ", ockDigest->mdCtx, (long) digestId);
+    gslogMessage("DETAIL_DIGEST ockDestinationDigestId->mdCtx=%lx ockSourceDigestId->mdCtx %lx : ", ockDestinationDigestId->mdCtx, ockSourceDigestId->mdCtx);
   }
 #endif
-  if( ockDigestCopy == NULL ) {
+  if( ockSourceDigestId == 0 ) {
 #ifdef DEBUG_DIGEST_DETAIL
     if ( debug ) {
-      gslogMessage ("DETAIL_DIGEST FAILURE malloc of copy of OCKDigest failed");
+      gslogMessage ("DETAIL_DIGEST FAILURE source digest is 0 and is not correct.");
     }
 #endif
-    throwOCKException(env, 0, "Error allocating copy of OCKDigest");
+    throwOCKException(env, 0, "Source digest is 0 and is not correct");
     if( debug ) {
       gslogFunctionExit(functionName);
     }
-    return 0;
-  } else {
-    ockDigestCopy->md = ockDigest->md;
-    ockDigestCopy->mdCtx = ICC_EVP_MD_CTX_new(ockCtx);
-    if ( NULL == ockDigestCopy->mdCtx ) {
-#ifdef DEBUG_DIGEST_DETAIL 
+    return -1;
+  }
+  if( ockDestinationDigestId == 0 ) {
+#ifdef DEBUG_DIGEST_DETAIL
     if ( debug ) {
-      gslogMessage ("DETAIL_DIGEST FAILURE ICC_EVP_MD_CTX_new failed");
+      gslogMessage ("DETAIL_DIGEST FAILURE destination digest is 0 and is not correct.");
     }
 #endif
-      ockCheckStatus(ockCtx);
-      throwOCKException(env, 0, "ICC_EVP_MD_CTX_new failed");
-    } else {
-      if (ICC_OSSL_SUCCESS != ICC_EVP_MD_CTX_copy(ockCtx, ockDigestCopy->mdCtx, ockDigest->mdCtx)) {
-#ifdef DEBUG_DIGEST_DETAIL
-        if ( debug ) {
-          gslogMessage ("DETAIL_DIGEST FAILURE ICC_EVP_MD_CTX_copy failed");
-        }
-#endif
-        throwOCKException(env, 0, "ICC_EVP_MD_CTX_copy failed");
-      } else {
-        digestCopyId = (jlong)((intptr_t)ockDigestCopy);
-#ifdef DEBUG_DIGEST_DETAIL
-        if( debug ) {
-          gslogMessage("DETAIL_DIGEST digestCopyId=%lx ockDigestCopy->mdCtx=%lx ockDigest->md=%lx", (long) digestCopyId, ockDigestCopy->mdCtx, ockDigestCopy->md);
-        }
-#endif
-      }
+    throwOCKException(env, 0, "Destination digest is 0 and is not correct");
+    if( debug ) {
+      gslogFunctionExit(functionName);
     }
+    return -1;
   }
 
-  if( digestCopyId == 0 ) {
-    FREE_N_NULL(ockDigestCopy);
+  int rc = ICC_EVP_MD_CTX_copy(ockCtx, ockDestinationDigestId->mdCtx, ockSourceDigestId->mdCtx);
+  if (ICC_OSSL_SUCCESS != rc) {
+#ifdef DEBUG_DIGEST_DETAIL
+    if ( debug ) {
+      gslogMessage ("DETAIL_DIGEST FAILURE ICC_EVP_MD_CTX_copy failed");
+    }
+#endif
+    throwOCKException(env, 0, "ICC_EVP_MD_CTX_copy failed");
   }
+
 
   if( debug ) {
     gslogFunctionExit(functionName);
   }
 
-  return digestCopyId;
+  return 0;
 }
 
 //============================================================================
