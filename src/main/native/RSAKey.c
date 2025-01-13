@@ -76,7 +76,6 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_RS
   ICC_CTX *       ockCtx = (ICC_CTX *)((intptr_t) ockContextId);
   ICC_RSA *       ockRSA = NULL;
   ICC_EVP_PKEY *  ockPKey = NULL;
-  ICC_EVP_PKEY *  ret = NULL;
   unsigned char * keyBytesNative = NULL;
   jboolean        isCopy = 0;
   jlong           rsaKeyId = 0;
@@ -127,13 +126,12 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_RS
 #endif
       throwOCKException(env, 0, "ICC_EVP_PKEY_new failed");
     } else {
-      ret = ICC_d2i_PrivateKey(ockCtx, 6, &ockPKey, &pBytes, (long)size);
-//#ifdef DEBUG_RSA_DETAIL
-//    if ( debug ) {
+      ICC_EVP_PKEY * ret = ICC_d2i_PrivateKey(ockCtx, 6, &ockPKey, &pBytes, (long)size);
+#ifdef DEBUG_RSA_DETAIL
+    if ( debug ) {
       gslogMessage ("DETAIL_RSA pointer to ICC_EVP_PKEY %x", ret);
-      gslogMessage ("DETAIL_RSA pointer to ockPKey %x", ockPKey);
-//    }
-//#endif
+    }
+#endif
       if( ret == NULL ) {
         ockCheckStatus(ockCtx);
 #ifdef DEBUG_RSA_DETAIL
@@ -164,16 +162,11 @@ JNIEXPORT jlong JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_RS
     }
   }
 
-  //if ( NULL != ret ) {
-  //  ICC_EVP_PKEY_free(ockCtx, ret);
-  //  ret = NULL;
-  //}
-
-  if( NULL != keyBytesNative ) {
+  if( keyBytesNative != NULL ) {
     (*env)->ReleasePrimitiveArrayCritical(env, privateKeyBytes, keyBytesNative, 0);
   }
 
-  if( NULL != ockPKey ) {
+  if( ockPKey != NULL ) {
     ICC_EVP_PKEY_free(ockCtx, ockPKey);
     ockPKey = NULL;
   }
@@ -644,20 +637,18 @@ JNIEXPORT void JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_RSA
   static const char * functionName = "NativeInterface.RSAKEY_delete";
 
   ICC_CTX * ockCtx = (ICC_CTX *)((intptr_t) ockContextId);
-  //ICC_RSA * ockRSA = (ICC_RSA *)((intptr_t) rsaKeyId);
-  ICC_EVP_PKEY * ockRSA = (ICC_EVP_PKEY *)((intptr_t) rsaKeyId);
+  ICC_RSA * ockRSA = (ICC_RSA *)((intptr_t) rsaKeyId);
 
   if( debug ) {
     gslogFunctionEntry(functionName);
   }
-//#ifdef DEBUG_RSA_DETAIL
-//  if ( debug ) {
+#ifdef DEBUG_RSA_DETAIL
+  if ( debug ) {
     gslogMessage("DETAIL_RSA rsaKeyId=%lx", (long) rsaKeyId);
-//  }
-//#endif
+  }
+#endif
   if (ockRSA != NULL) {
-	  ICC_EVP_PKEY_free(ockCtx, ockRSA);
-    //ICC_RSA_free(ockCtx, ockRSA);
+	  ICC_RSA_free(ockCtx, ockRSA);
 	  ockRSA = NULL;
   }
 

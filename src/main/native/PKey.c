@@ -37,7 +37,7 @@ JNIEXPORT void JNICALL Java_com_ibm_crypto_plus_provider_ock_NativeInterface_PKE
 
 //#ifdef DEBUG_PKEY_DETAIL
 //  if ( debug ) {
-    gslogMessage ("DETAIL_PKEY pkeyId=%x", (long) pkeyId);
+//    gslogMessage ("DETAIL_PKEY pkeyId=%x", (long) pkeyId);
 //  }
 //#endif 
   if (ockPKey != NULL) {
