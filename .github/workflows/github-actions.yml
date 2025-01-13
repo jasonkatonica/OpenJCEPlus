@@ -10,7 +10,7 @@
 
 name: GitHub Actions OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [pull_request]
+on: [push]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Build and Test ${{ matrix.os }}.
@@ -50,8 +50,8 @@ jobs:
       - name: 'Checkout Open Cryptography Kit C'
         uses: actions/checkout@v4
         with:
-          repository: IBM/OpenCryptographyKitC
-          ref: 411a80674cedc6d4bdb9d808df341c7a29170699 # main branch on Aug 11th 2024.
+          repository: jasonkatonica/OpenCryptographyKitC
+          ref: katonica/issue/leakinaesgcm # My updates for aesgcm leak
           path: ${{ github.workspace }}/OpenCryptographyKitC
       - name: Compile Open Cryptography Kit C
         run: |
