@@ -14,6 +14,8 @@ import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import javax.crypto.spec.GCMParameterSpec;
+//import org.junit.jupiter.api.AfterAll;
+//import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 /*
@@ -38,6 +40,13 @@ public class BaseTestAESGCMSameBuffer extends BaseTestJunit5 {
     private int textLength;
     private int AADLength;
 
+    //@AfterAll
+    //public void afterall() throws Exception {
+    //    System.out.println("Now sleeping");
+    //    Thread.sleep(100000000);
+    //}
+
+    //@RepeatedTest(10000)
     @Test
     public void testAESGCMSameBuffer() throws Exception {
         for (int keyLength : KEY_LENGTHS) {

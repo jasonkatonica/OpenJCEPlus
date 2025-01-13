@@ -23,8 +23,8 @@ import java.security.spec.PSSParameterSpec;
 import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 import java.security.spec.X509EncodedKeySpec;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.RepeatedTest;
+//import org.junit.jupiter.api.AfterAll;
+//import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.Assert.assertTrue;
 
@@ -114,13 +114,13 @@ public class BaseTestRSAPSS extends BaseTestJunit5 {
 
     static boolean printJunitTrace = false;
 
-    @AfterAll
-    public void afterall() throws Exception {
-        System.out.println("Now sleeping");
-        Thread.sleep(100000000);
-    }
+//    @AfterAll
+//    public void afterall() throws Exception {
+//        System.out.println("Now sleeping");
+//        Thread.sleep(100000000);
+//    }
 
-    @RepeatedTest(100000)
+//    @RepeatedTest(100000)
     public void testRSAPlainKeySignatureWithPSS() throws Exception {
         KeyFactory kf;
 

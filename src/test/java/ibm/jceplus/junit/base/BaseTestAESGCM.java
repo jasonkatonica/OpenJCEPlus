@@ -28,7 +28,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.RC2ParameterSpec;
 import javax.crypto.spec.RC5ParameterSpec;
+//import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+//import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -152,6 +154,12 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
             throw new Exception("Could not find GCMParameterSpec constructor");
         }
     }
+
+    //@AfterAll
+    //public void afterall() throws Exception {
+    //    System.out.println("Now sleeping");
+    //    Thread.sleep(100000000);
+    //}
 
     @Test
     public void testAES_GCM_encrypt_offset() throws Exception {
@@ -1052,6 +1060,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
 
     }
 
+    //@RepeatedTest(1000000)
     @Test
     public void testDecryptAfterShortBufferRetry() throws Exception {
         byte[] cipherText = null;
@@ -1069,8 +1078,8 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
             cpl = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
             cpl.init(Cipher.DECRYPT_MODE, key, params);
             byte[] sbPlainText = new byte[15];
-            System.out.println("cipherText.length=" + cipherText.length);
-            System.out.println("sbPlainText.length=" + sbPlainText.length);
+            //System.out.println("cipherText.length=" + cipherText.length);
+            //System.out.println("sbPlainText.length=" + sbPlainText.length);
             cpl.doFinal(cipherText, 0, cipherText.length, sbPlainText, 0);
             fail("Failed to get ShortedBufferException");
         } catch (ShortBufferException ex) {

@@ -13,7 +13,9 @@ import javax.crypto.Cipher;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+//import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
+//mport org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.Assert.assertTrue;
 
@@ -30,6 +32,13 @@ public class BaseTestAESGCMBufferIV extends BaseTestJunit5 {
         plaintext = new byte[51];
     }
 
+    //@AfterAll
+    //public void afterall() throws Exception {
+    //    System.out.println("Now sleeping");
+    //    Thread.sleep(100000000);
+    //}
+
+    //@RepeatedTest(1000000)
     @Test
     public void testAESGCMBufferIV() throws Exception {
         testBufferIV(45, 16);

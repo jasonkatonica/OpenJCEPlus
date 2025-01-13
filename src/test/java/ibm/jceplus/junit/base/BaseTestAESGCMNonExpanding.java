@@ -20,6 +20,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.SecretKey;
 import javax.crypto.ShortBufferException;
 import javax.crypto.spec.GCMParameterSpec;
+//import org.junit.jupiter.api.AfterAll;
+//import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -35,6 +37,13 @@ public class BaseTestAESGCMNonExpanding extends BaseTestJunit5 {
     private static final String PADDING = "NoPadding";
     protected int specifiedKeySize = 128;
 
+//    @AfterAll
+//    public void afterall() throws Exception {
+//        System.out.println("Now sleeping");
+//        Thread.sleep(100000000);
+//    }
+
+//    @RepeatedTest(1000000)
     @Test
     public void testNonExpanding() throws Exception {
 
