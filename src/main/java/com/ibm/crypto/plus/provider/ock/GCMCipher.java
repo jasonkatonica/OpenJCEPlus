@@ -336,6 +336,7 @@ public final class GCMCipher {
                 FastJNIBuffer inputBuffer = GCMCipher.inputBuffer.get();
                 inputBuffer.put(0, input, inputOffset, inputLen);
                 parameters.put(ivLen + aadLen, key, 0, keyLen);
+                //System.out.println("Right before NativeInterface.do_GCM_encryptFastJNI. Context: " + gcmCtx);
                 rc = NativeInterface.do_GCM_encryptFastJNI(ockContext.getId(), gcmCtx, keyLen,
                         ivLen, 0, inputLen, 0, aadLen, tagLen, parameters.pointer(),
                         inputBuffer.pointer(), outputBuffer.pointer());

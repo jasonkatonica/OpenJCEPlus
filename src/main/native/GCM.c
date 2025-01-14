@@ -159,6 +159,9 @@ int GCM_InitForUpdateDecrypt_core(JNIEnv *env, ICC_CTX *ockCtx, ICC_AES_GCM_CTX 
         }
 #endif
         rc = ICC_AES_GCM_Init(ockCtx, gcmCtx, iv, ivLen, key, keyLen);
+        if (rc != ICC_OSSL_SUCCESS) {
+            gslogMessage ("ICC_AES_GCM_Init FAILED 3!!!!", (int) rc, gcmCtx);
+        }
 
         if (rc == ICC_OSSL_SUCCESS) {
             if (aadLen > 0) {
@@ -197,9 +200,7 @@ int GCM_InitForUpdateDecrypt_core(JNIEnv *env, ICC_CTX *ockCtx, ICC_AES_GCM_CTX 
         } else {
             ockCheckStatus(ockCtx);
 #ifdef DEBUG_GCM_DETAIL
-               if ( debug ) {
-                gslogMessage ("DETAIL_GCM NI ICC_AES_GCM_DecryptUpdate ICC_AES_GCM_INIT_FAILED \n");
-            }
+            gslogMessage ("DETAIL_GCM NI ICC_AES_GCM_DecryptUpdate ICC_AES_GCM_INIT_FAILED \n");
 #endif
             return ICC_AES_GCM_INIT_FAILED;
         }
@@ -369,6 +370,9 @@ int GCM_InitForUpdateEncrypt_core(JNIEnv* env, ICC_CTX* ockCtx, ICC_AES_GCM_CTX*
     if (rc == ICC_OSSL_SUCCESS) {
         //Do initialization
         rc = ICC_AES_GCM_Init(ockCtx, gcmCtx, ivNative, ivLen, keyNative, keyLen);
+        if (rc != ICC_OSSL_SUCCESS) {
+                gslogMessage ("ICC_AES_GCM_Init FAILED 2!!!!", (int) rc, gcmCtx);
+        }
 #ifdef DEBUG_GCM_DETAIL
         if ( debug ) {
             gslogMessage ("DETAIL_GCM rc ICC_AES_GCM_iNIt %d", (int) rc);
@@ -1165,6 +1169,9 @@ int GCM_encrypt_core(JNIEnv* env, ICC_CTX* ockCtx, ICC_AES_GCM_CTX* gcmCtx,
 #endif
     if (rc == ICC_OSSL_SUCCESS) {
             rc = ICC_AES_GCM_Init(ockCtx, gcmCtx, ivNative, ivLen, keyNative, keyLen);
+            if (rc != ICC_OSSL_SUCCESS) {
+                gslogMessage ("ICC_AES_GCM_Init FAILED 1!!!!", (int) rc, gcmCtx);
+            }
 #ifdef DEBUG_GCM_DETAIL
         if ( debug ) {
                 gslogMessage ("DETAIL_GCM rc ICC_AES_GCM_iNIt %d", (int) rc);

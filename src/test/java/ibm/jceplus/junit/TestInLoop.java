@@ -21,11 +21,11 @@ public class TestInLoop {
     @Test
     public void test() throws Exception {
         System.out.println("Running tests!!!!!");
-        for (int x = 0;x <= 40; x++) {
+        for (int x = 0;x <= 5; x++) {
             System.out.println("Calling test suite.");
             runTest("ibm.jceplus.junit.openjceplus.TestAll");
         }
-        System.out.println("Sleeping for a while, we are done!!!!!");
+        System.out.println("Now sleeping PID: " + ProcessHandle.current().pid());
         Thread.sleep(100000000);
     }
 

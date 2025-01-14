@@ -39,7 +39,7 @@ public class BaseTestAESGCMNonExpanding extends BaseTestJunit5 {
 
 //    @AfterAll
 //    public void afterall() throws Exception {
-//        System.out.println("Now sleeping");
+//        System.out.println("Now sleeping PID: " + ProcessHandle.current().pid());
 //        Thread.sleep(100000000);
 //    }
 

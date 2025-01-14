@@ -28,9 +28,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.RC2ParameterSpec;
 import javax.crypto.spec.RC5ParameterSpec;
-//import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
-//import org.junit.jupiter.api.RepeatedTest;
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -100,6 +100,12 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
     byte[] ivBytes = "123456".getBytes();
     byte[] aadBytes = new byte[16];
 
+    @AfterAll
+    public void afterall() throws Exception {
+        System.out.println("Now sleeping PID: " + ProcessHandle.current().pid());
+        Thread.sleep(100000000);
+    }
+
     @BeforeEach
     public void setUp() throws Exception {
         aesKeyGen = KeyGenerator.getInstance("AES", getProviderName());
@@ -155,13 +161,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    //@AfterAll
-    //public void afterall() throws Exception {
-    //    System.out.println("Now sleeping");
-    //    Thread.sleep(100000000);
-    //}
-
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_encrypt_offset() throws Exception {
         // Test AES GCM - Encrypt Offset by 1
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -198,7 +198,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
                 byteEqual(plainText, 0, decrypted, 0, plainText.length));
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_decrypt_offset() throws Exception {
         // Test AES GCM - Decrypt Offset by 1
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -234,7 +234,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
                 byteEqual(plainText, 0, decrypted, offset, plainText.length));
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_encrypt_large_buffer() throws Exception {
         // Test AES GCM - Encrypting buffer large
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -265,7 +265,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_decrypt_large_buffer() throws Exception {
         // Test AES GCM - Decrypting buffer large
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -305,7 +305,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM() throws Exception {
         // Test AES GCM Cipher
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -323,7 +323,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
                 byteEqual(plainText, 0, newPlainText1, 0, plainText.length));
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_2() throws Exception {
         // Test AES GCM Cipher using duplicate calls
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -350,7 +350,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
                 byteEqual(plainText, 0, newPlainText1, 0, plainText.length));
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_encrypt_empty_text() throws Exception {
         try {
             // Test AES GCM - Encrypt Cipher.doFinal() without text
@@ -368,7 +368,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         assertTrue("Passed - Cipher.doFinal() encrypt empty text", true);
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_decrypt_without_parameters() throws Exception {
         try {
             // Test AES GCM - Decrypt Cipher.doFinal() without parameters
@@ -387,7 +387,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
                 false);
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_decrypt_empty_text() throws Exception {
         try {
             // Test AES GCM - Decrypt Cipher.doFinal() without text
@@ -409,7 +409,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         assertTrue("Failed - Cipher.doFinal() decrypt should have thrown exception", false);
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_5() {
         try {
             // Test AES GCM Cipher Cipher.doFinal(plainTxt) on decrypt -
@@ -436,7 +436,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         assertTrue("Failed - Expected AEADBadTagException", false);
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAES_GCM_Exception() throws Exception {
         // ProviderException
         try {
@@ -464,7 +464,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         assertTrue("Failed - Expected IllegalStateException", true);
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAESShortBuffer() throws Exception {
         try {
             // Test AES Cipher
@@ -480,7 +480,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAESIllegalBlockSize() throws Exception {
         try {
             Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -507,7 +507,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testAESNull() throws Exception {
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
         SecretKey nullKey = null;
@@ -526,7 +526,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testIllegalParamSpec() throws Exception {
         Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
 
@@ -580,7 +580,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testArguments() throws Exception {
         try {
             Cipher cp = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
@@ -1015,7 +1015,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testShortBuffer() throws Exception {
         Cipher cp = null;
         try {
@@ -1033,7 +1033,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
         }
     }
 
-    @Test
+    @RepeatedTest(10000)
     public void testEncryptAfterShortBufferRetry() throws Exception {
         Cipher cpl = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
         GCMParameterSpec parameterSpec = new GCMParameterSpec(128, ivBytes); //128 bit auth tag length
@@ -1061,7 +1061,7 @@ public class BaseTestAESGCM extends BaseTestJunit5 {
     }
 
     //@RepeatedTest(1000000)
-    @Test
+    @RepeatedTest(10000)
     public void testDecryptAfterShortBufferRetry() throws Exception {
         byte[] cipherText = null;
         Cipher cpl = null;
