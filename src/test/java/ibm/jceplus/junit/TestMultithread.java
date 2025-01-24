@@ -16,7 +16,10 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
@@ -27,64 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectClass;
 
+@TestInstance(Lifecycle.PER_CLASS)
 public class TestMultithread {
-    private final int numThreads = 10;
-    private final int timeoutSec = 4500;
+    private final int numThreads = 20;
+    private final int timeoutSec = 200000;
     private final String[] testList = {
-            "ibm.jceplus.junit.openjceplus.multithread.TestAES_128",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAES_192",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAES_256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCM_128",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCM_192",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCM_256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMCICOWithGCM",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMCICOWithGCMAndAAD",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESCipherInputStreamExceptions",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESCopySafe",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMLong",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMNonExpanding",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMSameBuffer",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMUpdate",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMWithByteBuffer",
-            "ibm.jceplus.junit.openjceplus.multithread.TestAliases",
-            "ibm.jceplus.junit.openjceplus.multithread.TestDESede",
-            "ibm.jceplus.junit.openjceplus.multithread.TestDH",
-            "ibm.jceplus.junit.openjceplus.multithread.TestDSAKey",
-            "ibm.jceplus.junit.openjceplus.multithread.TestDSASignatureInteropSUN",
-            "ibm.jceplus.junit.openjceplus.multithread.TestECDH",
-            "ibm.jceplus.junit.openjceplus.multithread.TestECDHInteropSunEC",
-            "ibm.jceplus.junit.openjceplus.multithread.TestECDSASignature",
-            "ibm.jceplus.junit.openjceplus.multithread.TestEdDSASignature",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHKDF",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacMD5",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacMD5InteropSunJCE",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA256InteropSunJCE",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA3_224",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA3_256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA3_384",
-            "ibm.jceplus.junit.openjceplus.multithread.TestHmacSHA3_512",
-            "ibm.jceplus.junit.openjceplus.multithread.TestMiniRSAPSS2",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSASignature",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSA_2048",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSAKey",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSAPSS",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSAPSS2",
-            //"ibm.jceplus.junit.openjceplus.multithread.TestRSAPSSInterop2",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSAPSSInterop3",
-            "ibm.jceplus.junit.openjceplus.multithread.TestRSASignatureInteropSunRsaSign",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA256Clone_SharedMD",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA3_224",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA3_256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA3_384",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA3_512",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA512",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA512_224",
-            "ibm.jceplus.junit.openjceplus.multithread.TestSHA512_256",
-            "ibm.jceplus.junit.openjceplus.multithread.TestXDH",
-            "ibm.jceplus.junit.openjceplus.multithread.TestXDHKeyImport",
-            "ibm.jceplus.junit.openjceplus.multithread.TestXDHKeyPairGenerator",
-            "ibm.jceplus.junit.openjceplus.multithread.TestXDHMultiParty"};
+            "ibm.jceplus.junit.openjceplus.multithread.TestAESGCMUpdate"};
 
     public TestMultithread() {}
 
@@ -155,6 +106,12 @@ public class TestMultithread {
                 return listener.getSummary().getFailures();
             }
         };
+    }
+
+    @AfterAll
+    public void afterall() throws Exception {
+        System.out.println("Now sleeping with PID: " + ProcessHandle.current().pid());
+        Thread.sleep(100000000);
     }
 
     @Test

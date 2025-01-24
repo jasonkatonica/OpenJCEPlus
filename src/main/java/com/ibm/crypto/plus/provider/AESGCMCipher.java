@@ -359,6 +359,10 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
                     throw new ShortBufferException("Output buffer too small");
                 }
 
+                // We know that this is too short lets intentionally make it short....
+                //output = new byte[8];
+                //System.out.println("Yes we are here.");
+
                 int ret = GCMCipher.doGCMFinal_Decrypt(ockContext, Key, IV, tagLenInBytes, input,
                         inputOffset, inputLen, output, outputOffset, authData);
                 authData = null; // Before returning from doFinal(), restore AAD to uninitialized state

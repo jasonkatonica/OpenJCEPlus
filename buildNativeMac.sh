@@ -21,7 +21,14 @@ if [ -z "$GSKIT_HOME" ];
   echo "Error: GSKIT_HOME is not defined or is empty";
   exit;
 fi
-
+export MallocStackLoggingNoCompact=1
+export MallocScribble=1
+export MallocPreScribble=1
+export MallocGuardEdges=1
+export MallocDoNotProtectPrelude=1
+export MallocDoNotProtectPostlude=1
+export MallocCheckHeapStart=1
+export MallocCheckHeapEach=1
 cd src/main/native
 
 make -f jgskit.mac.mak clean
