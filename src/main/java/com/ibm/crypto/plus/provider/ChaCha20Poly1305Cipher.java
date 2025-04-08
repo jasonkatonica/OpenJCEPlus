@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023, 2024
+ * Copyright IBM Corp. 2023, 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -635,10 +635,9 @@ public final class ChaCha20Poly1305Cipher extends CipherSpi
     }
 
     private byte[] generateRandomNonce(SecureRandom random) {
-        SecureRandom rand = (random != null) ? random : new SecureRandom();
-        SecureRandom cryptoRandom = provider.getSecureRandom(rand);
+        this.random = (random != null) ? random : provider.getSecureRandom(random);
         byte[] generatedNonce = new byte[ChaCha20_NONCE_SIZE];
-        cryptoRandom.nextBytes(generatedNonce);
+        random.nextBytes(generatedNonce);
 
         return generatedNonce;
     }

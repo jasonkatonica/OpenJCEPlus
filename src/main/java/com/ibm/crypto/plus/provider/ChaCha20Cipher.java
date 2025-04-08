@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023
+ * Copyright IBM Corp. 2023, 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -234,7 +234,7 @@ public final class ChaCha20Cipher extends CipherSpi implements ChaCha20Constants
         if (opmode == Cipher.DECRYPT_MODE) {
             throw new InvalidKeyException("Parameters missing");
         }
-        this.random = random;
+        this.random = provider.getSecureRandom(random);
         this.initialized = false;
         this.sbeInLastFinalEncrypt = false;
         generateIV = (opmode == Cipher.ENCRYPT_MODE);
@@ -251,7 +251,7 @@ public final class ChaCha20Cipher extends CipherSpi implements ChaCha20Constants
             engineInit(opmode, key, random);
         } else {
             generateIV = false; // Use IV from params
-            this.random = random;
+            this.random = provider.getSecureRandom(random);
 
             if (params instanceof ChaCha20ParameterSpec) {
                 byte[] nonce = ((ChaCha20ParameterSpec) params).getNonce();
@@ -465,10 +465,9 @@ public final class ChaCha20Cipher extends CipherSpi implements ChaCha20Constants
     }
 
     private byte[] generateRandomNonce(SecureRandom random) {
-        SecureRandom rand = (random != null) ? random : new SecureRandom();
-        SecureRandom cryptoRandom = provider.getSecureRandom(rand);
+        this.random = (random != null) ? random : provider.getSecureRandom(random);
         byte[] generatedNonce = new byte[ChaCha20_NONCE_SIZE];
-        cryptoRandom.nextBytes(generatedNonce);
+        random.nextBytes(generatedNonce);
 
         return generatedNonce;
     }
