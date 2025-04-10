@@ -47,8 +47,7 @@ public final class ChaCha20Poly1305Cipher extends CipherSpi
     private boolean encrypting = false;
     private boolean initialized = false;
     private boolean aadDone = false;
-    //final static String debPrefix = "ChaCha20Poly1305 ";
-
+    SecureRandom random = null;
     public ChaCha20Poly1305Cipher(OpenJCEPlusProvider provider) {
         if (!OpenJCEPlusProvider.verifySelfIntegrity(this)) {
             throw new SecurityException("Integrity check failed for: " + provider.getName());
