@@ -110,12 +110,12 @@ abstract class XDHKeyAgreement extends KeyAgreementSpi {
             this.secret = XECKey.computeECDHSecret(provider.getOCKContext(), genCtx,
                     ockXecKeyPub.getPKeyId(), ockXecKeyPriv.getPKeyId(), secrectBufferSize);
         } catch (OCKException e) {
-            throw new IllegalStateException("Failed to generate secret", e);
+            throw new InvalidKeyException("Failed to generate secret or point has small order.", e);
         } catch (Exception e) {
             throw new InvalidKeyException("Failed to generate secret", e);
         }
 
-        //Valdate the secret for Point has small order
+        // Validate the secret for Point has small order
         byte orValue = (byte) 0;
         for (int i = 0; i < secret.length; i++) {
             orValue |= secret[i];
