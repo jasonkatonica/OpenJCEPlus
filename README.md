@@ -5,6 +5,7 @@
 - [Test Execution](#test-execution)
   - [Run All Tests](#run-all-tests)
   - [Run Single Test](#run-single-test)
+  - Run Performance Tests
 - [OpenJCEPlus and OpenJCEPlusFIPS Provider SDK Installation](#openjceplus-and-openjceplusfips-provider-sdk-installation)
 - [Features and Algorithms](#features-and-algorithms)
 - [Contributions](#contributions)
@@ -182,6 +183,12 @@ cd OpenJCEPlus
 export JAVA_HOME="$JAVA_INSTALL_DIRECTORY/jdk-$JAVA_VERSION"
 export GSKIT_HOME="$PROJECT_HOME/OCK/jgsk_sdk"
 mvn '-Dock.library.path=$PROJECT_HOME/OCK/' test -Dtest=TestClassname
+```
+
+### Run Jmeter performance tests
+
+```console
+mvn -Dock.library.path=/Users/jasonkatonica/Data/Libraries/gskit/8.9.6/OCK/jgsk_crypto clean compile test-compile com.lazerycode.jmeter:jmeter-maven-plugin:jmeter
 ```
 
 ## OpenJCEPlus and OpenJCEPlusFIPS Provider SDK Installation

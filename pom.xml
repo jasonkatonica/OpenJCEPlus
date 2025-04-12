@@ -11,6 +11,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+    <groupId>org.OpenJCEPlus</groupId>
     <artifactId>OpenJCEPlus</artifactId>
     <version>25</version>
     <packaging>jar</packaging>
@@ -537,6 +538,56 @@
                 </execution>
               </executions>
             </plugin>
+            <plugin>
+                <groupId>com.lazerycode.jmeter</groupId>
+                <artifactId>jmeter-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>jmeter-tests</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>jmeter</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>configuration</id>
+                        <goals>
+                            <goal>configure</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jmeter-check-results</id>
+                        <goals>
+                            <goal>results</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-html-report</id>
+                        <phase>verify</phase>
+                        <goals>
+                          <goal>results</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <testFilesDirectory>${project.basedir}/src/test/jmeter</testFilesDirectory>
+                    <jMeterProcessJVMSettings>
+                      <arguments>
+                        <argument>-Djgskit.library.path=${build.target.jgskitlib.dir}</argument>
+                        <argument>-Dock.library.path=${ock.library.path}</argument>
+                        <argument>--module-path</argument>
+                        <argument>${project.build.directory}${file.separator}classes</argument>
+                        <argument>--add-exports=java.base/sun.security.util=openjceplus</argument>
+                      </arguments>
+                    </jMeterProcessJVMSettings>
+                    <resultsDirectory>${project.build.directory}/jmeter-results</resultsDirectory>
+                    <testResultsTimestamp>false</testResultsTimestamp>
+                    <propertiesUser>
+                        <jmeter.save.saveservice.output_format>csv</jmeter.save.saveservice.output_format>
+                    </propertiesUser>
+                    <generateReports>true</generateReports>
+                </configuration>
+            </plugin>
         </plugins>
         <resources>
             <resource>
@@ -708,12 +759,46 @@
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcprov-ext-jdk18on</artifactId>
           <version>1.78.1</version>
-      </dependency>
+        </dependency>
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.8.13</version>
         </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_core</artifactId>
+            <version>5.6.3</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.thoughtworks.xstream</groupId>
+                    <artifactId>xstream</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.xmlgraphics</groupId>
+                    <artifactId>batik-transcoder</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>1.18</version>
+        </dependency>
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.21</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.jmeter</groupId>
+            <artifactId>ApacheJMeter_java</artifactId>
+            <version>5.6.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.lazerycode.jmeter</groupId>
+            <artifactId>jmeter-maven-plugin</artifactId>
+            <version>3.8.0</version>
+        </dependency>
     </dependencies>
-    <groupId>crypto</groupId>
 </project>

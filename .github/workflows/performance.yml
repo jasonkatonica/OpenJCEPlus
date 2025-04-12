@@ -1,0 +1,76 @@
+name: GitHub Actions Performance OpenJCEPlus
+run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
+on: [push]
+jobs:
+  Build-Test-OpenJCEPlus:
+    name: Performance Test ${{ matrix.os }}.
+    runs-on: ${{ matrix.os }}
+    permissions:
+      checks: write # Needed to publish a check from the Publish Test Report step below.
+      contents: read # Needed to read the contents of the github repo and clone.
+    strategy:
+      matrix:
+        os: [ubuntu-22.04]
+        include:
+          - os: ubuntu-22.04
+            gskit_lib_name: libjgsk8iccs_64.so
+    steps:
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server."
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: 'Checkout Open Cryptography Kit C'
+        uses: actions/checkout@v4
+        with:
+          repository: IBM/OpenCryptographyKitC
+          ref: 411a80674cedc6d4bdb9d808df341c7a29170699 # main branch on Aug 11th 2024.
+          path: ${{ github.workspace }}/OpenCryptographyKitC
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
+        run: |
+          tree ${{ github.workspace }}
+      - name: Compile Open Cryptography Kit C
+        run: |
+          cd ${{ github.workspace }}/OpenCryptographyKitC/icc
+          make -k OPSYS=AMD64_LINUX CONFIG=release create_all
+          export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitC/openssl-1.1.1/
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release show_config
+          cd ..
+          cd iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          cd ${{ github.workspace }}
+      - name: Extract OCK SDK and Binary Tar File
+        run: |
+          mkdir ${{ github.workspace }}/OCK
+          cd ${{ github.workspace }}/OCK
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
+          ls -al
+          tree
+          tar -xvf jgsk_crypto.tar
+          tar -xvf jgsk_crypto_sdk.tar
+          mkdir jgsk_sdk/lib64
+          cp ${{ matrix.gskit_lib_name }} jgsk_sdk/lib64
+      - name: Setup Semeru JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '23.0.0+37'
+          distribution: 'semeru'
+          architecture: 'x64'
+      - name: Execute Maven Install Target And OpenJCEPlus Provider Tests
+        run: > 
+          mvn
+          --batch-mode
+          '-Dock.library.path=${{ github.workspace }}/OCK/'
+          compile test-compile com.lazerycode.jmeter:jmeter-maven-plugin:jmeter
+        env:
+          GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
+      - name: Archive JMeter results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-results-${{ matrix.os }}
+          path: target/jmeter*
