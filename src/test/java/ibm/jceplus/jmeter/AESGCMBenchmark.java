@@ -47,12 +47,23 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
         try {
             // TODO Move this to utilities class....
             // Insert provider into provider list.
-            Provider myProvider = java.security.Security.getProvider("OpenJCEPlus");
-            if (myProvider == null) {
-                myProvider = (Provider) Class.forName("com.ibm.crypto.plus.provider.OpenJCEPlus")
-                        .getDeclaredConstructor().newInstance();
+            if (provider.equalsIgnoreCase("OpenJCEPlus")) {
+                Provider myProvider = java.security.Security.getProvider("OpenJCEPlus");
+                if (myProvider == null) {
+                    myProvider = (Provider) Class
+                            .forName("com.ibm.crypto.plus.provider.OpenJCEPlus")
+                            .getDeclaredConstructor().newInstance();
+                }
+                java.security.Security.insertProviderAt(myProvider, 1);
+            } else if (provider.equalsIgnoreCase("BC")) {
+                Provider myProvider = java.security.Security.getProvider("BC");
+                if (myProvider == null) {
+                    myProvider = (Provider) Class
+                            .forName("org.bouncycastle.jce.provider.BouncyCastleProvider")
+                            .getDeclaredConstructor().newInstance();
+                }
+                java.security.Security.insertProviderAt(myProvider, 1);
             }
-            java.security.Security.insertProviderAt(myProvider, 1);
 
             // Instantiate the Cipher.
             cipher = Cipher.getInstance("AES/GCM/NoPadding", provider);
@@ -74,34 +85,32 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
     @Override
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
-        result.setSampleLabel("AES/GCM Benchmark" +
-                              "\nOperation:" + operation +
-                              "\nDataSize:" + dataSize +
-                              "\nProvider:" + provider +
-                              "\nLoops:" + loops +
-                              "\nThreads:" + threads);
+        result.setSampleLabel(
+                "AES/GCM Benchmark" + "\nOperation:" + operation + "\nDataSize:" + dataSize
+                        + "\nProvider:" + provider + "\nLoops:" + loops + "\nThreads:" + threads);
 
-        if (!(("encrypt".equalsIgnoreCase(operation) || ("encryptdecrypt".equalsIgnoreCase(operation))))) {
+        if (!(("encrypt".equalsIgnoreCase(operation)
+                || ("encryptdecrypt".equalsIgnoreCase(operation))))) {
             throw new RuntimeException("Operation value is incorrect: " + operation);
         }
 
         try {
             result.sampleStart();
-            for (int x=0; x<=loops; x++) {
+            for (int x = 0; x <= loops; x++) {
                 if ("encrypt".equalsIgnoreCase(operation)) {
-                        encrypt();
+                    encrypt();
                 } else if ("encryptdecrypt".equalsIgnoreCase(operation)) {
                     encrypt();
                     decrypt();
-                } 
+                }
             }
             result.sampleEnd();
 
             // Set some accounting stats.
             if ("encrypt".equalsIgnoreCase(operation)) {
-                result.setBytes((long)loops * dataSize);
+                result.setBytes((long) loops * dataSize);
             } else if ("encryptdecrypt".equalsIgnoreCase(operation)) {
-                result.setBytes((long)loops * dataSize * 2);
+                result.setBytes((long) loops * dataSize * 2);
             }
             result.setResponseCodeOK();
             result.setResponseMessage("OK");
