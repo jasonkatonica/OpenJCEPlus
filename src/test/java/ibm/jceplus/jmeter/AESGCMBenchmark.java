@@ -9,14 +9,13 @@ package ibm.jceplus.jmeter;
 
 import java.security.AlgorithmParameters;
 import java.security.Provider;
-import java.security.SecureRandom;
+import java.util.Random;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
-import org.apache.jmeter.util.JMeterUtils;
 
 /**
  * JMeter benchmark for AES/GCM.
@@ -31,7 +30,7 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
     private int dataSize;
     private String operation;
     private Cipher cipher = null;
-    private SecureRandom random = new SecureRandom();
+    private Random random = new Random(); // Use pseudo random this is good enough for data.
     private String provider;
     private int threads;
     private int loops;
@@ -87,7 +86,7 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.setSampleLabel(
                 "AES/GCM Benchmark" + "\nOperation:" + operation + "\nDataSize:" + dataSize
-                        + "\nProvider:" + provider + "\nLoops:" + loops + "\nThreads:" + threads);
+                        + "\nProvider:" + provider + "\nThreads:" + threads);
 
         if (!(("encrypt".equalsIgnoreCase(operation)
                 || ("encryptdecrypt".equalsIgnoreCase(operation))))) {
