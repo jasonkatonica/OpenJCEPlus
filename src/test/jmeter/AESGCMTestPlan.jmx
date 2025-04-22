@@ -22,7 +22,7 @@
           </elementProp>
           <elementProp name="NumberOfLoops" elementType="Argument">
             <stringProp name="Argument.name">NumberOfLoops</stringProp>
-            <stringProp name="Argument.value">10000</stringProp>
+            <stringProp name="Argument.value">100000</stringProp>
             <stringProp name="Argument.desc">Number of loops to run a given test</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -34,7 +34,7 @@
           </elementProp>
           <elementProp name="TotalIterations" elementType="Argument">
             <stringProp name="Argument.name">TotalIterations</stringProp>
-            <stringProp name="Argument.value">500</stringProp>
+            <stringProp name="Argument.value">50</stringProp>
             <stringProp name="Argument.desc">Number of iterations for entire benchmark ( each benchmark loops NumberOfLoops )</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -52,7 +52,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -187,7 +187,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -232,7 +232,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt And Decrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt And Decrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
