@@ -16,6 +16,7 @@ import javax.crypto.SecretKey;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
+import org.apache.jmeter.threads.JMeterContextService;
 
 /**
  * JMeter benchmark for AES/GCM.
@@ -85,8 +86,8 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
         result.setSampleLabel(
-                "AES/GCM Benchmark" + "\nOperation:" + operation + "\nDataSize:" + dataSize
-                        + "\nProvider:" + provider + "\nThreads:" + threads);
+            "AES/GCM Benchmark" + "\nOperation:" + operation + "\nDataSize:" + dataSize
+            + "\nProvider:" + provider + "\nThreads:" + threads);
 
         if (!(("encrypt".equalsIgnoreCase(operation)
                 || ("encryptdecrypt".equalsIgnoreCase(operation))))) {
@@ -111,10 +112,13 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
             } else if ("encryptdecrypt".equalsIgnoreCase(operation)) {
                 result.setBytes((long) loops * dataSize * 2);
             }
+
             result.setResponseCodeOK();
             result.setResponseMessage("OK");
             result.setSuccessful(true);
-
+            JMeterContextService.getContext().getVariables().put("provider",provider);
+            JMeterContextService.getContext().getVariables().put("operation",operation);
+            JMeterContextService.getContext().getVariables().put("datasize",Integer.valueOf(dataSize).toString());
         } catch (Exception e) {
             result.sampleEnd();
             result.setResponseCode("500");
@@ -122,7 +126,6 @@ public class AESGCMBenchmark extends AbstractJavaSamplerClient {
             result.setSuccessful(false);
             e.printStackTrace();
         }
-
         return result;
     }
 
