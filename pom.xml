@@ -581,6 +581,9 @@
                       </arguments>
                     </jMeterProcessJVMSettings>
                     <resultsDirectory>${project.build.directory}/jmeter-results</resultsDirectory>
+                    <customPropertiesFiles>
+                      <file>${project.basedir}/src/test/jmeter/jmeter.properties</file>
+                    </customPropertiesFiles>
                     <testResultsTimestamp>false</testResultsTimestamp>
                     <propertiesUser>
                         <jmeter.save.saveservice.output_format>csv</jmeter.save.saveservice.output_format>
