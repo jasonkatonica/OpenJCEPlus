@@ -29,6 +29,10 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
     private int threads;
     private int loops;
     private Random random = new Random();
+    private String osName = null;
+    private String osArch = null;
+    private String javaVersion = null;
+
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -37,6 +41,9 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
         provider = context.getParameter("provider");
         loops = Integer.parseInt(context.getParameter("loops"));
         threads = Integer.parseInt(context.getParameter("threads"));
+        osArch = System.getProperty("os.arch");
+        osName = System.getProperty("os.name");
+        javaVersion = System.getProperty("java.runtime.version");
 
         try {
             setupProvider();
@@ -51,7 +58,7 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
             random.nextBytes(inputData);
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(-1);
+            //System.exit(-1);
         }
     }
 
@@ -102,6 +109,9 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
             JMeterContextService.getContext().getVariables().put("provider", provider);
             JMeterContextService.getContext().getVariables().put("algorithm", algorithm);
             JMeterContextService.getContext().getVariables().put("datasize", Integer.valueOf(dataSize).toString());
+            JMeterContextService.getContext().getVariables().put("osname", osName);
+            JMeterContextService.getContext().getVariables().put("osarch", osArch);
+            JMeterContextService.getContext().getVariables().put("javaruntimeversion", javaVersion);
         } catch (Exception e) {
             result.sampleEnd();
             result.setResponseCode("500");

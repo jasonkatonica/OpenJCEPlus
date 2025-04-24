@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6.3">
   <hashTree>
-    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="RSA Benchmark">
-      <stringProp name="TestPlan.comments">Benchmark for testing RSA encryption/decryption performance</stringProp>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="AES/GCM Benchmark">
+      <stringProp name="TestPlan.comments">Benchmark for testing AES/GCM encryption/decryption performance</stringProp>
       <boolProp name="TestPlan.serialize_threadgroups">true</boolProp>
       <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
       <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables">
@@ -21,7 +21,7 @@
           </elementProp>
           <elementProp name="NumberOfLoops" elementType="Argument">
             <stringProp name="Argument.name">NumberOfLoops</stringProp>
-            <stringProp name="Argument.value">100000</stringProp>
+            <stringProp name="Argument.value">10000</stringProp>
             <stringProp name="Argument.desc">Number of loops to run a given test</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -39,13 +39,13 @@
           </elementProp>
           <elementProp name="AlgorithmTransformation" elementType="Argument">
             <stringProp name="Argument.name">AlgorithmTransformation</stringProp>
-            <stringProp name="Argument.value">RSA/ECB/PKCS1Padding</stringProp>
+            <stringProp name="Argument.value">AES/CBC/NoPadding</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
         </collectionProp>
       </Arguments>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus RSA Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/CBC Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -56,7 +56,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="RSA Encrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -66,7 +66,7 @@
               </elementProp>
               <elementProp name="dataSize" elementType="Argument">
                 <stringProp name="Argument.name">dataSize</stringProp>
-                <stringProp name="Argument.value">128</stringProp>
+                <stringProp name="Argument.value">1024</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="provider" elementType="Argument">
@@ -95,7 +95,7 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE RSA Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE AES/CBC Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -106,7 +106,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="RSA Encrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -116,7 +116,7 @@
               </elementProp>
               <elementProp name="dataSize" elementType="Argument">
                 <stringProp name="Argument.name">dataSize</stringProp>
-                <stringProp name="Argument.value">128</stringProp>
+                <stringProp name="Argument.value">1024</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="provider" elementType="Argument">
@@ -145,7 +145,7 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC RSA Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC AES/CBC Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -156,7 +156,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="RSA Encrypt" enabled="true">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -166,7 +166,7 @@
               </elementProp>
               <elementProp name="dataSize" elementType="Argument">
                 <stringProp name="Argument.name">dataSize</stringProp>
-                <stringProp name="Argument.value">128</stringProp>
+                <stringProp name="Argument.value">1024</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="provider" elementType="Argument">
@@ -182,6 +182,156 @@
               <elementProp name="threads" elementType="Argument">
                 <stringProp name="Argument.name">threads</stringProp>
                 <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
+        </JavaSampler>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/CBC Encrypt And Decrypt Thread Group">
+        <intProp name="ThreadGroup.num_threads">1</intProp>
+        <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt And Decrypt">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="operation" elementType="Argument">
+                <stringProp name="Argument.name">operation</stringProp>
+                <stringProp name="Argument.value">EncryptDecrypt</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dataSize" elementType="Argument">
+                <stringProp name="Argument.name">dataSize</stringProp>
+                <stringProp name="Argument.value">1024</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="provider" elementType="Argument">
+                <stringProp name="Argument.name">provider</stringProp>
+                <stringProp name="Argument.value">OpenJCEPlus</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="loops" elementType="Argument">
+                <stringProp name="Argument.name">loops</stringProp>
+                <stringProp name="Argument.value">${NumberOfLoops}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="threads" elementType="Argument">
+                <stringProp name="Argument.name">threads</stringProp>
+                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
+        </JavaSampler>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/CBC Large Data Test">
+        <intProp name="ThreadGroup.num_threads">1</intProp>
+        <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt Large Data">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="operation" elementType="Argument">
+                <stringProp name="Argument.name">operation</stringProp>
+                <stringProp name="Argument.value">Encrypt</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dataSize" elementType="Argument">
+                <stringProp name="Argument.name">dataSize</stringProp>
+                <stringProp name="Argument.value">102400</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="provider" elementType="Argument">
+                <stringProp name="Argument.name">provider</stringProp>
+                <stringProp name="Argument.value">OpenJCEPlus</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="loops" elementType="Argument">
+                <stringProp name="Argument.name">loops</stringProp>
+                <stringProp name="Argument.value">${NumberOfLoops}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="threads" elementType="Argument">
+                <stringProp name="Argument.name">threads</stringProp>
+                <stringProp name="Argument.value">1</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
+        </JavaSampler>
+        <hashTree/>
+      </hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/CBC Large Data Test Multithread">
+        <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
+          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+        </elementProp>
+      </ThreadGroup>
+      <hashTree>
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/CBC Encrypt Large Data">
+          <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="operation" elementType="Argument">
+                <stringProp name="Argument.name">operation</stringProp>
+                <stringProp name="Argument.value">Encrypt</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="dataSize" elementType="Argument">
+                <stringProp name="Argument.name">dataSize</stringProp>
+                <stringProp name="Argument.value">102400</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="provider" elementType="Argument">
+                <stringProp name="Argument.name">provider</stringProp>
+                <stringProp name="Argument.value">OpenJCEPlus</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="loops" elementType="Argument">
+                <stringProp name="Argument.name">loops</stringProp>
+                <stringProp name="Argument.value">${NumberOfLoops}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+              <elementProp name="threads" elementType="Argument">
+                <stringProp name="Argument.name">threads</stringProp>
+                <stringProp name="Argument.value">${NumberOfThreads}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
               <elementProp name="algorithm" elementType="Argument">

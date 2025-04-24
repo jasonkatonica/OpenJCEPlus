@@ -42,6 +42,9 @@ public class CipherBenchmark extends AbstractJavaSamplerClient {
     private String provider;
     private int threads;
     private int loops;
+    private String osName = null;
+    private String osArch = null;
+    private String javaVersion = null;
 
     @Override
     public void setupTest(JavaSamplerContext context) {
@@ -51,6 +54,9 @@ public class CipherBenchmark extends AbstractJavaSamplerClient {
         algorithm = context.getParameter("algorithm");
         loops = Integer.parseInt(context.getParameter("loops"));
         threads = Integer.parseInt(context.getParameter("threads"));
+        osArch = System.getProperty("os.arch");
+        osName = System.getProperty("os.name");
+        javaVersion = System.getProperty("java.runtime.version");
 
         try {
             setupProvider();
@@ -60,7 +66,7 @@ public class CipherBenchmark extends AbstractJavaSamplerClient {
             random.nextBytes(plainText);
         } catch (Exception e) {
             e.printStackTrace();
-            System.exit(-1);
+            //System.exit(-1);
         }
     }
 
@@ -135,6 +141,9 @@ public class CipherBenchmark extends AbstractJavaSamplerClient {
             JMeterContextService.getContext().getVariables().put("algorithm", algorithm);
             JMeterContextService.getContext().getVariables().put("operation", operation);
             JMeterContextService.getContext().getVariables().put("datasize",Integer.valueOf(dataSize).toString());
+            JMeterContextService.getContext().getVariables().put("osname", osName);
+            JMeterContextService.getContext().getVariables().put("osarch", osArch);
+            JMeterContextService.getContext().getVariables().put("javaruntimeversion", javaVersion);
         } catch (Exception e) {
             result.sampleEnd();
             result.setResponseCode("500");
