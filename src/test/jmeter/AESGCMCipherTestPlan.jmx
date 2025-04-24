@@ -28,7 +28,7 @@
           </elementProp>
           <elementProp name="RampUpTime" elementType="Argument">
             <stringProp name="Argument.name">RampUpTime</stringProp>
-            <stringProp name="Argument.value">20</stringProp>
+            <stringProp name="Argument.value">60</stringProp>
             <stringProp name="Argument.desc">Time in seconds to ramp up before collecting data</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -38,10 +38,15 @@
             <stringProp name="Argument.desc">Number of iterations for entire benchmark ( each benchmark loops NumberOfLoops )</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
+          <elementProp name="AlgorithmTransformation" elementType="Argument">
+            <stringProp name="Argument.name">AlgorithmTransformation</stringProp>
+            <stringProp name="Argument.value">AES/GCM/NoPadding</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
         </collectionProp>
       </Arguments>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -52,7 +57,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -80,13 +85,18 @@
                 <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE AES/GCM Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE AES/GCM Encrypt Thread Group" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -97,7 +107,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -125,13 +135,18 @@
                 <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC AES/GCM Encrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC AES/GCM Encrypt Thread Group" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -142,7 +157,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -170,13 +185,18 @@
                 <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group Multithread">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group Multithread" enabled="true">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -187,7 +207,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -215,13 +235,18 @@
                 <stringProp name="Argument.value">${NumberOfThreads}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -232,7 +257,7 @@
         </elementProp>
       </ThreadGroup>
       <hashTree>
-        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt And Decrypt">
+        <JavaSampler guiclass="JavaTestSamplerGui" testclass="JavaSampler" testname="AES/GCM Encrypt And Decrypt" enabled="true">
           <elementProp name="arguments" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments">
             <collectionProp name="Arguments.arguments">
               <elementProp name="operation" elementType="Argument">
@@ -260,13 +285,18 @@
                 <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group Multithread">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group Multithread" enabled="true">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -305,13 +335,18 @@
                 <stringProp name="Argument.value">${NumberOfThreads}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test" enabled="true">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -350,13 +385,18 @@
                 <stringProp name="Argument.value">1</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test Multithread">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test Multithread" enabled="true">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
@@ -395,9 +435,14 @@
                 <stringProp name="Argument.value">${NumberOfThreads}</stringProp>
                 <stringProp name="Argument.metadata">=</stringProp>
               </elementProp>
+              <elementProp name="algorithm" elementType="Argument">
+                <stringProp name="Argument.name">algorithm</stringProp>
+                <stringProp name="Argument.value">${AlgorithmTransformation}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
             </collectionProp>
           </elementProp>
-          <stringProp name="classname">ibm.jceplus.jmeter.AESGCMBenchmark</stringProp>
+          <stringProp name="classname">ibm.jceplus.jmeter.CipherBenchmark</stringProp>
         </JavaSampler>
         <hashTree/>
       </hashTree>
