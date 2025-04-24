@@ -1,11 +1,12 @@
-package ibm.jceplus.jmeter;
 /*
- * Copyright IBM Corp. 2024
+ * Copyright IBM Corp. 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+
+package ibm.jceplus.jmeter;
 
 import java.security.MessageDigest;
 import java.security.Provider;
@@ -79,8 +80,8 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
     public SampleResult runTest(JavaSamplerContext context) {
         SampleResult result = new SampleResult();
         result.setSampleLabel(
-            algorithm + " Hash Benchmark" + "\nDataSize:" + dataSize
-            + "\nProvider:" + provider + "\nThreads:" + threads);
+            "MessageDigestBenchmark" + " Algorithm:" + algorithm + ", DataSize:" + dataSize
+            + ", Provider:" + provider + ", Threads:" + threads);
 
         try {
             byte[] hashResult = null;
