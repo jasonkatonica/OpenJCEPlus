@@ -18,6 +18,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
+        <jmeter.skip.tests>true</jmeter.skip.tests>
     </properties>
         <profiles>
           <profile>
@@ -571,6 +572,7 @@
                 </executions>
                 <configuration>
                     <testFilesDirectory>${project.basedir}/src/test/jmeter</testFilesDirectory>
+                    <skipTests>${jmeter.skip.tests}</skipTests>
                     <jMeterProcessJVMSettings>
                       <arguments>
                         <argument>-Djgskit.library.path=${build.target.jgskitlib.dir}</argument>
@@ -578,6 +580,8 @@
                         <argument>--module-path</argument>
                         <argument>${project.build.directory}${file.separator}classes</argument>
                         <argument>--add-exports=java.base/sun.security.util=openjceplus</argument>
+                        <argument>--add-exports=java.base/sun.security.x509=openjceplus</argument>
+                        <argument>--add-exports=java.base/sun.security.pkcs=openjceplus</argument>
                       </arguments>
                     </jMeterProcessJVMSettings>
                     <resultsDirectory>${project.build.directory}/jmeter-results</resultsDirectory>
@@ -805,6 +809,24 @@
             <groupId>com.lazerycode.jmeter</groupId>
             <artifactId>jmeter-maven-plugin</artifactId>
             <version>3.8.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-core</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>com.jayway.jsonpath</groupId>
+                    <artifactId>json-path</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>net.minidev</groupId>
+                    <artifactId>json-smart</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 </project>
