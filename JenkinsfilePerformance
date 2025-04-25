@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2024, 2025
+ * Copyright IBM Corp. 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -516,19 +516,19 @@ pipeline {
                 font-style: italic;
             """
         )
-        booleanParam(name: 'ppc64_aix', defaultValue: false, description: '\
+        booleanParam(name: 'ppc64_aix', defaultValue: true, description: '\
             Build for ppc64_aix platform')
-        booleanParam(name: 'x86_64_linux', defaultValue: false, description: '\
+        booleanParam(name: 'x86_64_linux', defaultValue: true, description: '\
             Build for x86-64_linux platform')
-        booleanParam(name: 'ppc64le_linux', defaultValue: false, description: '\
+        booleanParam(name: 'ppc64le_linux', defaultValue: true, description: '\
             Build for ppc64le_linux platform')
-        booleanParam(name: 's390x_linux', defaultValue: false, description: '\
+        booleanParam(name: 's390x_linux', defaultValue: true, description: '\
             Build for s390x_linux platform')
-        booleanParam(name: 'x86_64_windows', defaultValue: false, description: '\
+        booleanParam(name: 'x86_64_windows', defaultValue: true, description: '\
             Build for x86-64_windows platform')
-        booleanParam(name: 'aarch64_mac', defaultValue: false, description: '\
+        booleanParam(name: 'aarch64_mac', defaultValue: true, description: '\
             Build for aarch64_mac platform')
-        booleanParam(name: 'x86_64_mac', defaultValue: false, description: '\
+        booleanParam(name: 'x86_64_mac', defaultValue: true, description: '\
             Build for x86-64_mac platform')
         booleanParam(name: 'aarch64_linux', defaultValue: true, description: '\
             Build for aarch64_linux platform')
