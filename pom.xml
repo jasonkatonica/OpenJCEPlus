@@ -577,8 +577,6 @@
                       <arguments>
                         <argument>-Djgskit.library.path=${build.target.jgskitlib.dir}</argument>
                         <argument>-Dock.library.path=${ock.library.path}</argument>
-                        <argument>-cp</argument>
-                        <argument>${project.build.directory}${file.separator}classes</argument>
                         <argument>--module-path</argument>
                         <argument>${project.build.directory}${file.separator}classes</argument>
                         <argument>--patch-module</argument>
