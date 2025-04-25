@@ -300,6 +300,7 @@ def runOpenJCEPlus(command, software) {
                ${additional_exports}
                ${environment}
                mvn '-Dock.library.path=${ock_path}' --batch-mode ${command}"
+               """
         }
     }
 }
