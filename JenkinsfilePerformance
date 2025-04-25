@@ -466,7 +466,7 @@ def run(platform) {
     return {
         def excludeNode = []
         def iteration = 0
-        retry(3) {
+        retry(0) {
             // Specific labels are selected based on platform.
             def nodeTags = "hw.arch.${node_hardware}&&sw.os.${node_software}"
             // Nodes where a failed attempt was made are excluded.
