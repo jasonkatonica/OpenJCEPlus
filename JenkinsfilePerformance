@@ -299,7 +299,7 @@ def runOpenJCEPlus(command, software) {
                ${gskit_home}
                ${additional_exports}
                ${environment}
-               mvn '-Dock.library.path=${ock_path}' --batch-mode ${command}"
+               mvn '-Dock.library.path=${ock_path}' --batch-mode ${command}
                """
         }
     }
