@@ -1,6 +1,6 @@
 name: GitHub Actions Performance OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [push]
+on: [pr]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Performance Test ${{ matrix.os }}.
