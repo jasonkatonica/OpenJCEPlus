@@ -253,42 +253,6 @@ def cloneOpenJCEPlus() {
 }
 
 /*
- * Get the appropriate test flag.
- *
- * The user might have requested that test are not
- * run or asked for a specific test to
- * be executed.
- *
- * Even if that's not the case, in some
- * platforms the OpenJCEPlusFIPS provider is not
- * available and thus the FIPS-related tests should
- * not be executed.
- */
-def getTestFlag(hardware, software) {
-    // User requested that tests not be executed.
-    if (EXECUTE_TESTS == "false") {
-        return " -DskipTests"
-    }
-
-    // User requested execution of a specific test.
-    if (SPECIFIC_TEST) {
-        return " -Dtest=${SPECIFIC_TEST}"
-    }
-
-    // Based on platform, decide whether FIPS tests should be run.
-    if ((software == "mac") || ((software == "linux") && (hardware == "aarch64"))) {
-        echo "Only non-FIPS tests can be run in ${hardware}_${software}"
-        return " -Dtest=ibm.jceplus.junit.openjceplus.TestAll," +
-                       "ibm.jceplus.junit.TestMemStressAll," +
-                       "ibm.jceplus.junit.TestMultithread," +
-                       "ibm.jceplus.junit.openjceplus.integration.TestAll"
-    } else {
-        echo "All tests (both FIPS and non-FIPS) can be run in ${hardware}_${software}"
-        return "";
-    }
-}
-
-/*
  * Export the appropriate environment variables
  * and run the requested maven commands.
  */
@@ -506,7 +470,6 @@ def run(platform) {
                     cloneOpenJCEPlus()
                     echo "OpenJCEPlus cloned"
                     def command = "-Djmeter.skip.tests=false compile test-compile com.lazerycode.jmeter:jmeter-maven-plugin:jmeter"
-                    command += getTestFlag(hardware, software)
                     runOpenJCEPlus(command, software)
                     echo "OpenJCEPlus built"
                 } finally {
