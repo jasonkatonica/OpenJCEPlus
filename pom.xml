@@ -574,6 +574,7 @@
                     <testFilesDirectory>${project.basedir}/src/test/jmeter</testFilesDirectory>
                     <skipTests>${jmeter.skip.tests}</skipTests>
                     <jMeterProcessJVMSettings>
+                      <javaRuntime>{env.JAVA_HOME}/bin/java</javaRuntime>
                       <arguments>
                         <argument>-Djgskit.library.path=${build.target.jgskitlib.dir}</argument>
                         <argument>-Dock.library.path=${ock.library.path}</argument>
