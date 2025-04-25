@@ -179,7 +179,7 @@
               <jdk>23</jdk>
             </activation>
             <properties>
-                <jdk.build.target>23</jdk.build.target>
+                <jdk.build.target>21</jdk.build.target>
             </properties>
           </profile>
           <profile>
