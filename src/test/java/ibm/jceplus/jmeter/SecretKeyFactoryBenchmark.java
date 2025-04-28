@@ -14,7 +14,6 @@ import java.util.Random;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
 import org.apache.jmeter.protocol.java.sampler.AbstractJavaSamplerClient;
 import org.apache.jmeter.protocol.java.sampler.JavaSamplerContext;
 import org.apache.jmeter.samplers.SampleResult;
@@ -26,8 +25,7 @@ import org.apache.jmeter.threads.JMeterContextService;
 public class SecretKeyFactoryBenchmark extends AbstractJavaSamplerClient {
 
     private SecretKeyFactory secretKeyFactory;
-    private char[] password;
-    private byte[] salt;
+    private byte[] salt = new byte[16];
     private int iterations = 300000;
     private int keyLength = 512;
     private String algorithm;
@@ -52,12 +50,11 @@ public class SecretKeyFactoryBenchmark extends AbstractJavaSamplerClient {
 
         try {
             setupProvider();
-
             secretKeyFactory = SecretKeyFactory.getInstance(algorithm, provider);
-            salt = new byte[16];
             random.nextBytes(salt);
         } catch (Exception e) {
             e.printStackTrace();
+            //System.exit(-1);
         }
     }
 
@@ -89,12 +86,11 @@ public class SecretKeyFactoryBenchmark extends AbstractJavaSamplerClient {
                 + ", Provider:" + provider + ", Threads:" + threads);
 
         try {
-            SecretKey secretKey = null;
             KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, iterations, keyLength);
 
             result.sampleStart();
             for (int x = 0; x < loops; x++) {
-                secretKey = secretKeyFactory.generateSecret(spec);
+                SecretKey secretKey = secretKeyFactory.generateSecret(spec);
             }
             result.sampleEnd();
 
