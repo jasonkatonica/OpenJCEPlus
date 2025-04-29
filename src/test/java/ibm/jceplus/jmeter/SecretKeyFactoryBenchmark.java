@@ -59,7 +59,6 @@ public class SecretKeyFactoryBenchmark extends AbstractJavaSamplerClient {
     }
 
     private void setupProvider() throws Exception {
-        // Insert provider into provider list
         if (provider.equalsIgnoreCase("OpenJCEPlus")) {
             Provider myProvider = java.security.Security.getProvider("OpenJCEPlus");
             if (myProvider == null) {
