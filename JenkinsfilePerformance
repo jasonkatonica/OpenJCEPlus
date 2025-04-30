@@ -23,8 +23,6 @@ import groovy.transform.Field;
 @Field JAVA_RELEASE
 @Field OCK_RELEASE
 @Field OCK_FULL_URL
-@Field EXECUTE_TESTS
-@Field SPECIFIC_TEST
 @Field PARALLEL_ITERATIONS
 @Field ADDITIONAL_NODE_LABELS
 @Field OVERRIDE_NODE_LABELS
@@ -586,11 +584,6 @@ pipeline {
                 font-style: italic;
             """
         )
-        booleanParam(name: 'EXECUTE_TESTS', defaultValue: true, description:'\
-            Execute tests during the build')
-        string(name: 'SPECIFIC_TEST', defaultValue: '', description: '\
-            Set this to only execute a specific test, instead of the whole test suite.<br> \
-            Keep in mind that EXECUTE_TESTS has to be set too for this to work.')
         string(name: 'PARALLEL_ITERATIONS', defaultValue: '', description: '\
             Number of iterations to run all stages for each of the specified platforms. The iterations will run in parallel.')
         separator(name: "ExtendedOptions", sectionHeader: "Extended Options",
@@ -645,8 +638,6 @@ pipeline {
                         JAVA_RELEASE="${params.JAVA_RELEASE}"
                         OCK_RELEASE="${params.OCK_RELEASE}"
                         OCK_FULL_URL="${params.OCK_FULL_URL}"
-                        EXECUTE_TESTS="${params.EXECUTE_TESTS}"
-                        SPECIFIC_TEST="${params.SPECIFIC_TEST}"
                         PARALLEL_ITERATIONS="${params.PARALLEL_ITERATIONS}"
                         ADDITIONAL_NODE_LABELS="${params.ADDITIONAL_NODE_LABELS}"
                         OVERRIDE_NODE_LABELS="${params.OVERRIDE_NODE_LABELS}"
