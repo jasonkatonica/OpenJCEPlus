@@ -402,6 +402,8 @@ def archive(platform, iteration) {
 
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
+
+    perfReport 'target/jmeter-results/*.csv'
 }
 
 /*
