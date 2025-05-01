@@ -82,7 +82,7 @@ public class SecretKeyFactoryBenchmark extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.setSampleLabel("SecretKeyFactoryBenchmark" + " Algorithm:" + algorithm
                 + ", Iterations:" + iterations + ", KeyLength:" + keyLength
-                + ", Provider:" + provider + ", Threads:" + threads);
+                + ", Provider:" + provider + ", Threads:" + threads + ", " + osArch + "-" + osName);
 
         try {
             KeySpec spec = new PBEKeySpec(PASSWORD.toCharArray(), salt, iterations, keyLength);
