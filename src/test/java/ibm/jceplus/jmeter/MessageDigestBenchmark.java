@@ -88,7 +88,7 @@ public class MessageDigestBenchmark extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.setSampleLabel(
             "MessageDigestBenchmark" + " Algorithm:" + algorithm + ", DataSize:" + dataSize
-            + ", Provider:" + provider + ", Threads:" + threads);
+            + ", Provider:" + provider + ", Threads:" + threads + ", " + osArch + "-" + osName);
 
         try {
             byte[] hashResult = null;

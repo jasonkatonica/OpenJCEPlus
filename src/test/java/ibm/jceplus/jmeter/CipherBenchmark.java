@@ -110,7 +110,7 @@ public class CipherBenchmark extends AbstractJavaSamplerClient {
         SampleResult result = new SampleResult();
         result.setSampleLabel(
             "CipherBenchmark" + " Algorithm:" + algorithm + ", Operation:" + operation + ", DataSize:" + dataSize
-            + ", Provider:" + provider + ", Threads:" + threads);
+            + ", Provider:" + provider + ", Threads:" + threads + ", " + osArch + "-" + osName);
 
         if (!(("encrypt".equalsIgnoreCase(operation) || ("encryptdecrypt".equalsIgnoreCase(operation))))) {
             throw new RuntimeException("Operation value is incorrect: " + operation);
