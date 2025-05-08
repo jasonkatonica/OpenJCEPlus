@@ -74,8 +74,8 @@ def getPlatforms() {
 }
 
 def renameFilesInDirectory(String directory, String prefix) {
-    def directory = new File(directory)
-    def files = directory.listFiles().findAll { it.isFile() }
+    def sourceDirectory = new File(directory)
+    def files = sourceDirectory.listFiles().findAll { it.isFile() }
     files.each { file ->
         def originalName = file.getName()
         def newName = "${prefix}${originalName}"
