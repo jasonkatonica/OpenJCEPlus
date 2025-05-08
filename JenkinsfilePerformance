@@ -73,18 +73,16 @@ def getPlatforms() {
 }
 
 def renameFilesInDirectory(String directory, String prefix) {
-    def sourceDirectory = new File(directory)
-    def files = sourceDirectory.listFiles().findAll { it.isFile() }
-    files.each { file ->
-        def originalName = file.getName()
-        def newName = "${prefix}${originalName}"
-        def newFile = new File(directory, newName)
-        if (file.renameTo(newFile)) {
-            echo "File renamed from ${originalName} to ${newName}"
-        } else {
-            echo "Failed to rename file from ${originalName} to ${newName}"
-        }
-    }
+    script """
+    cd ${directory}
+    files=\$(find . -maxdepth 1 -type f -printf "%f\\n")
+    for file in \$files; do
+        if [ -f "\$file" ]; then
+            mv "\$file" "${prefix}\$file"
+            echo "Renamed \file to ${prefix}\$file"
+        fi
+    done
+    """
 }
 
 /*
