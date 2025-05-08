@@ -590,6 +590,7 @@
                     <customPropertiesFiles>
                       <file>${project.basedir}/src/test/jmeter/jmeter.properties</file>
                     </customPropertiesFiles>
+                    <results.jtl.file>${project.build.directory}/jmeter-results/results-${java.arch}.csv</results.jtl.file>
                     <testResultsTimestamp>false</testResultsTimestamp>
                     <propertiesUser>
                         <jmeter.save.saveservice.output_format>csv</jmeter.save.saveservice.output_format>
