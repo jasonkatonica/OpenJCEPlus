@@ -371,6 +371,8 @@ def getSanitizedBranchName() {
  */
 def archive(platform, iteration) {
     
+    renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", "$platform")
+
     // Create compressed file containing build.
     def ending = ".tar.gz"
     def filename = "openjceplus-$iteration-$platform$ending"
@@ -415,7 +417,6 @@ def archive(platform, iteration) {
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
 
-    renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", "$platform")
     perfReport 'openjceplus/OpenJCEPlus/target/jmeter-results/*.csv'
 }
 
