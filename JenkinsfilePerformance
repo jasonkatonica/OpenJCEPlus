@@ -5,6 +5,7 @@
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+library 'PipelineUtilities'
 
 import groovy.json.JsonOutput;
 import groovy.transform.Field;
@@ -357,7 +358,7 @@ def archive(platform, iteration) {
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
 
-    renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", $platform)
+    PipelineUtilities.renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", $platform)
     perfReport 'openjceplus/OpenJCEPlus/target/jmeter-results/*.csv'
 }
 
@@ -603,7 +604,7 @@ pipeline {
 
                         timeout(time: "${TIMEOUT_TIME}".toInteger(), unit: 'HOURS') {
                             // Figure out the platforms to build on.
-                            def platforms = getPlatforms()
+                            def platforms = PipelineUtilities.getPlatforms()
                             assert !((platforms.size() > 1) && (OCK_FULL_URL != "")) : "Cannot specify full OCK URL and multiple platforms."
                              
                              // Check whether the build has to be run multiple times in parallel.
