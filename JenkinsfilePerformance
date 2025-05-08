@@ -73,16 +73,16 @@ def getPlatforms() {
 }
 
 def renameFilesInDirectory(String directory, String prefix) {
-    script """
-    cd ${directory}
-    files=\$(find . -maxdepth 1 -type f -printf "%f\\n")
-    for file in \$files; do
-        if [ -f "\$file" ]; then
-            mv "\$file" "${prefix}\$file"
-            echo "Renamed \file to ${prefix}\$file"
-        fi
-    done
-    """
+    sh """
+       cd ${directory}
+       files=\$(find . -maxdepth 1 -type f -printf "%f\\n")
+       for file in \$files; do
+         if [ -f "\$file" ]; then
+           mv "\$file" "${prefix}\$file"
+           echo "Renamed \file to ${prefix}\$file"
+         fi
+       done
+       """
 }
 
 /*
