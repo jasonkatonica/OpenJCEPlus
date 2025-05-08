@@ -73,6 +73,21 @@ def getPlatforms() {
     return platforms
 }
 
+def renameFilesInDirectory(String directory, String prefix) {
+    def directory = new File(directory)
+    def files = directory.listFiles().findAll { it.isFile() }
+    files.each { file ->
+        def originalName = file.getName()
+        def newName = "${prefix}${originalName}"
+        def newFile = new File(directory, newName)
+        if (file.renameTo(newFile)) {
+            echo "File renamed from ${originalName} to ${newName}"
+        } else {
+            echo "Failed to rename file from ${originalName} to ${newName}"
+        }
+    }
+}
+
 /*
  * Checks whether OpenJCEPlus is buildable on this platform.
  *
@@ -401,6 +416,7 @@ def archive(platform, iteration) {
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
 
+    renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", $platform)
     perfReport 'openjceplus/OpenJCEPlus/target/jmeter-results/*.csv'
 }
 
