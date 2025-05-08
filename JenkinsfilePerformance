@@ -5,6 +5,7 @@
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+@Library('PipelineUtilities') _
 
 import groovy.json.JsonOutput;
 import groovy.transform.Field;
@@ -28,65 +29,6 @@ import groovy.transform.Field;
 @Field OVERRIDE_NODE_LABELS
 @Field ADDITIONAL_ENVARS
 @Field TIMEOUT_TIME
-
-/*
- * Checks the checkboxes to figure out the platforms
- * selected to build OpenJCEPlus on.
- *
- * @return      The platforms to build OpenJCEPlus on
- */
-def getPlatforms() {
-    def platforms = []
-
-    if (PPC64_AIX == "true") {
-        platforms.add("ppc64_aix")
-    }
-
-    if (X86_64_LINUX == "true") {
-        platforms.add("x86-64_linux")
-    }
-
-    if (PPC64LE_LINUX == "true") {
-        platforms.add("ppc64le_linux")
-    }
-
-    if (S390X_LINUX == "true") {
-        platforms.add("s390x_linux")
-    }
-
-    if (X86_64_WINDOWS == "true") {
-        platforms.add("x86-64_windows")
-    }
-
-    if (AARCH64_MAC == "true") {
-        platforms.add("aarch64_mac")
-    }
-
-    if (X86_64_MAC == "true") {
-        platforms.add("x86-64_mac")
-    }
-
-    if (AARCH64_LINUX == "true") {
-        platforms.add("aarch64_linux")
-    }
-
-    return platforms
-}
-
-def renameFilesInDirectory(String directory, String prefix) {
-    def sourceDirectory = new File(directory)
-    def files = sourceDirectory.listFiles().findAll { it.isFile() }
-    files.each { file ->
-        def originalName = file.getName()
-        def newName = "${prefix}${originalName}"
-        def newFile = new File(directory, newName)
-        if (file.renameTo(newFile)) {
-            echo "File renamed from ${originalName} to ${newName}"
-        } else {
-            echo "Failed to rename file from ${originalName} to ${newName}"
-        }
-    }
-}
 
 /*
  * Checks whether OpenJCEPlus is buildable on this platform.
@@ -416,7 +358,7 @@ def archive(platform, iteration) {
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
 
-    renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", $platform)
+    PipelineUtilities.renameFilesInDirectory("openjceplus/OpenJCEPlus/target/jmeter-results", $platform)
     perfReport 'openjceplus/OpenJCEPlus/target/jmeter-results/*.csv'
 }
 
@@ -662,7 +604,7 @@ pipeline {
 
                         timeout(time: "${TIMEOUT_TIME}".toInteger(), unit: 'HOURS') {
                             // Figure out the platforms to build on.
-                            def platforms = getPlatforms()
+                            def platforms = PipelineUtilities.getPlatforms()
                             assert !((platforms.size() > 1) && (OCK_FULL_URL != "")) : "Cannot specify full OCK URL and multiple platforms."
                              
                              // Check whether the build has to be run multiple times in parallel.
