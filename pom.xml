@@ -577,6 +577,7 @@
                       <arguments>
                         <argument>-Djgskit.library.path=${build.target.jgskitlib.dir}</argument>
                         <argument>-Dock.library.path=${ock.library.path}</argument>
+                        <argument>--module-path="${project.build.directory}${file.separator}classes"</argument>
                         <argument>--patch-module="openjceplus=target${file.separator}classes${path.separator}target${file.separator}test-classes"</argument>
                         <argument>--add-exports=java.base/sun.security.util=openjceplus</argument>
                         <argument>--add-exports=java.base/sun.security.x509=openjceplus</argument>
