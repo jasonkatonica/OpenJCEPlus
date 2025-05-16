@@ -32,9 +32,9 @@
             <stringProp name="Argument.desc">Time in seconds to ramp up before collecting data</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
-          <elementProp name="TotalIterations" elementType="Argument">
-            <stringProp name="Argument.name">TotalIterations</stringProp>
-            <stringProp name="Argument.value">50</stringProp>
+          <elementProp name="Duration" elementType="Argument">
+            <stringProp name="Argument.name">Duration</stringProp>
+            <stringProp name="Argument.value">120</stringProp>
             <stringProp name="Argument.desc">Number of iterations for entire benchmark ( each benchmark loops NumberOfLoops )</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
@@ -46,13 +46,15 @@
         </collectionProp>
       </Arguments>
       <hashTree/>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -96,13 +98,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE AES/GCM Encrypt Thread Group" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="SunJCE AES/GCM Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -146,13 +150,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC AES/GCM Encrypt Thread Group" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="BC AES/GCM Encrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -196,13 +202,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group Multithread" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt Thread Group Multithread">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -246,13 +254,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -296,13 +306,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group Multithread" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AES/GCM Encrypt And Decrypt Thread Group Multithread">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -346,13 +358,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test">
         <intProp name="ThreadGroup.num_threads">1</intProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
@@ -396,13 +410,15 @@
         </JavaSampler>
         <hashTree/>
       </hashTree>
-      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test Multithread" enabled="true">
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="OpenJCEPlus AESGCM Large Data Test Multithread">
         <stringProp name="ThreadGroup.num_threads">${NumberOfThreads}</stringProp>
         <stringProp name="ThreadGroup.ramp_time">${RampUpTime}</stringProp>
+        <stringProp name="ThreadGroup.duration">${Duration}</stringProp>
         <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
         <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
         <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller">
-          <stringProp name="LoopController.loops">${TotalIterations}</stringProp>
+          <intProp name="LoopController.loops">-1</intProp>
           <boolProp name="LoopController.continue_forever">false</boolProp>
         </elementProp>
       </ThreadGroup>
