@@ -77,8 +77,9 @@ def renameFilesInDirectory(String directory, String prefix) {
        cd ${directory}
        files=\$(find . -maxdepth 1 -type f | tr '\n' ' ')
        for file in \$files; do
-           mv "\$file" "${prefix}\$file"
-           echo "Renamed \file to ${prefix}\$file"
+           name=\$(basename "\$file")
+           mv "\$file" "${prefix}\$name"
+           echo "Renamed \$file to ${prefix}\$name"
        done
        """
 }
@@ -366,9 +367,7 @@ def getSanitizedBranchName() {
  * @return              The URL to the uploaded file
  */
 def archive(platform, iteration) {
-    dir("openjceplus/OpenJCEPlus") {
-        renameFilesInDirectory("$WORKSPACE/openjceplus/OpenJCEPlus/target/jmeter-results", "$platform")
-    }
+    renameFilesInDirectory("$WORKSPACE/openjceplus/OpenJCEPlus/target/jmeter-results", "$platform")
 
     // Create compressed file containing build.
     def ending = ".tar.gz"
