@@ -367,7 +367,9 @@ def getSanitizedBranchName() {
  * @return              The URL to the uploaded file
  */
 def archive(platform, iteration) {
-    renameFilesInDirectory("$WORKSPACE/openjceplus/OpenJCEPlus/target/jmeter-results", "$platform")
+    dir("openjceplus/OpenJCEPlus/target/jmeter-results") {
+        renameFilesInDirectory(".", "$platform")
+    }
 
     // Create compressed file containing build.
     def ending = ".tar.gz"
