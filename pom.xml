@@ -17,6 +17,8 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
+        <jmh.benchmark.args>ibm.jceplus.jmh.RunAll</jmh.benchmark.args>
+        <jmh.benchmark.skip>false</jmh.benchmark.skip>
     </properties>
         <profiles>
           <profile>
@@ -66,6 +68,7 @@
                 <plugin>
                   <groupId>org.codehaus.mojo</groupId>
                   <artifactId>exec-maven-plugin</artifactId>
+                  <version>3.5.0</version>
                   <executions>
                     <execution>
                       <id>Execute Native Library Build Script</id>
@@ -263,6 +266,52 @@
                     </includes>
                   </configuration>
                 </plugin>
+                <plugin>
+                  <artifactId>maven-antrun-plugin</artifactId>
+                  <version>3.1.0</version>
+                  <executions>
+                      <execution>
+                          <phase>generate-sources</phase>
+                          <configuration>
+                              <target>
+                                  <mkdir dir="${project.build.directory}/jmh-results"/>
+                              </target>
+                          </configuration>
+                          <goals>
+                              <goal>run</goal>
+                          </goals>
+                      </execution>
+                  </executions>
+                </plugin>
+                <plugin>
+                  <groupId>org.codehaus.mojo</groupId>
+                  <artifactId>exec-maven-plugin</artifactId>
+                  <version>3.5.0</version>
+                  <executions>
+                      <execution>
+                        <id>Execute Performance Tests</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>java</goal>
+                        </goals>
+                        <configuration>
+                          <includeProjectDependencies>true</includeProjectDependencies>
+                          <includePluginDependencies>true</includePluginDependencies>
+                          <additionalClasspathElements>
+                            <additionalClasspathElement>${project.build.directory}${file.separator}test-classes</additionalClasspathElement>
+                          </additionalClasspathElements>
+                          <systemProperties>
+                            <systemProperty>
+                              <key>jmh.project.dir</key>
+                              <value>${project.basedir}</value>
+                            </systemProperty>
+                          </systemProperties>
+                          <mainClass>${jmh.benchmark.args}</mainClass>
+                          <skip>${jmh.benchmark.skip}</skip>
+                        </configuration>
+                      </execution>
+                  </executions>
+                </plugin>
               </plugins>
             </build>
           </profile>
@@ -369,11 +418,10 @@
                     <inputEncoding>${style.encoding}</inputEncoding>
                     <consoleOutput>true</consoleOutput>
                     <failsOnError>true</failsOnError>
-                    <includeTestSourceDirectory>true</includeTestSourceDirectory>
                     <excludes>**/module-info.java</excludes>
                     <sourceDirectories>
-                        <sourceDirectory>src</sourceDirectory>
-                        <sourceDirectory>src/native</sourceDirectory>
+                        <sourceDirectory>src/test</sourceDirectory>
+                        <sourceDirectory>src/main</sourceDirectory>
                     </sourceDirectories>
                 </configuration>
                 <executions>
@@ -444,6 +492,13 @@
                         <arg>--add-exports </arg>
                         <arg>java.base/jdk.internal.logger=ALL-UNNAMED</arg>
                     </compilerArgs>
+                    <annotationProcessorPaths>
+                      <path>
+                          <groupId>org.openjdk.jmh</groupId>
+                          <artifactId>jmh-generator-annprocess</artifactId>
+                          <version>1.37</version>
+                      </path>
+                    </annotationProcessorPaths>
                     <fork>true</fork>
                     <debug>true</debug>
                 </configuration>
@@ -718,11 +773,26 @@
           <groupId>org.bouncycastle</groupId>
           <artifactId>bcprov-ext-jdk18on</artifactId>
           <version>1.78.1</version>
-      </dependency>
+        </dependency>
         <dependency>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
             <version>0.8.13</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>1.37</version>
+        </dependency>
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-generator-annprocess</artifactId>
+            <version>1.37</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>3.1.0</version>
         </dependency>
     </dependencies>
     <groupId>crypto</groupId>
