@@ -375,7 +375,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeInterface_DHKEY_1createPrivateKey(
 #endif
         throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
     } else {
-        const unsigned char *pBytes = (unsigned char *)keyBytesNative;
+        const unsigned char *pBytes = (const unsigned char *)keyBytesNative;
         jint size = (*env)->GetArrayLength(env, privateKeyBytes);
 
         ockPKey = ICC_EVP_PKEY_new(ockCtx);
