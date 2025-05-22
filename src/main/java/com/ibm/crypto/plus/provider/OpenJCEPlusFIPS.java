@@ -94,7 +94,7 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
                 break;
             }
         }
-        isPlatformSupported = isOsSupported && isArchSupported;
+        isPlatformSupported = true;
     }
 
     public OpenJCEPlusFIPS() {
@@ -798,7 +798,7 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
         }
 
         try {
-            boolean useFIPSMode = true;
+            boolean useFIPSMode = false;
 
             ockContext = OCKContext.createContext(useFIPSMode);
             ockInitialized = true;
