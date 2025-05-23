@@ -30,7 +30,7 @@ import org.openjdk.jmh.runner.options.Options;
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
-public class SHA256Benchmark  extends OpenJCEPlusBase {
+public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
 
     //@Param({"16"})
     @Param({"16", "2048", "16384"})
