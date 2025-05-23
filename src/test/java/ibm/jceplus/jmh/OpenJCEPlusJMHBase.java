@@ -64,7 +64,7 @@ abstract public class OpenJCEPlusJMHBase {
         if (osName.contains("linux")) {
             optionsBuilder.addProfiler(LinuxPerfProfiler.class);
             optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
-            optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
+            //optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
         } else if (osName.contains("windows")) {
             optionsBuilder.addProfiler(WinPerfAsmProfiler.class);
         }
