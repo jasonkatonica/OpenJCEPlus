@@ -17,7 +17,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.build.timestamp.format>yyyyMMdd</maven.build.timestamp.format>
-        <jmh.benchmark.args>ibm.jceplus.jmh.RunAll</jmh.benchmark.args>
+        <jmh.benchmark>ibm.jceplus.jmh.RunAll</jmh.benchmark>
         <jmh.benchmark.skip>true</jmh.benchmark.skip>
     </properties>
         <profiles>
@@ -314,7 +314,7 @@
                               <value>${build.target.jgskitlib.dir}</value>
                             </systemProperty>
                           </systemProperties>
-                          <mainClass>${jmh.benchmark.args}</mainClass>
+                          <mainClass>${jmh.benchmark}</mainClass>
                           <skip>${jmh.benchmark.skip}</skip>
                         </configuration>
                       </execution>
