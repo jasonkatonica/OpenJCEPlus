@@ -36,6 +36,7 @@ abstract public class OpenJCEPlusJMHBase {
         // Get properties needed to build options.
         String projectHomeDir = System.getProperty("jmh.project.dir");
         String ockLibraryPath = System.getProperty("ock.library.path");
+        String jgskitLibraryPath = System.getProperty("jgskit.library.path");
         System.out.println("Home dir: " + projectHomeDir);
         System.out.println("Regex of classes to run: " + regexClassName);
 
@@ -50,14 +51,12 @@ abstract public class OpenJCEPlusJMHBase {
                 optionsBuilder.addProfiler(GCProfiler.class);
                 optionsBuilder.addProfiler(ClassloaderProfiler.class);
                 optionsBuilder.addProfiler(CompilerProfiler.class);
-                optionsBuilder.jvmArgs(
-                "-Xms1G",
-                "-Xmx1G",
-                "--patch-module",
-                "openjceplus=" + projectHomeDir + "/target/classes",
-                "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
-                "-Dock.library.path=" + ockLibraryPath,
-                "-Djgskit.library.path=" + projectHomeDir + "/target/jgskit-aarch64-mac/");
+                optionsBuilder.jvmArgsPrepend("-Xms1G");
+                optionsBuilder.jvmArgsPrepend("-Xmx1G");
+                optionsBuilder.jvmArgsPrepend("--patch-module","openjceplus=" + projectHomeDir + "/target/classes");
+                optionsBuilder.jvmArgsPrepend("--add-exports=java.base/sun.security.util=ALL-UNNAMED");
+                optionsBuilder.jvmArgsPrepend("-Dock.library.path=" + ockLibraryPath);
+                optionsBuilder.jvmArgsPrepend("-Djgskit.library.path=" + jgskitLibraryPath);
                 optionsBuilder.forks(1);
                 optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
 

@@ -309,6 +309,10 @@
                               <key>ock.library.path</key>
                               <value>${ock.library.path}</value>
                             </systemProperty>
+                            <systemProperty>
+                              <key>jgskit.library.path</key>
+                              <value>${build.target.jgskitlib.dir}</value>
+                            </systemProperty>
                           </systemProperties>
                           <mainClass>${jmh.benchmark.args}</mainClass>
                           <skip>${jmh.benchmark.skip}</skip>
