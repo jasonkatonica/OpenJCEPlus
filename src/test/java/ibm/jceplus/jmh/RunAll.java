@@ -12,7 +12,7 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 
-public class RunAll extends OpenJCEPlusBase {
+public class RunAll extends OpenJCEPlusJMHBase {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = optionsBuild(
