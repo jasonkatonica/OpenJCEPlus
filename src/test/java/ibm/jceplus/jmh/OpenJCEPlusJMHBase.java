@@ -14,11 +14,15 @@ import java.security.Provider;
 import org.openjdk.jmh.profile.ClassloaderProfiler;
 import org.openjdk.jmh.profile.CompilerProfiler;
 import org.openjdk.jmh.profile.GCProfiler;
+import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
+import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
+import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.profile.StackProfiler;
+import org.openjdk.jmh.profile.WinPerfAsmProfiler;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
-abstract public class OpenJCEPlusBase {
+abstract public class OpenJCEPlusJMHBase {
 
     protected static Options optionsBuild(String regexClassName, String logFileRoot) {
         // This is necessary to pass various classpath values to the forked JVM we are about to create.
@@ -34,33 +38,39 @@ abstract public class OpenJCEPlusBase {
         System.out.println("Home dir: " + projectHomeDir);
         System.out.println("Regex of classes to run: " + regexClassName);
 
-        Options opt = new OptionsBuilder()
-                .include(regexClassName)
-                .resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON)
-                .result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json")
-                .addProfiler(StackProfiler.class)
-                .addProfiler(GCProfiler.class)
-                .addProfiler(ClassloaderProfiler.class)
-                .addProfiler(CompilerProfiler.class)
-                .jvmArgs(
+        String osName = System.getProperty("os.name").toLowerCase();
+        System.out.println("OS Name: " + osName);
+
+        OptionsBuilder optionsBuilder = new OptionsBuilder();
+                optionsBuilder.include(regexClassName);
+                optionsBuilder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
+                optionsBuilder.result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json");
+                optionsBuilder.addProfiler(StackProfiler.class);
+                optionsBuilder.addProfiler(GCProfiler.class);
+                optionsBuilder.addProfiler(ClassloaderProfiler.class);
+                optionsBuilder.addProfiler(CompilerProfiler.class);
+                optionsBuilder.jvmArgs(
                 "-Xms1G",
                 "-Xmx1G",
                 "--patch-module",
                 "openjceplus=" + projectHomeDir + "/target/classes",
                 "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
                 "-Dock.library.path=/Users/jasonkatonica/Data/Libraries/gskit/8.9.6/OCK/jgsk_crypto",
-                "-Djgskit.library.path=" + projectHomeDir + "/target/jgskit-aarch64-mac/")
-                .forks(1)
-                .output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt")
-                .build();
-        
+                "-Djgskit.library.path=" + projectHomeDir + "/target/jgskit-aarch64-mac/");
+                optionsBuilder.forks(1);
+                optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
+
+        if (osName.contains("linux")) {
+            optionsBuilder.addProfiler(LinuxPerfProfiler.class);
+            optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
+            optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
+        } else if (osName.contains("windows")) {
+            optionsBuilder.addProfiler(WinPerfAsmProfiler.class);
+        }
+
         //Add these conditionally based on os and arch:
-        //.addProfiler(LinuxPerfProfiler.class)
-        //.addProfiler(LinuxPerfNormProfiler.class)
-        //.addProfiler(LinuxPerfAsmProfiler.class)
-        //.addProfiler(WinPerfAsmProfiler.class)
         //.addProfiler(DTraceAsmProfiler.class)
-        return opt;
+        return optionsBuilder.build();
     }
 
     protected void insertProvider(String provider) throws Exception {
