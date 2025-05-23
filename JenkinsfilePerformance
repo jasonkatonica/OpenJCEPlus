@@ -26,7 +26,6 @@ import groovy.transform.Field;
 @Field BENCHMARK
 @Field ADDITIONAL_NODE_LABELS
 @Field OVERRIDE_NODE_LABELS
-@Field ADDITIONAL_ENVARS
 @Field TIMEOUT_TIME
 
 /*
@@ -273,14 +272,6 @@ def runOpenJCEPlus(command, software) {
         def additional_exports = ""
         if (software == "aix") {
             additional_exports = "export LIBPATH=$WORKSPACE/openjceplus/OCK/:$WORKSPACE/openjceplus/OCK/jgsk_sdk;"
-        }
-
-        def additional_envars = ADDITIONAL_ENVARS
-        if (additional_envars != "") {
-            for (envar in additional_envars.split(",")) {
-                additional_exports += " export ${envar.trim()};"
-            }
-            
         }
 
         def java_home = "export JAVA_HOME=$WORKSPACE/java/jdk;"
@@ -625,11 +616,6 @@ pipeline {
             These labels will be added to the automatically generated ones, pertaining to platform specified.')
         string(name: 'OVERRIDE_NODE_LABELS', defaultValue: '', description: '\
             The labels specified will override any other labels chosen and will be the only ones utilized.')
-        string(name: 'ADDITIONAL_ENVARS', defaultValue: '', description: '\
-            Additional environment variables that one might want to add to the existing ones.<br> \
-            Specify them in comma-separated pairs of name and value (e.g. ENVAR1=value1, ENVAR2=value2, ...).<br><br> \
-            Beware of what you add as it might be overriding existing environment variables.<br> \
-            NOTE: those will be added to all selected platforms.')
         string(name: 'TIMEOUT_TIME', defaultValue: '6', description: '\
             Overall build timeout (HOURS)')
     }
@@ -661,7 +647,6 @@ pipeline {
                         BENCHMARK="${params.BENCHMARK}"
                         ADDITIONAL_NODE_LABELS="${params.ADDITIONAL_NODE_LABELS}"
                         OVERRIDE_NODE_LABELS="${params.OVERRIDE_NODE_LABELS}"
-                        ADDITIONAL_ENVARS="${params.ADDITIONAL_ENVARS}"
                         TIMEOUT_TIME="${params.TIMEOUT_TIME}"
 
                         timeout(time: "${TIMEOUT_TIME}".toInteger(), unit: 'HOURS') {
