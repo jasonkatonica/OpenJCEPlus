@@ -36,8 +36,8 @@ abstract public class OpenJCEPlusBase {
 
         Options opt = new OptionsBuilder()
                 .include(regexClassName)
-                .resultFormat(org.openjdk.jmh.results.format.ResultFormatType.CSV)
-                .result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".csv")
+                .resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON)
+                .result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json")
                 .addProfiler(StackProfiler.class)
                 .addProfiler(GCProfiler.class)
                 .addProfiler(ClassloaderProfiler.class)
