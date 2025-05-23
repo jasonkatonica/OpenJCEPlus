@@ -375,7 +375,7 @@ def archive(platform, iteration) {
 
     // Create compressed file containing build.
     def ending = ".tar.gz"
-    def filename = "openjceplus-$iteration-$platform$ending"
+    def filename = "openjceplus-performance-$iteration-$platform$ending"
     dir("openjceplus/OpenJCEPlus") {
         tar archive: false, compress: true, defaultExcludes: false, dir: '', exclude: '', file: "$filename", glob: '', overwrite: false
     }
