@@ -67,7 +67,6 @@ public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = SHA256Benchmark.class.getSimpleName();
-        System.out.println("Running Benchmark: " + testSimpleName);
         Options opt = optionsBuild(
             testSimpleName,
             testSimpleName);
