@@ -40,21 +40,22 @@ abstract public class OpenJCEPlusJMHBase {
         System.out.println("OS Name: " + osName);
 
         OptionsBuilder optionsBuilder = new OptionsBuilder();
-        optionsBuilder.include(regexClassName);
-        optionsBuilder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
-        optionsBuilder.result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json");
-        optionsBuilder.addProfiler(StackProfiler.class);
-        optionsBuilder.addProfiler(GCProfiler.class);
-        optionsBuilder.addProfiler(ClassloaderProfiler.class);
-        optionsBuilder.addProfiler(CompilerProfiler.class);
-        optionsBuilder.jvmArgsPrepend("-Xms1G");
-        optionsBuilder.jvmArgsPrepend("-Xmx1G");
-        optionsBuilder.jvmArgsPrepend("--patch-module", "openjceplus=" + projectHomeDir + "/target/classes");
-        optionsBuilder.jvmArgsPrepend("--add-exports=java.base/sun.security.util=ALL-UNNAMED");
-        optionsBuilder.jvmArgsPrepend("-Dock.library.path=" + ockLibraryPath);
-        optionsBuilder.jvmArgsPrepend("-Djgskit.library.path=" + jgskitLibraryPath);
-        optionsBuilder.forks(1);
-        optionsBuilder.output(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".txt");
+                optionsBuilder.include(regexClassName);
+                optionsBuilder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
+                optionsBuilder.result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json");
+                optionsBuilder.addProfiler(StackProfiler.class);
+                optionsBuilder.addProfiler(GCProfiler.class);
+                optionsBuilder.addProfiler(ClassloaderProfiler.class);
+                optionsBuilder.addProfiler(CompilerProfiler.class);
+                optionsBuilder.jvmArgsAppend("-Xms1G",
+                "-Xmx1G",
+                "--patch-module",
+                "openjceplus=" + projectHomeDir + "/target/classes",
+                "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
+                "-Dock.library.path=" + ockLibraryPath,
+                "-Djgskit.library.path=" + projectHomeDir + "/target/jgskit-aarch64-mac/");
+                optionsBuilder.forks(1);
+                optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
 
         //TODO Most Jenkins systems dont seem to work with this. Must be admin.
         /*
