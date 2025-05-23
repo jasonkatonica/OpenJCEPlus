@@ -491,7 +491,7 @@ def run(platform) {
                     echo "Maven fetched"
                     cloneOpenJCEPlus()
                     echo "OpenJCEPlus cloned"
-                    def command = "-DskipTests -Djmh.benchmark.skip=false"
+                    def command = "clean install -DskipTests -Djmh.benchmark.skip=false"
                     runOpenJCEPlus(command, software)
                     echo "OpenJCEPlus built"
                 } finally {
