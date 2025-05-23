@@ -61,9 +61,9 @@ abstract public class OpenJCEPlusJMHBase {
                 optionsBuilder.forks(1);
                 optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
 
+        //TODO Most systems dont seem to work with this. Must be admin.
         if (osName.contains("linux")) {
-            //TODO Disable `LinuxPerfProfiler` on s390x since it does not work???
-            optionsBuilder.addProfiler(LinuxPerfProfiler.class);
+            //optionsBuilder.addProfiler(LinuxPerfProfiler.class);
             //optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
             //optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
         } else if (osName.contains("windows")) {
