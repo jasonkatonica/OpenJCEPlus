@@ -60,14 +60,16 @@ abstract public class OpenJCEPlusJMHBase {
                 optionsBuilder.forks(1);
                 optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
 
-        //TODO Most systems dont seem to work with this. Must be admin.
+        //TODO Most Jenkins systems dont seem to work with this. Must be admin.
+        /*
         if (osName.contains("linux")) {
-            //optionsBuilder.addProfiler(LinuxPerfProfiler.class);
-            //optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
-            //optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
+            optionsBuilder.addProfiler(LinuxPerfProfiler.class);
+            optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
+            optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
         } else if (osName.contains("windows")) {
-            //optionsBuilder.addProfiler(WinPerfAsmProfiler.class);
+            optionsBuilder.addProfiler(WinPerfAsmProfiler.class);
         }
+        */
 
         //Add these conditionally based on os and arch:
         //.addProfiler(DTraceAsmProfiler.class)
