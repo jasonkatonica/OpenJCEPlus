@@ -491,7 +491,7 @@ def run(platform) {
                     echo "Maven fetched"
                     cloneOpenJCEPlus()
                     echo "OpenJCEPlus cloned"
-                    def command = "clean install -DskipTests -Djmh.benchmark.skip=false"
+                    def command = "clean install -DskipTests -Djmh.benchmark.skip=false -Djmh.benchmark=" + BENCHMARK
                     runOpenJCEPlus(command, software)
                     echo "OpenJCEPlus built"
                 } finally {
@@ -602,6 +602,8 @@ pipeline {
         )
         string(name: 'PARALLEL_ITERATIONS', defaultValue: '', description: '\
             Number of iterations to run all stages for each of the specified platforms. The iterations will run in parallel.')
+        choice(name: 'BENCHMARK', choices: ['ibm.jceplus.jmh.RunAll', 'ibm.jceplus.jmh.SHA256Benchmark'], description: '\
+            Specify the performance benchmark you would like to run.')
         separator(name: "ExtendedOptions", sectionHeader: "Extended Options",
             separatorStyle: "border-width: 0",
             sectionHeaderStyle: """
@@ -655,6 +657,7 @@ pipeline {
                         OCK_RELEASE="${params.OCK_RELEASE}"
                         OCK_FULL_URL="${params.OCK_FULL_URL}"
                         PARALLEL_ITERATIONS="${params.PARALLEL_ITERATIONS}"
+                        BENCHMARK="${params.BENCHMARK}"
                         ADDITIONAL_NODE_LABELS="${params.ADDITIONAL_NODE_LABELS}"
                         OVERRIDE_NODE_LABELS="${params.OVERRIDE_NODE_LABELS}"
                         ADDITIONAL_ENVARS="${params.ADDITIONAL_ENVARS}"
