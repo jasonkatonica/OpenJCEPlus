@@ -14,11 +14,7 @@ import java.security.Provider;
 import org.openjdk.jmh.profile.ClassloaderProfiler;
 import org.openjdk.jmh.profile.CompilerProfiler;
 import org.openjdk.jmh.profile.GCProfiler;
-import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
-import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
-import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.profile.StackProfiler;
-import org.openjdk.jmh.profile.WinPerfAsmProfiler;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
 
@@ -28,7 +24,7 @@ abstract public class OpenJCEPlusJMHBase {
         // This is necessary to pass various classpath values to the forked JVM we are about to create.
         URLClassLoader classLoader = (URLClassLoader) SHA256Benchmark.class.getClassLoader();
         StringBuilder classpath = new StringBuilder();
-        for(URL url : classLoader.getURLs()) {
+        for (URL url : classLoader.getURLs()) {
             classpath.append(url.getPath()).append(File.pathSeparator);
         }
         System.setProperty("java.class.path", classpath.toString());
@@ -44,21 +40,21 @@ abstract public class OpenJCEPlusJMHBase {
         System.out.println("OS Name: " + osName);
 
         OptionsBuilder optionsBuilder = new OptionsBuilder();
-                optionsBuilder.include(regexClassName);
-                optionsBuilder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
-                optionsBuilder.result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json");
-                optionsBuilder.addProfiler(StackProfiler.class);
-                optionsBuilder.addProfiler(GCProfiler.class);
-                optionsBuilder.addProfiler(ClassloaderProfiler.class);
-                optionsBuilder.addProfiler(CompilerProfiler.class);
-                optionsBuilder.jvmArgsPrepend("-Xms1G");
-                optionsBuilder.jvmArgsPrepend("-Xmx1G");
-                optionsBuilder.jvmArgsPrepend("--patch-module","openjceplus=" + projectHomeDir + "/target/classes");
-                optionsBuilder.jvmArgsPrepend("--add-exports=java.base/sun.security.util=ALL-UNNAMED");
-                optionsBuilder.jvmArgsPrepend("-Dock.library.path=" + ockLibraryPath);
-                optionsBuilder.jvmArgsPrepend("-Djgskit.library.path=" + jgskitLibraryPath);
-                optionsBuilder.forks(1);
-                optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
+        optionsBuilder.include(regexClassName);
+        optionsBuilder.resultFormat(org.openjdk.jmh.results.format.ResultFormatType.JSON);
+        optionsBuilder.result(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".json");
+        optionsBuilder.addProfiler(StackProfiler.class);
+        optionsBuilder.addProfiler(GCProfiler.class);
+        optionsBuilder.addProfiler(ClassloaderProfiler.class);
+        optionsBuilder.addProfiler(CompilerProfiler.class);
+        optionsBuilder.jvmArgsPrepend("-Xms1G");
+        optionsBuilder.jvmArgsPrepend("-Xmx1G");
+        optionsBuilder.jvmArgsPrepend("--patch-module", "openjceplus=" + projectHomeDir + "/target/classes");
+        optionsBuilder.jvmArgsPrepend("--add-exports=java.base/sun.security.util=ALL-UNNAMED");
+        optionsBuilder.jvmArgsPrepend("-Dock.library.path=" + ockLibraryPath);
+        optionsBuilder.jvmArgsPrepend("-Djgskit.library.path=" + jgskitLibraryPath);
+        optionsBuilder.forks(1);
+        optionsBuilder.output(projectHomeDir + "/target/jmh-results/" + logFileRoot + ".txt");
 
         //TODO Most Jenkins systems dont seem to work with this. Must be admin.
         /*
