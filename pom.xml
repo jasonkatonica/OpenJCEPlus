@@ -305,6 +305,10 @@
                               <key>jmh.project.dir</key>
                               <value>${project.basedir}</value>
                             </systemProperty>
+                            <systemProperty>
+                              <key>ock.library.path</key>
+                              <value>${ock.library.path}</value>
+                            </systemProperty>
                           </systemProperties>
                           <mainClass>${jmh.benchmark.args}</mainClass>
                           <skip>${jmh.benchmark.skip}</skip>

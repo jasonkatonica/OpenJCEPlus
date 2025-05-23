@@ -35,6 +35,7 @@ abstract public class OpenJCEPlusJMHBase {
 
         // Get properties needed to build options.
         String projectHomeDir = System.getProperty("jmh.project.dir");
+        String ockLibraryPath = System.getProperty("ock.library.path");
         System.out.println("Home dir: " + projectHomeDir);
         System.out.println("Regex of classes to run: " + regexClassName);
 
@@ -55,7 +56,7 @@ abstract public class OpenJCEPlusJMHBase {
                 "--patch-module",
                 "openjceplus=" + projectHomeDir + "/target/classes",
                 "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
-                "-Dock.library.path=/Users/jasonkatonica/Data/Libraries/gskit/8.9.6/OCK/jgsk_crypto",
+                "-Dock.library.path=" + ockLibraryPath,
                 "-Djgskit.library.path=" + projectHomeDir + "/target/jgskit-aarch64-mac/");
                 optionsBuilder.forks(1);
                 optionsBuilder.output(projectHomeDir + "/target/jmh-results/"+ logFileRoot + ".txt");
