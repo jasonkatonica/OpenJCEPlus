@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023, 2025
+ * Copyright IBM Corp. 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -30,15 +30,16 @@ import org.openjdk.jmh.runner.options.Options;
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
-public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
+public class MessageDigestBenchmark  extends OpenJCEPlusJMHBase {
 
-    //@Param({"16"})
     @Param({"16", "2048", "16384"})
     private int payload;
 
     @Param({"OpenJCEPlus", "SUN"})
-    //@Param({"OpenJCEPlus"})
     private String provider;
+
+    @Param({"SHA-512", "SHA-256", "MD5", "SHA1"})
+    private String algorithm;
 
     private byte[] data;
     private MessageDigest messageDigest;
@@ -51,22 +52,22 @@ public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
         }
-        messageDigest = MessageDigest.getInstance("SHA-256", provider);
+        messageDigest = MessageDigest.getInstance(algorithm, provider);
     }
 
     @Benchmark
-    public byte[] sha256UpdateDigestBenchmark() {
+    public byte[] updateDigest() {
         messageDigest.update(data);
         return messageDigest.digest();
     }
 
     @Benchmark
-    public byte[] sha256SingleShotBenchmark(Blackhole blackhole) {
+    public byte[] singleShotDigest(Blackhole blackhole) {
         return messageDigest.digest(data);
     }
 
     public static void main(String[] args) throws RunnerException {
-        String testSimpleName = SHA256Benchmark.class.getSimpleName();
+        String testSimpleName = MessageDigestBenchmark.class.getSimpleName();
         Options opt = optionsBuild(
             testSimpleName,
             testSimpleName);

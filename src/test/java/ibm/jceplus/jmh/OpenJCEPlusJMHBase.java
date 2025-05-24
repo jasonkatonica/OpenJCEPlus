@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023, 2025
+ * Copyright IBM Corp. 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -22,7 +22,7 @@ abstract public class OpenJCEPlusJMHBase {
 
     protected static Options optionsBuild(String regexClassName, String logFileRoot) {
         // This is necessary to pass various classpath values to the forked JVM we are about to create.
-        URLClassLoader classLoader = (URLClassLoader) SHA256Benchmark.class.getClassLoader();
+        URLClassLoader classLoader = (URLClassLoader) RunAll.class.getClassLoader();
         StringBuilder classpath = new StringBuilder();
         for (URL url : classLoader.getURLs()) {
             classpath.append(url.getPath()).append(File.pathSeparator);
