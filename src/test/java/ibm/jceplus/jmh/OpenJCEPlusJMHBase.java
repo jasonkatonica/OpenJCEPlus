@@ -33,10 +33,10 @@ abstract public class OpenJCEPlusJMHBase {
         String projectHomeDir = System.getProperty("jmh.project.dir");
         String ockLibraryPath = System.getProperty("ock.library.path");
         String jgskitLibraryPath = System.getProperty("jgskit.library.path");
-        System.out.println("Home dir: " + projectHomeDir);
-        System.out.println("Regex of classes to run: " + regexClassName);
-
         String osName = System.getProperty("os.name").toLowerCase();
+        System.out.println("Home dir: " + projectHomeDir);
+        System.out.println("JGSkit Library Path: " + jgskitLibraryPath);
+        System.out.println("Regex of classes to run: " + regexClassName);
         System.out.println("OS Name: " + osName);
 
         OptionsBuilder optionsBuilder = new OptionsBuilder();
