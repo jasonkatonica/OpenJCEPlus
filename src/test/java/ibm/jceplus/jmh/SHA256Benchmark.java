@@ -34,7 +34,7 @@ public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
 
     //@Param({"16"})
     @Param({"16", "2048", "16384"})
-    private int length;
+    private int payload;
 
     @Param({"OpenJCEPlus", "SUN"})
     //@Param({"OpenJCEPlus"})
@@ -47,7 +47,7 @@ public class SHA256Benchmark  extends OpenJCEPlusJMHBase {
     public void setup() throws Exception {
         insertProvider(provider);
 
-        data = new byte[length];
+        data = new byte[payload];
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
         }
