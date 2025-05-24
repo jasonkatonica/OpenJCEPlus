@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023, 2025
+ * Copyright IBM Corp. 2025
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -16,7 +16,7 @@ public class RunAll extends OpenJCEPlusJMHBase {
 
     public static void main(String[] args) throws RunnerException {
         Options opt = optionsBuild(
-            "Benchmark",
+            "Benchmark", // Run all classes that have the word "Benchmark" in their name.
             RunAll.class.getSimpleName());
         new Runner(opt).run();
     }
