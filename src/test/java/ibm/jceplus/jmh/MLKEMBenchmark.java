@@ -8,8 +8,11 @@
 
 package ibm.jceplus.jmh;
 
-import java.security.MessageDigest;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.util.concurrent.TimeUnit;
+import javax.crypto.KEM;
+import javax.crypto.SecretKey;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Measurement;
@@ -29,44 +32,54 @@ import org.openjdk.jmh.runner.options.Options;
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
-public class MessageDigestBenchmark  extends OpenJCEPlusJMHBase {
+public class MLKEMBenchmark extends OpenJCEPlusJMHBase {
 
-    @Param({"16", "2048", "16384"})
-    private int payload;
-
-    @Param({"OpenJCEPlus", "SUN"})
-    private String provider;
-
-    @Param({"SHA-512", "SHA-256", "MD5", "SHA1"})
+    @Param({"ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"})
     private String algorithm;
 
-    private byte[] data;
-    private MessageDigest messageDigest;
+    @Param({"OpenJCEPlus", "SunJCE"})
+    private String provider;
+
+    private KEM pqcKEM;
+    private KeyPair keyPair;
+    private KeyPairGenerator pqcKeyPairGen;
+    private KEM.Encapsulator encr;
+    private KEM.Encapsulated enc;
+    private KEM.Decapsulator decr;
 
     @Setup
     public void setup() throws Exception {
         insertProvider(provider);
 
-        data = new byte[payload];
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (byte) i;
-        }
-        messageDigest = MessageDigest.getInstance(algorithm, provider);
+        pqcKEM = KEM.getInstance(algorithm, provider);
+        pqcKeyPairGen = KeyPairGenerator.getInstance(algorithm, provider);
+        keyPair = pqcKeyPairGen.generateKeyPair();
+        keyPair.getPublic();
+        keyPair.getPrivate();
+        encr = pqcKEM.newEncapsulator(keyPair.getPublic());
+        enc = encr.encapsulate(0,31,"AES");
+        decr = pqcKEM.newDecapsulator(keyPair.getPrivate());
     }
 
     @Benchmark
-    public byte[] updateDigest() {
-        messageDigest.update(data);
-        return messageDigest.digest();
+    public SecretKey encapsulation() throws Exception {
+        enc = encr.encapsulate(0,31,"AES");
+        return enc.key();
     }
 
     @Benchmark
-    public byte[] singleShotDigest() {
-        return messageDigest.digest(data);
+    public SecretKey decapsulation() throws Exception {
+        return decr.decapsulate(enc.encapsulation(),0,31,"AES");
+    }
+
+    @Benchmark
+    public SecretKey encapsulationAndDecapsulation() throws Exception {
+        enc = encr.encapsulate(0,31,"AES");
+        return decr.decapsulate(enc.encapsulation(),0,31,"AES");
     }
 
     public static void main(String[] args) throws RunnerException {
-        String testSimpleName = MessageDigestBenchmark.class.getSimpleName();
+        String testSimpleName = MLKEMBenchmark.class.getSimpleName();
         Options opt = optionsBuild(
             testSimpleName,
             testSimpleName);
