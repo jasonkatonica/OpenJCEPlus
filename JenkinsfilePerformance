@@ -73,20 +73,6 @@ def getPlatforms() {
 }
 
 /*
-def renameFilesInDirectory(String directory, String prefix) {
-    sh """
-       cd ${directory}
-       files=\$(find . -type f | tr '\n' ' ')
-       for file in \$files; do
-           name=\$(basename "\$file")
-           mv "\$file" "${prefix}\$name"
-           echo "Renamed \$file to ${prefix}\$name"
-       done
-       """
-}
-*/
-
-/*
  * Checks whether OpenJCEPlus is buildable on this platform.
  *
  * @return  Whether OpenJCEPlus is buildable on the platform
@@ -150,7 +136,7 @@ def getOCKTarget(hardware, software) {
  */
 def getBinaries(hardware, software) {
     if (OCK_RELEASE == "") {
-        OCK_RELEASE = "20240521_8.9.6"
+        OCK_RELEASE = "20250522_8.9.11"
     }
     def target = getOCKTarget(hardware, software)
     def gskit_bin = "https://na.artifactory.swg-devops.com/artifactory/sec-gskit-javasec-generic-local/gskit8/$OCK_RELEASE/$target/jgsk_crypto.tar"
@@ -192,41 +178,44 @@ def getBinaries(hardware, software) {
  */
 def getJava(hardware, software) {
     def extension = "tar.gz"
-    if (software == "windows") {
-        extension = "zip"
-    }
 
     if (hardware == "x86-64") {
         hardware = "x64"
     }
 
     def java_link = ""
+
     if (JAVA_RELEASE == "") {
-        java_link = "https://api.adoptopenjdk.net/v3/binary/latest/${JAVA_VERSION}/ga/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
-    } else {
-        def java_release_link = JAVA_RELEASE.replace("+", "%2B")
-        java_link = "https://api.adoptopenjdk.net/v3/binary/version/${java_release_link}/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
-    }
-    
+            if (software == "windows") {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-x86-64_windows-20250531-000422.tar.gz"
+            } else if ((software == "linux") && (hardware == "aarch64")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-aarch64_linux-20250531-035208.tar.gz"
+            } else if ((software == "linux") && (hardware == "ppc64le")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-ppc64le_linux-20250531-032314.tar.gz"
+            } else if ((software == "linux") && (hardware == "x64")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-x86-64_linux-20250531-032515.tar.gz"
+            } else if ((software == "linux") && (hardware == "s390x")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-s390x_linux-20250531-031249.tar.gz"
+            } else if ((software == "mac") && (hardware == "aarch64")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-aarch64_mac-20250531-132316.tar.gz"
+            } else if ((software == "mac") && (hardware == "x64")) {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-x86-64_mac-20250531-005554.tar.gz"
+            } else if (software == "aix") {
+                java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/openjceplusworkaround060225/OpenJ9-JDKnext-ppc64_aix-20250531-041857.tar.gz"
+            } else {
+                echo "No Java SDK downloaded!!!"
+            }
+        }
+
     dir("java") {
-        sh "curl -LJkO ${java_link}"
+        sh "curl -u $GSKIT_USERNAME:$GSKIT_PASSWORD ${java_link} > java.tar.gz"
         def java_file = sh (
             script: 'ls | grep \'tar\\|zip\'',
             returnStdout: true
         ).trim()
 
-        if (software == "windows") {
-            unzip zipFile: "$java_file"
-        } else {
-            untar file: "$java_file"
-        }
+        untar file: "$java_file"
         sh "rm $java_file"
-
-        def java_folder = sh (
-            script: "ls | grep \'jdk-${JAVA_VERSION}\'",
-            returnStdout: true
-        ).trim()
-        fileOperations([folderRenameOperation(destination: 'jdk', source: "$java_folder")])
 
         // AIX always loads the bundled version of native libraries. We delete them to
         // ensure that the one provided by the user is utilized.
@@ -293,17 +282,11 @@ def runOpenJCEPlus(command, software) {
                $WORKSPACE\\apache-maven-3.9.9\\bin\\mvn -Dock.library.path=${ock_path} --batch-mode ${command}
                """
         } else if (software == "mac") {
-            java_home = "export JAVA_HOME=$WORKSPACE/java/jdk/Contents/Home;"
+            java_home = "export JAVA_HOME=$WORKSPACE/java/jdk;"
         }
 
         if (software != "windows") {
-            sh """
-               ${java_home}
-               ${gskit_home}
-               ${additional_exports}
-               ${environment}
-               mvn '-Dock.library.path=${ock_path}' --batch-mode ${command}
-               """
+            sh "${java_home} ${gskit_home} ${additional_exports} ${environment} mvn '-Dock.library.path=${ock_path}' --batch-mode ${command}"
         }
     }
 }
@@ -361,10 +344,7 @@ def getSanitizedBranchName() {
  * @return              The URL to the uploaded file
  */
 def archive(platform, iteration) {
-//    dir("openjceplus/OpenJCEPlus/target/jmeter-results") {
-//        renameFilesInDirectory(".", "$platform")
-//    }
-
+    
     // Create compressed file containing build.
     def ending = ".tar.gz"
     def filename = "openjceplus-performance-$iteration-$platform$ending"
@@ -408,8 +388,6 @@ def archive(platform, iteration) {
 
     // Add it to the description for quick access.
     currentBuild.description += "<br><a href=$fileUrl>$filename</a>"
-
-    //perfReport 'openjceplus/OpenJCEPlus/target/jmeter-results/*.csv'
 }
 
 /*
@@ -452,10 +430,8 @@ def run(platform) {
 
             // Some OSes have some further specific requirements.
             if (software == "aix") {
-                // Timing issue with some machines.
-                // TODO: Remove this when issue https://github.ibm.com/runtimes/infrastructure/issues/7198 is resolved.
-                nodeTags += "&&!ci.role.build.release"
-                nodeTags += "&&ci.role.build"
+                // Issue with updating the tooling. C++17.1
+                nodeTags += "&&sw.tool.c++runtime.17_1"
             }
 
             // Machines tagged as ci.role.test are expected to have
@@ -475,7 +451,9 @@ def run(platform) {
 
             node("$nodeTags") {
                 try {
-                    getJava(hardware, software)
+                    withCredentials([usernamePassword(credentialsId: '7c1c2c28-650f-49e0-afd1-ca6b60479546', passwordVariable: 'GSKIT_PASSWORD', usernameVariable: 'GSKIT_USERNAME')]) {
+                        getJava(hardware, software)
+                    }
                     echo "Java fetched"
                     getBinaries(hardware, software)
                     echo "Binaries fetched"
@@ -524,21 +502,21 @@ pipeline {
                 font-style: italic;
             """
         )
-        booleanParam(name: 'ppc64_aix', defaultValue: true, description: '\
+        booleanParam(name: 'ppc64_aix', defaultValue: false, description: '\
             Build for ppc64_aix platform')
-        booleanParam(name: 'x86_64_linux', defaultValue: true, description: '\
+        booleanParam(name: 'x86_64_linux', defaultValue: false, description: '\
             Build for x86-64_linux platform')
-        booleanParam(name: 'ppc64le_linux', defaultValue: true, description: '\
+        booleanParam(name: 'ppc64le_linux', defaultValue: false, description: '\
             Build for ppc64le_linux platform')
-        booleanParam(name: 's390x_linux', defaultValue: true, description: '\
+        booleanParam(name: 's390x_linux', defaultValue: false, description: '\
             Build for s390x_linux platform')
-        booleanParam(name: 'x86_64_windows', defaultValue: true, description: '\
+        booleanParam(name: 'x86_64_windows', defaultValue: false, description: '\
             Build for x86-64_windows platform')
-        booleanParam(name: 'aarch64_mac', defaultValue: true, description: '\
+        booleanParam(name: 'aarch64_mac', defaultValue: false, description: '\
             Build for aarch64_mac platform')
-        booleanParam(name: 'x86_64_mac', defaultValue: true, description: '\
+        booleanParam(name: 'x86_64_mac', defaultValue: false, description: '\
             Build for x86-64_mac platform')
-        booleanParam(name: 'aarch64_linux', defaultValue: true, description: '\
+        booleanParam(name: 'aarch64_linux', defaultValue: false, description: '\
             Build for aarch64_linux platform')
         separator(name: "BuildAndTestPlatforms", sectionHeader: "Build And Test Options",
             separatorStyle: "border-width: 0",
@@ -560,7 +538,7 @@ pipeline {
             Typically this will use https://github.com/IBM/OpenJCEPlus')
         string(name: 'OPENJCEPLUS_BRANCH', defaultValue: '', description: '\
             The OpenJCEPlus branch to be used. When not specified this will default to the branch scanned by this multibranch pipeline.')
-        choice(name: 'JAVA_VERSION', choices: ['23', '22', '21', '17', '11'], description: '\
+        choice(name: 'JAVA_VERSION', choices: ['25', '24', '23', '22', '21', '17', '11'], description: '\
             Specify the Java version your branch uses to build.')
         string(name: 'JAVA_RELEASE', defaultValue: '', description: '\
             Indicate a specific Java release that you want to use to build your branch.<br> \
