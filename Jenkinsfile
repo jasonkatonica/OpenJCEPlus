@@ -649,7 +649,7 @@ pipeline {
             Specify them in comma-separated pairs of name and value (e.g. ENVAR1=value1, ENVAR2=value2, ...).<br><br> \
             Beware of what you add as it might be overriding existing environment variables.<br> \
             NOTE: those will be added to all selected platforms.')
-        string(name: 'TIMEOUT_TIME', defaultValue: '6', description: '\
+        string(name: 'TIMEOUT_TIME', defaultValue: '48', description: '\
             Overall build timeout (HOURS)')
     }
 
