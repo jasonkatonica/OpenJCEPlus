@@ -50,6 +50,7 @@ abstract public class OpenJCEPlusJMHBase {
         optionsBuilder.jvmArgsAppend("-Xms1G", "-Xmx1G", "--patch-module",
                 "openjceplus=" + projectHomeDir + "/target/classes",
                 "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
+                "--add-exports=java.base/sun.security.pkcs=openjceplus",
                 "-Dock.library.path=" + ockLibraryPath,
                 "-Djgskit.library.path=" + jgskitLibraryPath);
         optionsBuilder.forks(1);
