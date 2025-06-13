@@ -39,61 +39,113 @@ public class MLDSABenchmark  extends OpenJCEPlusJMHBase {
     @Param({"OpenJCEPlus", "SUN"})
     private String provider;
 
-    @Param({"ML-DSA-44", "ML-DSA-65", "ML-DSA-87"})
-    private String pqcParameterSet;
-    
-    private KeyPairGenerator keyPairGenerator;
-    private Signature signatureInstance;
-    private Signature verifierInstance;
-    private KeyPair keyPair;
-    private byte[] signature;
+    private KeyPairGenerator mldsa44KeyPairGenerator;
+    private KeyPairGenerator mldsa65KeyPairGenerator;
+    private KeyPairGenerator mldsa87KeyPairGenerator;
+    private Signature mldsa44SignatureInstance;
+    private Signature mldsa65SignatureInstance;
+    private Signature mldsa87SignatureInstance;
+    private Signature mldsa44VerifierInstance;
+    private Signature mldsa65VerifierInstance;
+    private Signature mldsa87VerifierInstance;
+    private KeyPair mldsa44keyPair;
+    private KeyPair mldsa65keyPair;
+    private KeyPair mldsa87keyPair;
+    private byte[] mldsa44signature;
+    private byte[] mldsa65signature;
+    private byte[] mldsa87signature;
     private byte[] message;
 
     @Setup
     public void setup() throws Exception {
         insertProvider(provider);
 
-        keyPairGenerator = KeyPairGenerator.getInstance(pqcParameterSet, provider);
-        signatureInstance = Signature.getInstance(pqcParameterSet, provider);
-        verifierInstance = Signature.getInstance(pqcParameterSet, provider);
+        mldsa44KeyPairGenerator = KeyPairGenerator.getInstance("ML-DSA-44", provider);
+        mldsa65KeyPairGenerator = KeyPairGenerator.getInstance("ML-DSA-65", provider);
+        mldsa87KeyPairGenerator = KeyPairGenerator.getInstance("ML-DSA-87", provider);
 
-        keyPair = keyPairGenerator.generateKeyPair();
-        signatureInstance.initSign(keyPair.getPrivate());
+        mldsa44SignatureInstance = Signature.getInstance("ML-DSA-44", provider);
+        mldsa65SignatureInstance = Signature.getInstance("ML-DSA-65", provider);
+        mldsa87SignatureInstance = Signature.getInstance("ML-DSA-87", provider);
+
+        mldsa44VerifierInstance = Signature.getInstance("ML-DSA-44", provider);
+        mldsa65VerifierInstance = Signature.getInstance("ML-DSA-65", provider);
+        mldsa87VerifierInstance = Signature.getInstance("ML-DSA-87", provider);
+
+        mldsa44keyPair = mldsa44KeyPairGenerator.generateKeyPair();
+        mldsa65keyPair = mldsa65KeyPairGenerator.generateKeyPair();
+        mldsa87keyPair = mldsa87KeyPairGenerator.generateKeyPair();
+
+        mldsa44SignatureInstance.initSign(mldsa44keyPair.getPrivate());
+        mldsa65SignatureInstance.initSign(mldsa65keyPair.getPrivate());
+        mldsa87SignatureInstance.initSign(mldsa87keyPair.getPrivate());
+
         message = new byte[messageSize];
-        signatureInstance.update(message);
-        signature = signatureInstance.sign();
+
+        mldsa44SignatureInstance.update(message);
+        mldsa65SignatureInstance.update(message);
+        mldsa87SignatureInstance.update(message);
+
+        mldsa44signature = mldsa44SignatureInstance.sign();
+        mldsa65signature = mldsa65SignatureInstance.sign();
+        mldsa87signature = mldsa87SignatureInstance.sign();
     }
 
     @Benchmark
-    public KeyPair keyGeneration() throws Exception {
-        return keyPairGenerator.generateKeyPair();
+    public KeyPair mldsa44KeyGeneration() throws Exception {
+        return mldsa44KeyPairGenerator.generateKeyPair();
     }
 
     @Benchmark
-    public byte[] sign() throws Exception {
-        signatureInstance.initSign(keyPair.getPrivate());
-        signatureInstance.update(message);
-        return signatureInstance.sign();
+    public KeyPair mldsa65KeyGeneration() throws Exception {
+        return mldsa65KeyPairGenerator.generateKeyPair();
     }
 
     @Benchmark
-    public boolean verify() throws Exception {
-        verifierInstance.initVerify(keyPair.getPublic());
-        verifierInstance.update(message);
-        return verifierInstance.verify(signature);
+    public KeyPair mldsa87KeyGeneration() throws Exception {
+        return mldsa87KeyPairGenerator.generateKeyPair();
     }
 
     @Benchmark
-    public boolean signAndVerify() throws Exception {
-        // Sign
-        signatureInstance.initSign(keyPair.getPrivate());
-        signatureInstance.update(message);
-        byte[] sig = signatureInstance.sign();
-        
-        // Verify
-        verifierInstance.initVerify(keyPair.getPublic());
-        verifierInstance.update(message);
-        return verifierInstance.verify(sig);
+    public byte[] mldsa44Sign() throws Exception {
+        mldsa44SignatureInstance.initSign(mldsa44keyPair.getPrivate());
+        mldsa44SignatureInstance.update(message);
+        return mldsa44SignatureInstance.sign();
+    }
+
+    @Benchmark
+    public byte[] mldsa65Sign() throws Exception {
+        mldsa65SignatureInstance.initSign(mldsa65keyPair.getPrivate());
+        mldsa65SignatureInstance.update(message);
+        return mldsa65SignatureInstance.sign();
+    }
+
+    @Benchmark
+    public byte[] mldsa87Sign() throws Exception {
+        mldsa87SignatureInstance.initSign(mldsa87keyPair.getPrivate());
+        mldsa87SignatureInstance.update(message);
+        return mldsa87SignatureInstance.sign();
+    }
+
+    @Benchmark
+    public boolean mldsa44Verify() throws Exception {
+        mldsa44VerifierInstance.initVerify(mldsa44keyPair.getPublic());
+        mldsa44VerifierInstance.update(message);
+        return mldsa44VerifierInstance.verify(mldsa44signature);
+    }
+
+    @Benchmark
+    public boolean mldsa65Verify() throws Exception {
+        mldsa65VerifierInstance.initVerify(mldsa65keyPair.getPublic());
+        mldsa65VerifierInstance.update(message);
+        return mldsa65VerifierInstance.verify(mldsa65signature);
+    }
+
+    @Benchmark
+    public boolean mldsa87Verify() throws Exception {
+        mldsa87VerifierInstance.initVerify(mldsa87keyPair.getPublic());
+        mldsa87VerifierInstance.update(message);
+        return mldsa87VerifierInstance.verify(mldsa87signature);
     }
 
     public static void main(String[] args) throws RunnerException {

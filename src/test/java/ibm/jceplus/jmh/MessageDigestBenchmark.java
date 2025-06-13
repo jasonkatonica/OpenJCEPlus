@@ -37,11 +37,11 @@ public class MessageDigestBenchmark  extends OpenJCEPlusJMHBase {
     @Param({"OpenJCEPlus", "SUN"})
     private String provider;
 
-    @Param({"SHA-512", "SHA-256", "MD5", "SHA1"})
-    private String algorithm;
-
     private byte[] data;
-    private MessageDigest messageDigest;
+    private MessageDigest messageDigestSHA512;
+    private MessageDigest messageDigestSHA256;
+    private MessageDigest messageDigestMD5;
+    private MessageDigest messageDigestSHA1;
 
     @Setup
     public void setup() throws Exception {
@@ -51,18 +51,54 @@ public class MessageDigestBenchmark  extends OpenJCEPlusJMHBase {
         for (int i = 0; i < data.length; i++) {
             data[i] = (byte) i;
         }
-        messageDigest = MessageDigest.getInstance(algorithm, provider);
+        messageDigestSHA512 = MessageDigest.getInstance("SHA-512", provider);
+        messageDigestSHA256 = MessageDigest.getInstance("SHA-256", provider);
+        messageDigestMD5 = MessageDigest.getInstance("MD5", provider);
+        messageDigestSHA1 = MessageDigest.getInstance("SHA1", provider);
     }
 
     @Benchmark
-    public byte[] updateDigest() {
-        messageDigest.update(data);
-        return messageDigest.digest();
+    public byte[] sha512UpdateDigest() {
+        messageDigestSHA512.update(data);
+        return messageDigestSHA512.digest();
     }
 
     @Benchmark
-    public byte[] singleShotDigest() {
-        return messageDigest.digest(data);
+    public byte[] sha256UpdateDigest() {
+        messageDigestSHA256.update(data);
+        return messageDigestSHA256.digest();
+    }
+
+    @Benchmark
+    public byte[] md5UpdateDigest() {
+        messageDigestMD5.update(data);
+        return messageDigestMD5.digest();
+    }
+
+    @Benchmark
+    public byte[] sha1UpdateDigest() {
+        messageDigestSHA1.update(data);
+        return messageDigestSHA1.digest();
+    }
+
+    @Benchmark
+    public byte[] sha512SingleShotDigest() {
+        return messageDigestSHA512.digest(data);
+    }
+
+    @Benchmark
+    public byte[] sha256SingleShotDigest() {
+        return messageDigestSHA256.digest(data);
+    }
+
+    @Benchmark
+    public byte[] md5SingleShotDigest() {
+        return messageDigestMD5.digest(data);
+    }
+
+    @Benchmark
+    public byte[] sha1SingleShotDigest() {
+        return messageDigestSHA1.digest(data);
     }
 
     public static void main(String[] args) throws RunnerException {
