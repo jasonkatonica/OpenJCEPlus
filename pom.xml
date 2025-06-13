@@ -481,6 +481,10 @@
                         <arg>-XDignore.symbol.file</arg>
                         <arg>-Xlint:all</arg>
                         <arg>--add-exports </arg>
+                        <arg>java.base/java.lang.ref=openjceplus</arg>
+                        <arg>--add-exports </arg>
+                        <arg>java.base/jdk.internal.ref=openjceplus</arg>
+                        <arg>--add-exports </arg> 
                         <arg>java.base/sun.security.internal.spec=openjceplus</arg>
                         <arg>--add-exports </arg>
                         <arg>java.base/sun.security.util=${test.compilation.export.target}</arg>

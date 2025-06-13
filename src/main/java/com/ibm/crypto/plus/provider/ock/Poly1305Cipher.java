@@ -8,6 +8,12 @@
 
 package com.ibm.crypto.plus.provider.ock;
 
+<<<<<<< HEAD
+=======
+import java.lang.ref.WeakReference;
+import com.ibm.crypto.plus.provider.CleanableObject;
+import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
+>>>>>>> 4501670e (Finalizer code from sabrina)
 import com.ibm.crypto.plus.provider.Poly1305Constants;
 import java.io.ByteArrayOutputStream;
 import java.util.Arrays;

@@ -1,9 +1,9 @@
 /*
  * Copyright IBM Corp. 2023, 2024
  *
- * This code is free software; you can redistribute it and/or modify it
- * under the terms provided by IBM in the LICENSE file that accompanied
- * this code, including the "Classpath" Exception described therein.
+ * Licensed under the Apache License 2.0 (the "License").  You may not use
+ * this file except in compliance with the License.  You can obtain a copy
+ * in the file LICENSE in the source distribution.
  */
 
 package com.ibm.crypto.plus.provider.ock;
@@ -53,18 +53,22 @@ public final class Digest implements Cloneable {
 
     static {
         // Configurable number of cached contexts
-        int tmpNumContext = 0;
-        if (isWindows) {
-            tmpNumContext = 0;
-        } else {
-            try {
-                tmpNumContext = Integer
-                        .parseInt(System.getProperty(DIGEST_CONTEXT_CACHE_SIZE, "2048"));
-            } catch (NumberFormatException e) {
-                tmpNumContext = 0;
+        numContexts = AccessController.doPrivileged(new PrivilegedAction<Integer>() {
+            public Integer run() {
+                int numContexts;
+                if (isWindows) {
+                    return 0;
+                } else {
+                    try {
+                        numContexts = Integer
+                                .parseInt(System.getProperty(DIGEST_CONTEXT_CACHE_SIZE, "2048"));
+                    } catch (NumberFormatException e) {
+                        numContexts = 0;
+                    }
+                    return numContexts;
+                }
             }
-        }
-        numContexts = tmpNumContext;
+        });
     }
 
     void getContext() throws OCKException {
@@ -196,9 +200,9 @@ public final class Digest implements Cloneable {
         this.digestAlgo = digestAlgo;
         getContext();
         //OCKDebug.Msg(debPrefix, methodName,  "digestAlgo :" + digestAlgo);
-    }
 
-    private Digest() {
+        OpenJCEPlusProvider.registerCleanableB(this, cleanOCKResources(digestId, algIndx,
+                contextFromQueue, needsReinit, ockContext));
     }
 
     static void throwOCKException(int errorCode) throws OCKException {
@@ -336,28 +340,15 @@ public final class Digest implements Cloneable {
         return (id != 0L);
     }
 
-    /**
-     * Clones a given Digest.
-     */
-    public synchronized Object clone() throws CloneNotSupportedException {
-        // Create new Digest instance and copy all relevant fields into the copy.
-        // Clones do not make use of the cache so always set the value of
-        // contextFromQueue to false to ensure that the context is later freed
-        // correctly.
-        Digest copy = new Digest();
-        copy.digestLength = this.digestLength;
-        copy.algIndx = this.algIndx;
-        copy.digestAlgo = new String(this.digestAlgo);
-        copy.needsReinit = this.needsReinit;
-        copy.ockContext = this.ockContext;
+    @Override
+    synchronized public Object clone() throws CloneNotSupportedException {
+        Digest copy = (Digest) super.clone();
+        
         copy.contextFromQueue = false;
-
-        // Allocate a new context for the digestId and copy all state information from our
-        // original context into the copy. 
         try {
             copy.digestId = NativeInterface.DIGEST_copy(
                 this.ockContext.getId(), getId());
-            if (0 == copy.digestId) {
+            if (copy.digestId == 0) {
                 throw new CloneNotSupportedException("Copy of native digest context failed.");
             }
         } catch (OCKException e) {
@@ -367,6 +358,9 @@ public final class Digest implements Cloneable {
                                       .collect(Collectors.joining("\n"));
             throw new CloneNotSupportedException(stackTrace);
         }
+
+        OpenJCEPlusProvider.registerCleanableB(copy, cleanOCKResources(copy.digestId, copy.algIndx,
+                copy.contextFromQueue, copy.needsReinit, copy.ockContext));
         return copy;
     }
 }
