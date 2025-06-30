@@ -48,7 +48,7 @@ public final class ECKeyPairGenerator extends KeyPairGeneratorSpi {
     }
 
     /**
-     * To-Do Currently we cannot generate curves based on parameters.
+     * Generate curves based on parameters.
      */
     public void initialize(AlgorithmParameterSpec params, SecureRandom random)
             throws InvalidAlgorithmParameterException {
@@ -61,7 +61,6 @@ public final class ECKeyPairGenerator extends KeyPairGeneratorSpi {
                             "Curve name not recognized or not supported");
                 // this.random = OpenJCEPlus.getSecureRandom(random);
                 // this.keysize = ecSpec.getCurve().getField().getFieldSize();
-                return;
             } else {
                 throw new InvalidAlgorithmParameterException(
                         "Params must be instance of ECParameterSpec or ECGenParameterSpec");
@@ -76,20 +75,17 @@ public final class ECKeyPairGenerator extends KeyPairGeneratorSpi {
                 // ecNamedCurve.getName());
                 this.oid = ECNamedCurve.getOIDFromName(ecNamedCurve.getName());
                 // this.random = OpenJCEPlus.getSecureRandom(random);
-                return;
+                this.ecSpec = (ECParameterSpec) params;
+                // this.random = OpenJCEPlus.getSecureRandom(random);
+                this.keysize = ecSpec.getCurve().getField().getFieldSize();
             }
-
         }
 
         if (provider.isFIPS()) {
             if (!ECNamedCurve.isFIPS(this.oid.toString())) {
-                throw provider.providerException("Curve not supported in FIPS", null);
+                throw provider.providerException("Curve not supported in FIPS: " + this.oid.toString(), null);
             }
         }
-
-        this.ecSpec = (ECParameterSpec) params;
-        // this.random = OpenJCEPlus.getSecureRandom(random);
-        this.keysize = ecSpec.getCurve().getField().getFieldSize();
     }
 
     /**
@@ -131,12 +127,4 @@ public final class ECKeyPairGenerator extends KeyPairGeneratorSpi {
         }
 
     }
-
-    /**
-     *
-     */
-    private void generateParameters() {
-
-    }
-
 }

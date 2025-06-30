@@ -70,14 +70,18 @@ public class BaseTestECDH extends BaseTestJunit5 {
             algParameterSpec_256r1 = new ECGenParameterSpec(curveName_256r1);
 
             kpgA = KeyPairGenerator.getInstance("EC", provider_name);
-            kpgA.initialize(algParameterSpec_192k1);
-            keyPairA_192k1 = kpgA.generateKeyPair();
+            if (!(provider_name.equalsIgnoreCase("OpenJCEPlusFIPS"))) {
+                kpgA.initialize(algParameterSpec_192k1);
+                keyPairA_192k1 = kpgA.generateKeyPair();
+            }
             kpgA.initialize(algParameterSpec_256r1);
             keyPairA_256r1 = kpgA.generateKeyPair();
 
             kpgB = KeyPairGenerator.getInstance("EC", provider_name);
-            kpgB.initialize(algParameterSpec_192k1);
-            keyPairB_192k1 = kpgB.generateKeyPair();
+            if (!(provider_name.equalsIgnoreCase("OpenJCEPlusFIPS"))) {
+                kpgB.initialize(algParameterSpec_192k1);
+                keyPairB_192k1 = kpgB.generateKeyPair();
+            }
             kpgB.initialize(algParameterSpec_256r1);
             keyPairB_256r1 = kpgB.generateKeyPair();
 
@@ -107,6 +111,10 @@ public class BaseTestECDH extends BaseTestJunit5 {
     @Test
     public void testECDH_secp192k1() throws Exception {
 
+        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS")) {
+            return;
+        }
+
         String curveName = "secp192k1";
 
         ECGenParameterSpec ecgn = new ECGenParameterSpec(curveName);
@@ -132,6 +140,10 @@ public class BaseTestECDH extends BaseTestJunit5 {
 
     @Test
     public void testECDH_ECSpec() throws Exception {
+
+        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS")) {
+            return;
+        }
 
         String methodId = "ECDHECParamSpec";
 

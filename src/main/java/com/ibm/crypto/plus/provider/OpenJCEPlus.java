@@ -1173,4 +1173,11 @@ public final class OpenJCEPlus extends OpenJCEPlusProvider {
         }
         return versionDate;
     }
+
+    // Return whether the provider is FIPS. If the provider is using an OCK
+    // context in FIPS mode then it is FIPS.
+    //
+    boolean isFIPS() {
+        return getOCKContext().isFIPS();
+    }
 }

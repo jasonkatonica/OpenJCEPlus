@@ -40,7 +40,7 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
 
         //final String methodName = "testCreateKeyPairECGenParamImport";
 
-        ECGenParameterSpec ecgn = new ECGenParameterSpec("secp192k1");
+        ECGenParameterSpec ecgn = new ECGenParameterSpec("secp192r1");
         KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance("EC", getProviderName());
 
         keyPairGen.initialize(ecgn);
@@ -82,6 +82,10 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
      */
     @Test
     public void testCreateKeyPairECParamImport() throws Exception {
+
+        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS")) {
+            return;
+        }
 
         //final String methodName = "testCreateKeyPairECParamImport";
 

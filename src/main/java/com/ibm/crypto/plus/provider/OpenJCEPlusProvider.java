@@ -64,9 +64,7 @@ public abstract class OpenJCEPlusProvider extends java.security.Provider {
     // Return whether the provider is FIPS. If the provider is using an OCK
     // context in FIPS mode then it is FIPS.
     //
-    boolean isFIPS() {
-        return getOCKContext().isFIPS();
-    }
+    abstract boolean isFIPS();
 
     // Return the Java version.
     //

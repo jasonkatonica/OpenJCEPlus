@@ -124,6 +124,9 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
 
     @Test
     public void testECKeyGenCurves_secp192k1() throws Exception {
+        if (getProviderName().equals("OpenJCEPlusFIPS")) {
+            return;
+        }
         generictestECKeyGenCurve("secp192k1");
         generictestECKeyGenCurve("1.3.132.0.31");
         generictestECKeyGenCurve("NIST P-192");
@@ -132,22 +135,44 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
 
     @Test
     public void testPrintECCurves() throws Exception {
-        if (getProviderName().equalsIgnoreCase("OpenJCEPlus")) {
+        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS")) {
+            generictestECKeyGenCurve("secp192r1");
+            generictestECKeyGenCurve("NIST P-192");
 
-            generictestECKeyGenCurve("secp112r1");
-            generictestECKeyGenCurve("1.3.132.0.6");
+            //"secp224r1
+            generictestECKeyGenCurve("secp224r1");
+            generictestECKeyGenCurve("NIST P-224");
+            generictestECKeyGenCurve("1.3.132.0.33");
+        
+            //"secp256r1
+            generictestECKeyGenCurve("secp256r1");
+            generictestECKeyGenCurve("NIST P-256");
+        
+            //"secp384r1
+            generictestECKeyGenCurve("secp384r1");
+            generictestECKeyGenCurve("NIST P-384");
+            generictestECKeyGenCurve("1.3.132.0.34");
+        
+            //"secp521r1
+            generictestECKeyGenCurve("secp521r1");
+            generictestECKeyGenCurve("NIST P-521");
+            generictestECKeyGenCurve("1.3.132.0.35");
 
-            generictestECKeyGenCurve("secp112r2");
-            generictestECKeyGenCurve("1.3.132.0.7");
-
-            generictestECKeyGenCurve("secp128r1");
-            generictestECKeyGenCurve("1.3.132.0.28");
-
-            generictestECKeyGenCurve("secp128r2");
-            generictestECKeyGenCurve("1.3.132.0.29");
-
+            return;
 
         }
+
+        generictestECKeyGenCurve("secp112r1");
+        generictestECKeyGenCurve("1.3.132.0.6");
+
+        generictestECKeyGenCurve("secp112r2");
+        generictestECKeyGenCurve("1.3.132.0.7");
+
+        generictestECKeyGenCurve("secp128r1");
+        generictestECKeyGenCurve("1.3.132.0.28");
+
+        generictestECKeyGenCurve("secp128r2");
+        generictestECKeyGenCurve("1.3.132.0.29");
 
         generictestECKeyGenCurve("secp160k1");
         generictestECKeyGenCurve("1.3.132.0.9");
@@ -251,8 +276,7 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
             assertTrue(true);
         }
 
-        boolean isDeveloperModePlatform = BaseUtils.getIsFIPSCertifiedPlatform();
-        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS") && !isDeveloperModePlatform) {
+        if (getProviderName().equalsIgnoreCase("OpenJCEPlusFIPS")) {
             try {
                 generictestECKeyGenCurve("secp112r1");
                 assertTrue(false);

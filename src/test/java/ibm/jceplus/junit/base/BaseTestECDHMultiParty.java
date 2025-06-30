@@ -32,9 +32,9 @@ public class BaseTestECDHMultiParty extends BaseTestJunit5 {
      * @throws Exception
      */
     @Test
-    public void testECDHMulti_secp192k1() throws Exception {
+    public void testECDHMulti_secp192r1() throws Exception {
 
-        String curveName = "secp192k1";
+        String curveName = "secp192r1";
 
         ECGenParameterSpec ecgn = new ECGenParameterSpec(curveName);
 
