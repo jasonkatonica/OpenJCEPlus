@@ -6,4 +6,7 @@ grant {
     permission java.lang.RuntimePermission "getProtectionDomain";
     permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
     permission java.lang.RuntimePermission "defineClass";
+
+    // Needed by apache surefire
+    permission java.util.PropertyPermission "basedir" "write";
 };
