@@ -2,4 +2,5 @@ grant {
     permission java.io.FilePermission "<<ALL FILES>>","read,write,delete"; // Needed for jacoco
     permission java.lang.RuntimePermission "shutdownHooks"; // Needed for jacoco
     permission java.lang.RuntimePermission "createClassLoader"; // Needed for jacoco
+    permission java.lang.RuntimePermission "getProtectionDomain"; // Needed for jacoco
 };
