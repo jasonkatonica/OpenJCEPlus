@@ -168,6 +168,7 @@
                     <argLine>
                       @{argLine}
                       -Djava.security.manager
+                      -Djava.security.policy=my.policy
                       --add-exports=java.base/sun.security.internal.interfaces=ALL-UNNAMED
                       --add-exports=java.base/sun.security.internal.interfaces=openjceplus
                       --add-exports=java.base/sun.security.internal.spec=ALL-UNNAMED
