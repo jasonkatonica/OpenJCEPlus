@@ -204,6 +204,27 @@ public final class OpenJCEPlus extends OpenJCEPlusProvider {
         putService(new OpenJCEPlusService(jce, "Cipher", "AES",
                 "com.ibm.crypto.plus.provider.AESCipher", aliases));
 
+        aliases = null;
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES/KW/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KW", aliases));
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES/KWP/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP", aliases));
+
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KW/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_128", aliases));
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KWP/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_128", aliases));
+        
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KW/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_192", aliases));
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KWP/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_192", aliases));
+
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KW/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_256", aliases));
+        putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KWP/NoPadding",
+                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_256", aliases));
+
         aliases = new String[] {"TripleDES", "3DES"};
         putService(new OpenJCEPlusService(jce, "Cipher", "DESede",
                 "com.ibm.crypto.plus.provider.DESedeCipher", aliases));
