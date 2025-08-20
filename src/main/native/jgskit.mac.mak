@@ -35,7 +35,7 @@ OPENJCEPLUS_HEADER_FILES ?= ${TOPDIR}/src/main/native
 JAVACLASSDIR=${BUILDTOP}/classes
 
 OBJS = \
-	${HOSTOUT}/AESKeyWrap.obj \
+	${HOSTOUT}/AESKeyWrap.o \
 	${HOSTOUT}/BasicRandom.o \
 	${HOSTOUT}/BuildDate.o \
 	${HOSTOUT}/CCM.o \
