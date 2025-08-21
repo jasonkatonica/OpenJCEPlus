@@ -12,6 +12,7 @@ import java.security.Key;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -123,6 +124,54 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
 
             cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
             fail("testAESWrapFailureCiphertext did no fail as expected.");
+        } catch (Exception e) {
+            assumeTrue(true);
+        }
+    }
+
+    @Test
+    public void testAESWrapModeFailureWrap() throws Exception {
+        SecretKey kek = null;
+        SecretKey keyToBeWrapped = null;
+        String alg = "AES_192/KW/Nopadding ";
+
+        kek = createKey("AES", getKeySize(alg), getProviderName());
+        keyToBeWrapped = createKey("AES", 256, getInteropProviderName());
+
+        try {
+            Cipher cp = null;
+
+            cp = Cipher.getInstance(alg, getProviderName());
+
+            // Encrypt the plain text
+            cp.init(Cipher.UNWRAP_MODE, kek);
+            cp.wrap(keyToBeWrapped);
+            fail("testAESWrapModeFailureWrap did no fail as expected.");
+        } catch (Exception e) {
+            assumeTrue(true);
+        }
+    }
+
+    @Test
+    public void testAESWrapModeFailureUnwrap() throws Exception {
+        SecretKey kek = null;
+        SecretKey keyToBeWrapped = null;
+        String alg = "AES_192/KW/Nopadding ";
+
+        kek = createKey("AES", getKeySize(alg), getProviderName());
+        keyToBeWrapped = createKey("AES", 256, getInteropProviderName());
+
+        try {
+            Cipher cp = null;
+
+            cp = Cipher.getInstance(alg, getProviderName());
+
+            // Encrypt the plain text
+            cp.init(Cipher.WRAP_MODE, kek);
+            byte [] cipherText = cp.wrap(keyToBeWrapped);
+            cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
+
+            fail("testAESWrapModeFailureUnwrap did no fail as expected.");
         } catch (Exception e) {
             assumeTrue(true);
         }
