@@ -40,12 +40,12 @@ public final class AESKeyWrap {
 
         try {
             output = NativeInterface.CIPHER_KeyWraporUnwrap(this.ockContext.getId(), inData, this.key, type);
-
-            //Clear inData
-            Arrays.fill(inData, (byte)0);   
         } catch (Exception e) {
             throw new OCKException("Failed to wrap data");
-        }    
+        }  finally {
+            //Clear inData
+            Arrays.fill(inData, (byte)0);  
+        }   
         return output;    
     }
 
@@ -65,7 +65,10 @@ public final class AESKeyWrap {
             output = NativeInterface.CIPHER_KeyWraporUnwrap(this.ockContext.getId(), inData, this.key, type);
         } catch (Exception e) {
             throw new OCKException("Failed to unwrap data");
-        }    
+        }  finally {
+            //Clear inData
+            Arrays.fill(inData, (byte)0);  
+        }       
         return output;    
     }
 

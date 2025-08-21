@@ -66,10 +66,13 @@ abstract class AESKeyWrapCipher extends CipherSpi {
 
     @Override
     protected int engineGetKeySize(Key key) throws InvalidKeyException {
-        if (key == null || !key.getAlgorithm().equalsIgnoreCase("AES")) {
-            throw new InvalidKeyException("Key missing");
+        if (key == null) {
+            throw new InvalidKeyException("Key missing.");
         }
 
+        if (!key.getAlgorithm().equalsIgnoreCase("AES")) {
+            throw new InvalidKeyException("Key not an AES key.");
+        }
         byte[] encoded = key.getEncoded();
         if (!AESUtils.isKeySizeValid(encoded.length)) {
             throw new InvalidKeyException("Invalid AES key length: " + encoded.length + " bytes");
@@ -158,7 +161,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
 
     @Override
     protected void engineSetMode(String mode) throws NoSuchAlgorithmException {
-        if (!mode.equalsIgnoreCase("KW") && !mode.equalsIgnoreCase("KWP")) {
+        if (mode == null || (!mode.equalsIgnoreCase("KW") && !mode.equalsIgnoreCase("KWP"))) {
             throw new NoSuchAlgorithmException("Only KW or KWP mode is supported.");
         }
     }
@@ -207,7 +210,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
         checkCipherInitialized();
 
         if (wrappering) {
-            throw new IllegalStateException("Cipher not initialized for wrap");
+            throw new IllegalStateException("Cipher not initialized for unwrap");
         }
         try {
             byte[] encoded = cipher.unwrap(wrappedKey, 0, wrappedKey.length);

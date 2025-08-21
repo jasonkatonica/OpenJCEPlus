@@ -7,7 +7,9 @@
  */
 package ibm.jceplus.junit.base;
 
+import java.lang.IllegalStateException;
 import java.security.AlgorithmParameters;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import javax.crypto.Cipher;
 import javax.crypto.KeyGenerator;
@@ -30,8 +32,8 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     protected int specifiedKeySize = 0;
 
     @ParameterizedTest
-    @CsvSource({"AES/KW/Nopadding","AES/KWP/Nopadding","AES_128/KW/Nopadding","AES_128/KWP/Nopadding","AES_192/KW/Nopadding","AES_192/KWP/Nopadding",
-                "AES_256/KW/Nopadding","AES_256/KWP/Nopadding"})
+    @CsvSource({"AES/KW/NoPadding","AES/KWP/NoPadding","AES_128/KW/NoPadding","AES_128/KWP/NoPadding","AES_192/KW/NoPadding","AES_192/KWP/NoPadding",
+                "AES_256/KW/NoPadding","AES_256/KWP/NoPadding"})
     public void testAESWrap128Keys(String alg) throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
@@ -43,8 +45,8 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     }
  
     @ParameterizedTest
-    @CsvSource({"AES/KW/Nopadding","AES/KWP/Nopadding","AES_128/KW/Nopadding","AES_128/KWP/Nopadding","AES_192/KW/Nopadding","AES_192/KWP/Nopadding",
-                "AES_256/KW/Nopadding","AES_256/KWP/Nopadding"})
+    @CsvSource({"AES/KW/NoPadding","AES/KWP/NoPadding","AES_128/KW/NoPadding","AES_128/KWP/NoPadding","AES_192/KW/NoPadding","AES_192/KWP/NoPadding",
+                "AES_256/KW/NoPadding","AES_256/KWP/NoPadding"})
     public void testAESWrapWith256WrappedKey(String alg) throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
@@ -56,8 +58,8 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     }
 
     @ParameterizedTest
-    @CsvSource({"AES/KW/Nopadding","AES/KWP/Nopadding","AES_128/KW/Nopadding","AES_128/KWP/Nopadding","AES_192/KW/Nopadding","AES_192/KWP/Nopadding",
-                "AES_256/KW/Nopadding","AES_256/KWP/Nopadding"})
+    @CsvSource({"AES/KW/NoPadding","AES/KWP/NoPadding","AES_128/KW/NoPadding","AES_128/KWP/NoPadding","AES_192/KW/NoPadding","AES_192/KWP/NoPadding",
+                "AES_256/KW/NoPadding","AES_256/KWP/NoPadding"})
     public void testAESWrapInterop(String alg) throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
@@ -74,7 +76,7 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     }
         
     @ParameterizedTest
-    @CsvSource({"AES_192/KW/Nopadding","AES_192/KWP/Nopadding", "AES_256/KW/Nopadding","AES_256/KWP/Nopadding"})
+    @CsvSource({"AES_192/KW/NoPadding","AES_192/KWP/NoPadding", "AES_256/KW/NoPadding","AES_256/KWP/NoPadding"})
     public void testAESWrapFailureKeySize(String alg) throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
@@ -91,17 +93,21 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
 
             // Encrypt the plain text
             cp.init(Cipher.WRAP_MODE, kek);
-            byte [] cipherText = cp.wrap(keyToBeWrapped);
+            cp.wrap(keyToBeWrapped);
 
-            cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
-            fail("testAESWrapFailureKeySize did no fail as expected.");
-        } catch (Exception e) {
+             fail("testAESWrapFailureKeySize did no fail as expected.");
+        } catch (InvalidKeyException ie) {    
             assumeTrue(true);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+            assumeTrue(false);
+            
         }
     }
 
     @ParameterizedTest
-    @CsvSource({"AES_192/KW/Nopadding","AES_192/KWP/Nopadding", "AES_256/KW/Nopadding","AES_256/KWP/Nopadding"})
+    @CsvSource({"AES_192/KW/NoPadding","AES_192/KWP/NoPadding", "AES_256/KW/NoPadding","AES_256/KWP/NoPadding"})
     public void testAESWrapFailureCiphertext(String alg) throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
@@ -124,8 +130,13 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
 
             cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
             fail("testAESWrapFailureCiphertext did no fail as expected.");
-        } catch (Exception e) {
+        } catch (InvalidKeyException ie) {    
             assumeTrue(true);
+        } catch (Exception e) {
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+            assumeTrue(false);
+            
         }
     }
 
@@ -133,7 +144,7 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     public void testAESWrapModeFailureWrap() throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
-        String alg = "AES_192/KW/Nopadding ";
+        String alg = "AES_192/KW/NoPadding";
 
         kek = createKey("AES", getKeySize(alg), getProviderName());
         keyToBeWrapped = createKey("AES", 256, getInteropProviderName());
@@ -147,8 +158,12 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
             cp.init(Cipher.UNWRAP_MODE, kek);
             cp.wrap(keyToBeWrapped);
             fail("testAESWrapModeFailureWrap did no fail as expected.");
+        } catch (IllegalStateException ie) { 
+            assumeTrue(true);   
         } catch (Exception e) {
-            assumeTrue(true);
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+            assumeTrue(false);
         }
     }
 
@@ -156,7 +171,7 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     public void testAESWrapModeFailureUnwrap() throws Exception {
         SecretKey kek = null;
         SecretKey keyToBeWrapped = null;
-        String alg = "AES_192/KW/Nopadding ";
+        String alg = "AES_192/KW/NoPadding";
 
         kek = createKey("AES", getKeySize(alg), getProviderName());
         keyToBeWrapped = createKey("AES", 256, getInteropProviderName());
@@ -172,8 +187,12 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
             cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
 
             fail("testAESWrapModeFailureUnwrap did no fail as expected.");
+        } catch (IllegalStateException ie) { 
+            assumeTrue(true);   
         } catch (Exception e) {
-            assumeTrue(true);
+            System.out.println(e.getMessage());
+            e.printStackTrace();
+            assumeTrue(false);
         }
     }
 
@@ -202,7 +221,7 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
 
             Key res = cp.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
 
-            assertArrayEquals(res.getEncoded(), keyWrapped.getEncoded(), "Keys does not match!");
+            assertArrayEquals(res.getEncoded(), keyWrapped.getEncoded(), "Keys do not match!");
 
         } catch (Exception ex) {
             System.out.println("Test exception: "+ex.getMessage());
@@ -231,7 +250,7 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
 
             res = cpI.unwrap(cipherText, "AES",  Cipher.SECRET_KEY);
 
-            assertArrayEquals(res.getEncoded(), keyWrapped.getEncoded(), "Keys does not match!");  
+            assertArrayEquals(res.getEncoded(), keyWrapped.getEncoded(), "Keys do not match!");  
 
             cipherText = null;
             res = null;
@@ -291,13 +310,13 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
     public int getKeySize(String alg) {
         int size = 128;
         switch (alg) {
-            case "AES/KW/Nopadding":
-            case "AES/KWP/Nopadding":
-            case "AES_128/KW/Nopadding":
-            case "AES_128/KWP/Nopadding":
+            case "AES/KW/NoPadding":
+            case "AES/KWP/NoPadding":
+            case "AES_128/KW/NoPadding":
+            case "AES_128/KWP/NoPadding":
                 break;
-            case "AES_192/KW/Nopadding":
-            case "AES_192/KWP/Nopadding":
+            case "AES_192/KW/NoPadding":
+            case "AES_192/KWP/NoPadding":
                 size = 192;
                 break;
             default:
