@@ -8,7 +8,7 @@
 
 package com.ibm.crypto.plus.provider;
 
-import com.ibm.crypto.plus.provider.ock.AESKeyWrapCipher;
+import com.ibm.crypto.plus.provider.ock.AESKeyWrap;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -23,16 +23,16 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
-abstract class AESKeyWrap extends CipherSpi {
+abstract class AESKeyWrapCipher extends CipherSpi {
 
     private OpenJCEPlusProvider provider = null;
     private boolean wrappering = true;
     private boolean initialized = false;
-    private AESKeyWrapCipher cipher = null;
+    private AESKeyWrap cipher = null;
     private int setKeySize = 0;
     private boolean setPadding = false;
 
-    public AESKeyWrap(OpenJCEPlusProvider provider, boolean padding, int keySize) {
+    public AESKeyWrapCipher(OpenJCEPlusProvider provider, boolean padding, int keySize) {
         if (!OpenJCEPlusProvider.verifySelfIntegrity(this)) {
             throw new SecurityException("Integrity check failed for: " + provider.getName());
         }
@@ -56,7 +56,7 @@ abstract class AESKeyWrap extends CipherSpi {
 
     @Override
     protected int engineGetBlockSize() {
-        return AESConstants.AES_BLOCK_SIZE;
+        return 8;
     }
 
     @Override
@@ -66,7 +66,7 @@ abstract class AESKeyWrap extends CipherSpi {
 
     @Override
     protected int engineGetKeySize(Key key) throws InvalidKeyException {
-        if (key == null) {
+        if (key == null || !key.getAlgorithm().equalsIgnoreCase("AES")) {
             throw new InvalidKeyException("Key missing");
         }
 
@@ -149,7 +149,7 @@ abstract class AESKeyWrap extends CipherSpi {
         }
 
         try {
-            this.cipher = new AESKeyWrapCipher(provider.getOCKContext(), rawKey, setPadding);
+            this.cipher = new AESKeyWrap(provider.getOCKContext(), rawKey, setPadding);
         } catch (Exception e) {
             throw new InvalidKeyException("OCKC context null or bad key.");
         } 
@@ -158,8 +158,8 @@ abstract class AESKeyWrap extends CipherSpi {
 
     @Override
     protected void engineSetMode(String mode) throws NoSuchAlgorithmException {
-        if (!mode.equalsIgnoreCase("ECB")) {
-            throw new NoSuchAlgorithmException("Only ECB mode is supported.");
+        if (!mode.equalsIgnoreCase("KW") && !mode.equalsIgnoreCase("KWP")) {
+            throw new NoSuchAlgorithmException("Only KW or KWP mode is supported.");
         }
     }
 
@@ -184,6 +184,9 @@ abstract class AESKeyWrap extends CipherSpi {
     // see JCE spec
     protected byte[] engineWrap(Key key) throws InvalidKeyException, IllegalBlockSizeException {
         checkCipherInitialized();
+        if (!wrappering) {
+            throw new IllegalStateException("Cipher not initialized for wrap");
+        }
 
         byte[] encoded = key.getEncoded();
         if ((encoded == null) || (encoded.length == 0)) {
@@ -203,6 +206,9 @@ abstract class AESKeyWrap extends CipherSpi {
             throws InvalidKeyException, NoSuchAlgorithmException {
         checkCipherInitialized();
 
+        if (wrappering) {
+            throw new IllegalStateException("Cipher not initialized for wrap");
+        }
         try {
             byte[] encoded = cipher.unwrap(wrappedKey, 0, wrappedKey.length);
             return ConstructKeys.constructKey(provider, encoded, algorithm, type);
@@ -224,56 +230,56 @@ abstract class AESKeyWrap extends CipherSpi {
         }
         return true;
     }
-    public static final class KW extends AESKeyWrap {
+    public static final class KW extends AESKeyWrapCipher {
 
         public KW(OpenJCEPlusProvider provider) {
             super(provider, false, -1);
         }
     }
 
-    public static final class KWP extends AESKeyWrap {
+    public static final class KWP extends AESKeyWrapCipher {
 
         public KWP(OpenJCEPlusProvider provider) {
             super(provider, true, -1);
         }
     }
     
-    public static final class KW_128 extends AESKeyWrap {
+    public static final class KW_128 extends AESKeyWrapCipher {
 
         public KW_128(OpenJCEPlusProvider provider) {
             super(provider, false, 16);
         }
     }
 
-    public static final class KWP_128 extends AESKeyWrap {
+    public static final class KWP_128 extends AESKeyWrapCipher {
 
         public KWP_128(OpenJCEPlusProvider provider) {
             super(provider, true, 16);
         }
     }
         
-    public static final class KW_192 extends AESKeyWrap {
+    public static final class KW_192 extends AESKeyWrapCipher {
 
         public KW_192(OpenJCEPlusProvider provider) {
             super(provider, false, 24);
         }
     }
 
-    public static final class KWP_192 extends AESKeyWrap {
+    public static final class KWP_192 extends AESKeyWrapCipher {
 
         public KWP_192(OpenJCEPlusProvider provider) {
             super(provider, true, 24);
         }
     }
         
-    public static final class KW_256 extends AESKeyWrap {
+    public static final class KW_256 extends AESKeyWrapCipher {
 
         public KW_256(OpenJCEPlusProvider provider) {
             super(provider, false, 32);
         }
     }
 
-    public static final class KWP_256 extends AESKeyWrap {
+    public static final class KWP_256 extends AESKeyWrapCipher {
 
         public KWP_256(OpenJCEPlusProvider provider) {
             super(provider, true, 32);
