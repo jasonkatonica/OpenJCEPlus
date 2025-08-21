@@ -225,25 +225,25 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
 
         aliases = null;
         putService(new OpenJCEPlusService(jce, "Cipher", "AES/KW/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KW", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW", aliases));
         putService(new OpenJCEPlusService(jce, "Cipher", "AES/KWP/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP", aliases));
 
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KW/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_128", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_128", aliases));
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KWP/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_128", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_128", aliases));
         
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KW/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_192", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_192", aliases));
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KWP/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_192", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_192", aliases));
 
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KW/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KW_256", aliases));
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_256", aliases));
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KWP/NoPadding",
-                "com.ibm.crypto.plus.provider.AESKeyWrap$KWP_256", aliases));
-                
+                "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_256", aliases));
+
         /* =======================================================================
          * Key agreement
          * =======================================================================
