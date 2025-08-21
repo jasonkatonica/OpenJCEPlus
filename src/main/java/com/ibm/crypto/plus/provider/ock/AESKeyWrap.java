@@ -10,13 +10,13 @@ package com.ibm.crypto.plus.provider.ock;
 
 import java.util.Arrays;
 
-public final class AESKeyWrapCipher {
+public final class AESKeyWrap {
 
     private OCKContext ockContext;
     private byte [] key = null;
     private boolean padding = false;
 
-    public AESKeyWrapCipher(OCKContext ockContext, byte [] key, boolean padding)
+    public AESKeyWrap(OCKContext ockContext, byte [] key, boolean padding)
             throws OCKException {
         if (ockContext == null || key == null) {
             throw new OCKException("Invalid input data");
@@ -27,7 +27,7 @@ public final class AESKeyWrapCipher {
     }
 
     public byte [] wrap(byte [] data, int start, int length) throws OCKException {
-        if (data == null || start < 0 || length < start || data.length < (length - start)) {
+        if (data == null || start < 0 || data.length < start || data.length < (length + start)) {
             throw new OCKException("Invalid input data");
         }
         byte [] output = null;
@@ -40,6 +40,9 @@ public final class AESKeyWrapCipher {
 
         try {
             output = NativeInterface.CIPHER_KeyWraporUnwrap(this.ockContext.getId(), inData, this.key, type);
+
+            //Clear inData
+            Arrays.fill(inData, (byte)0);   
         } catch (Exception e) {
             throw new OCKException("Failed to wrap data");
         }    
