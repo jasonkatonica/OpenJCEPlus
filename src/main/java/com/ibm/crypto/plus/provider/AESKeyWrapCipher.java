@@ -9,13 +9,16 @@
 package com.ibm.crypto.plus.provider;
 
 import com.ibm.crypto.plus.provider.ock.AESKeyWrap;
+import com.ibm.crypto.plus.provider.ock.OCKException;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
+import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.CipherSpi;
@@ -30,6 +33,9 @@ abstract class AESKeyWrapCipher extends CipherSpi {
     private boolean initialized = false;
     private AESKeyWrap cipher = null;
     private int setKeySize = 0;
+    private byte[] buffer = null;
+    private int bufSize = 0;
+    private int opmode = 0;
     private boolean setPadding = false;
 
     public AESKeyWrapCipher(OpenJCEPlusProvider provider, boolean padding, int keySize) {
@@ -41,16 +47,97 @@ abstract class AESKeyWrapCipher extends CipherSpi {
         this.setPadding = padding;
     }
 
+    private void add2Buffer(byte[] data, int offSet, int len) {
+        // In NIST SP 800-38F, KWP input size is limited to be no longer
+        // than 2^32 bytes. Otherwise, the length cannot be encoded in 32 bits
+        // However, given the current spec requirement that recovered text
+        // can only be returned after successful tag verification, we are
+        // bound by limiting the data size to the size limit of java byte array,
+        // e.g. Integer.MAX_VALUE, since all data are returned by doFinal().
+        int remain = Integer.MAX_VALUE - bufSize - 16;  //16 bytes required by OCKC call
+        if (len > remain) {
+            throw new ProviderException("Buffer can only take " +
+                remain + " more bytes");
+        }
+
+        if (buffer == null || buffer.length - bufSize < len) {
+            int newSize = Math.addExact(bufSize, len);
+
+            byte[] temp = new byte[newSize];
+            if (buffer != null && bufSize > 0) {
+                System.arraycopy(buffer, 0, temp, 0, bufSize);
+            }
+            buffer = temp;
+        }
+
+        if (data != null) {
+            System.arraycopy(data, offSet, buffer, bufSize, len);
+            bufSize += len;
+        }
+    }
+
     @Override
     protected byte[] engineDoFinal(byte[] input, int inputOffset, int inputLen)
             throws IllegalBlockSizeException, BadPaddingException {
-        throw new IllegalStateException("Cipher has not been initialized");
+        
+        byte[] out = null;
+
+        if (!this.initialized) {
+            throw new IllegalStateException("Cipher has not been initialized"); 
+        }
+
+        if (opmode != Cipher.ENCRYPT_MODE && opmode != Cipher.DECRYPT_MODE) {
+            throw new IllegalStateException("Cipher not initialized for doFinal");
+        }
+
+        if (input == null || inputOffset >= input.length || (input.length < inputLen + inputOffset)) {
+            throw new IllegalStateException("Incorrect input to API.");
+        }
+
+        add2Buffer(input, inputOffset, inputLen);
+
+        try {
+            if (opmode == Cipher.ENCRYPT_MODE) {
+                out = cipher.wrap(buffer, 0, bufSize);
+            } else {
+                out = cipher.unwrap(buffer, 0, bufSize);
+            }
+        } catch (OCKException ocke) {
+            throw new ProviderException("Operation doFinal failed  - "+ ocke.getMessage());
+        }
+        this.bufSize = 0;
+        this.buffer = null;
+        return out;
     }
 
     @Override
     protected int engineDoFinal(byte[] input, int inputOffset, int inputLen, byte[] output,
             int outputOffset)
             throws ShortBufferException, IllegalBlockSizeException, BadPaddingException {
+        byte[] out = null;
+        int estOutLen = engineGetOutputSize(inputLen + bufSize);
+
+        if (output.length - outputOffset < estOutLen) {
+            throw new ShortBufferException("Need at least " + estOutLen);
+        }
+
+        try {
+            out = engineDoFinal(input, inputOffset, inputLen);
+                            
+            if (out.length > estOutLen) {
+                throw new AssertionError("Actual output length exceeds estimated length");
+            }
+            System.arraycopy(output, 0, out, outputOffset, out.length);
+            
+            return out.length;
+        } catch (Exception e) {
+
+        } finally {
+            if (out != null) {
+                Arrays.fill(out, (byte)0);
+            }
+        }
+
         throw new IllegalStateException("Cipher has not been initialized");
     }
 
@@ -101,15 +188,13 @@ abstract class AESKeyWrapCipher extends CipherSpi {
     @Override
     protected void engineInit(int opmode, Key key, SecureRandom random) throws InvalidKeyException {
 
-        if (opmode == Cipher.UNWRAP_MODE) {
+        if (opmode == Cipher.UNWRAP_MODE || opmode == Cipher.DECRYPT_MODE) {
             wrappering = false;
-        } else if (opmode == Cipher.WRAP_MODE) {
+        } else if (opmode == Cipher.WRAP_MODE || opmode == Cipher.ENCRYPT_MODE) {
             wrappering = true;
-        } else {
-            throw new UnsupportedOperationException("This cipher can " +
-                "only be used for key wrapping and unwrapping");
-        }
-
+        } 
+        
+        this.opmode = opmode;
         internalInit(opmode, key);
     }
 
@@ -175,13 +260,31 @@ abstract class AESKeyWrapCipher extends CipherSpi {
 
     @Override
     protected byte[] engineUpdate(byte[] input, int inputOffset, int inputLen) {
-        throw new IllegalStateException("Cipher has not been initialized");
+        if (!this.initialized) {
+            throw new IllegalStateException("Cipher has not been initialized"); 
+        }
+
+        if (opmode != Cipher.ENCRYPT_MODE && opmode != Cipher.DECRYPT_MODE) {
+            throw new IllegalStateException("Cipher not initialized for doFinal");
+        }
+
+        add2Buffer(input, inputOffset, inputLen);
+        return null;
     }
 
     @Override
     protected int engineUpdate(byte[] input, int inputOffset, int inputLen, byte[] output,
             int outputOffset) throws ShortBufferException {
-        throw new IllegalStateException("Cipher has not been initialized");
+        if (!this.initialized) {
+            throw new IllegalStateException("Cipher has not been initialized"); 
+        }
+
+        if (opmode != Cipher.ENCRYPT_MODE && opmode != Cipher.DECRYPT_MODE) {
+            throw new IllegalStateException("Cipher not initialized for doFinal");
+        }
+
+        add2Buffer(input, inputOffset, inputLen);
+        return 0;
     }
 
     // see JCE spec
