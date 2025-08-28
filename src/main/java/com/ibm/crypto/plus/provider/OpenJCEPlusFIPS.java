@@ -223,24 +223,35 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
         putService(new OpenJCEPlusService(jce, "Cipher", "RSA", "com.ibm.crypto.plus.provider.RSA",
                 aliases));
 
-        aliases = null;
+        aliases = new String[] {"AESWrap"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES/KW/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW", aliases));
+        
+        aliases = new String[] {"AESWrapPad"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES/KWP/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP", aliases));
 
+        aliases = new String[] {"AESWrap_128"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KW/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_128", aliases));
+
+        aliases = new String[] {"AESWrapPad_128"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_128/KWP/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_128", aliases));
-        
+                
+        aliases = new String[] {"AESWrap_192"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KW/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_192", aliases));
+                
+        aliases = new String[] {"AESWrapPad_192"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_192/KWP/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_192", aliases));
 
+        aliases = new String[] {"AESWrap_256"};
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KW/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KW_256", aliases));
+
+        aliases = new String[] {"AESWrapPad_256"};                
         putService(new OpenJCEPlusService(jce, "Cipher", "AES_256/KWP/NoPadding",
                 "com.ibm.crypto.plus.provider.AESKeyWrapCipher$KWP_256", aliases));
 
