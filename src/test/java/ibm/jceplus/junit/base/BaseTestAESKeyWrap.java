@@ -10,6 +10,7 @@ package ibm.jceplus.junit.base;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.InvalidParameterException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
@@ -630,9 +631,14 @@ public class BaseTestAESKeyWrap extends BaseTestJunit5Interop {
             case "AESWrapPad_192":
                 size = 192;
                 break;
-            default:
+            case "AES_256/KW/NoPadding":
+            case "AES_256/KWP/NoPadding":
+            case "AESWrap_256":
+            case "AESWrapPad_256":
                 size = 256;
                 break;
+            default:
+                throw new InvalidParameterException("Invalid key algorithm specified");
         }
         return size;
     }
