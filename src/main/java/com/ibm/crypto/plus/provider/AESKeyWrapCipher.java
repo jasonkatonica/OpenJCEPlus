@@ -13,6 +13,7 @@ import com.ibm.crypto.plus.provider.ock.OCKException;
 import java.security.AlgorithmParameters;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.InvalidParameterException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.ProviderException;
@@ -66,6 +67,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
             byte[] temp = new byte[newSize];
             if (buffer != null && bufSize > 0) {
                 System.arraycopy(buffer, 0, temp, 0, bufSize);
+                Arrays.fill(buffer, (byte)0x00);
             }
             buffer = temp;
         }
@@ -106,6 +108,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
             throw new ProviderException("Operation doFinal failed  - "+ ocke.getMessage());
         }
         this.bufSize = 0;
+        Arrays.fill(buffer, (byte)0x00);
         this.buffer = null;
         return out;
     }
@@ -192,7 +195,9 @@ abstract class AESKeyWrapCipher extends CipherSpi {
             wrappering = false;
         } else if (opmode == Cipher.WRAP_MODE || opmode == Cipher.ENCRYPT_MODE) {
             wrappering = true;
-        } 
+        } else {
+            throw new InvalidParameterException("Incorrect opmode passed in");
+        }
         
         this.opmode = opmode;
         internalInit(opmode, key);
@@ -265,7 +270,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
         }
 
         if (opmode != Cipher.ENCRYPT_MODE && opmode != Cipher.DECRYPT_MODE) {
-            throw new IllegalStateException("Cipher not initialized for doFinal");
+            throw new IllegalStateException("Cipher not initialized for update");
         }
 
         add2Buffer(input, inputOffset, inputLen);
@@ -280,7 +285,7 @@ abstract class AESKeyWrapCipher extends CipherSpi {
         }
 
         if (opmode != Cipher.ENCRYPT_MODE && opmode != Cipher.DECRYPT_MODE) {
-            throw new IllegalStateException("Cipher not initialized for doFinal");
+            throw new IllegalStateException("Cipher not initialized for update");
         }
 
         add2Buffer(input, inputOffset, inputLen);
