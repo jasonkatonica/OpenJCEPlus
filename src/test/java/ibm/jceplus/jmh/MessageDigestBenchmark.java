@@ -39,6 +39,8 @@ public class MessageDigestBenchmark extends JMHBase {
     private String provider;
 
     private MessageDigest messageDigestSHA512;
+    private MessageDigest messageDigestSHA512_224;
+    private MessageDigest messageDigestSHA512_256;
     private MessageDigest messageDigestSHA256;
     private MessageDigest messageDigestMD5;
     private MessageDigest messageDigestSHA1;
@@ -52,6 +54,8 @@ public class MessageDigestBenchmark extends JMHBase {
         payload = new byte[payloadSize];
         random.nextBytes(payload);
         messageDigestSHA512 = MessageDigest.getInstance("SHA-512", provider);
+        messageDigestSHA512_224 = MessageDigest.getInstance("SHA512/224", provider);
+        messageDigestSHA512_256 = MessageDigest.getInstance("SHA512/256", provider);
         messageDigestSHA256 = MessageDigest.getInstance("SHA-256", provider);
         messageDigestMD5 = MessageDigest.getInstance("MD5", provider);
         messageDigestSHA1 = MessageDigest.getInstance("SHA1", provider);
@@ -61,6 +65,18 @@ public class MessageDigestBenchmark extends JMHBase {
     public byte[] sha512UpdateDigest() {
         messageDigestSHA512.update(payload);
         return messageDigestSHA512.digest();
+    }
+
+    @Benchmark
+    public byte[] sha512_224UpdateDigest() {
+        messageDigestSHA512_224.update(payload);
+        return messageDigestSHA512_224.digest();
+    }
+
+    @Benchmark
+    public byte[] sha512_256UpdateDigest() {
+        messageDigestSHA512_256.update(payload);
+        return messageDigestSHA512_256.digest();
     }
 
     @Benchmark
