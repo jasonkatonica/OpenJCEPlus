@@ -335,18 +335,28 @@ pipeline {
             Number of iterations to run all stages for each of the specified platforms. The iterations will run in parallel.')
         choice(name: 'BENCHMARK', choices: ['ibm.jceplus.jmh.RunAll', \
                                             'ibm.jceplus.jmh.AESCipherBenchmark', \
+                                            'ibm.jceplus.jmh.AESKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.AESWrapBenchmark', \
                                             'ibm.jceplus.jmh.ChaCha20CipherBenchmark', \
+                                            'ibm.jceplus.jmh.ChaCha20KeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.ChaCha20Poly1305CipherBenchmark', \
                                             'ibm.jceplus.jmh.DESedeCipherBenchmark', \
+                                            'ibm.jceplus.jmh.DESedeKeyGeneratorBenchmark', \
+                                            'ibm.jceplus.jmh.DHKeyGeneratorBenchmark', \
+                                            'ibm.jceplus.jmh.DSAKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.DSASignatureBenchmark', \
+                                            'ibm.jceplus.jmh.ECKeyGeneratorBenchmark', \
+                                            'ibm.jceplus.jmh.EdKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.HmacBenchmark', \
+                                            'ibm.jceplus.jmh.HMACKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.MessageDigestBenchmark', \
                                             'ibm.jceplus.jmh.MLDSABenchmark', \
                                             'ibm.jceplus.jmh.MLKEMBenchmark', \
                                             'ibm.jceplus.jmh.PBKDF2Benchmark', \
                                             'ibm.jceplus.jmh.RandomBenchmark', \
-                                            'ibm.jceplus.jmh.RSASignatureBenchmark'], description: '\
+                                            'ibm.jceplus.jmh.RSAKeyGeneratorBenchmark', \
+                                            'ibm.jceplus.jmh.RSASignatureBenchmark', \
+                                            'ibm.jceplus.jmh.XDHKeyGeneratorBenchmark'], description: '\
             Specify the performance benchmark you would like to run.')
         separator(name: "ExtendedOptions", sectionHeader: "Extended Options",
             separatorStyle: "border-width: 0",
