@@ -32,10 +32,7 @@ import org.openjdk.jmh.runner.options.Options;
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
 public class AESWrapBenchmark extends CipherBase {
 
-    @Param({
-        "AESWrap",
-        "AESWrapPad"
-    })
+    @Param({"AESWrap", "AESWrapPad"})
     private String transformation;
 
     @Param({"128", "192", "256"})
@@ -59,16 +56,14 @@ public class AESWrapBenchmark extends CipherBase {
         return encryptCipher.wrap(secretKey);
     }
 
-    @Benchmark 
+    @Benchmark
     public Key benchmarkAESUnwrap() throws Exception {
         return decryptCipher.unwrap(wrappedKey, "AES", Cipher.SECRET_KEY);
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = AESWrapBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

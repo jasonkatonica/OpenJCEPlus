@@ -56,16 +56,14 @@ public class ChaCha20Poly1305CipherBenchmark extends CipherBase {
         return encryptCipher.doFinal(plaintext);
     }
 
-    @Benchmark 
+    @Benchmark
     public byte[] benchmarkDecryption() throws Exception {
         return decryptCipher.doFinal(ciphertext);
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = ChaCha20Poly1305CipherBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

@@ -32,10 +32,7 @@ import org.openjdk.jmh.runner.options.Options;
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
 public class DESedeCipherBenchmark extends CipherBase {
 
-    @Param({
-        "DESede/ECB/PKCS5Padding",
-        "DESede/CBC/PKCS5Padding"
-    })
+    @Param({"DESede/ECB/PKCS5Padding", "DESede/CBC/PKCS5Padding"})
     private String transformation;
 
     @Param({"1024", "32768"})
@@ -65,16 +62,14 @@ public class DESedeCipherBenchmark extends CipherBase {
         return encryptCipher.doFinal(plaintext);
     }
 
-    @Benchmark 
+    @Benchmark
     public byte[] benchmarkDecryption() throws Exception {
         return decryptCipher.doFinal(ciphertext);
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = DESedeCipherBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

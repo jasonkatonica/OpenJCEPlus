@@ -73,9 +73,7 @@ public class HmacBenchmark extends JMHBase {
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = HmacBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

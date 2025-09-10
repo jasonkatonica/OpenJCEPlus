@@ -32,14 +32,8 @@ import org.openjdk.jmh.runner.options.Options;
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
 public class AESCipherBenchmark extends CipherBase {
 
-    @Param({
-        "AES/ECB/PKCS5Padding",
-        "AES/CBC/PKCS5Padding", 
-        "AES/CFB/PKCS5Padding",
-        "AES/OFB/PKCS5Padding",
-        "AES/CTR/NoPadding",
-        "AES/GCM/NoPadding"
-    })
+    @Param({"AES/ECB/PKCS5Padding", "AES/CBC/PKCS5Padding", "AES/CFB/PKCS5Padding",
+            "AES/OFB/PKCS5Padding", "AES/CTR/NoPadding", "AES/GCM/NoPadding"})
     private String transformation;
 
     @Param({"256"})
@@ -75,16 +69,14 @@ public class AESCipherBenchmark extends CipherBase {
         return encryptCipher.doFinal(plaintext);
     }
 
-    @Benchmark 
+    @Benchmark
     public byte[] benchmarkDecryption() throws Exception {
         return decryptCipher.doFinal(ciphertext);
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = AESCipherBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

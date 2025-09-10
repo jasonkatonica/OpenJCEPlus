@@ -57,32 +57,30 @@ public class MLKEMBenchmark extends JMHBase {
         keyPair.getPublic();
         keyPair.getPrivate();
         encapsulator = myKEM.newEncapsulator(keyPair.getPublic());
-        encapsulated = encapsulator.encapsulate(0,31,"AES");
+        encapsulated = encapsulator.encapsulate(0, 31, "AES");
         decapsulator = myKEM.newDecapsulator(keyPair.getPrivate());
     }
 
     @Benchmark
     public SecretKey encapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(0,31,"AES");
+        encapsulated = encapsulator.encapsulate(0, 31, "AES");
         return encapsulated.key();
     }
 
     @Benchmark
     public SecretKey decapsulation() throws Exception {
-        return decapsulator.decapsulate(encapsulated.encapsulation(),0,31,"AES");
+        return decapsulator.decapsulate(encapsulated.encapsulation(), 0, 31, "AES");
     }
 
     @Benchmark
     public SecretKey encapsulationAndDecapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(0,31,"AES");
-        return decapsulator.decapsulate(encapsulated.encapsulation(),0,31,"AES");
+        encapsulated = encapsulator.encapsulate(0, 31, "AES");
+        return decapsulator.decapsulate(encapsulated.encapsulation(), 0, 31, "AES");
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = MLKEMBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

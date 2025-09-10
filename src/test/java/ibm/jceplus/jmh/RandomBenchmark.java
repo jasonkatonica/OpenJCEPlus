@@ -29,7 +29,7 @@ import org.openjdk.jmh.runner.options.Options;
 @State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
-public class RandomBenchmark  extends JMHBase {
+public class RandomBenchmark extends JMHBase {
 
     @Param({"16", "2048", "32768"})
     private int payloadSize;
@@ -79,9 +79,7 @@ public class RandomBenchmark  extends JMHBase {
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = RandomBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

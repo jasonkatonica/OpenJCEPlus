@@ -56,39 +56,43 @@ public class PBKDF2Benchmark extends JMHBase {
 
     @Benchmark
     public byte[] pbkdf2Sha11000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha1Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256)).getEncoded();
+        return pbkdf2Sha1Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256))
+                .getEncoded();
     }
 
     @Benchmark
     public byte[] pbkdf2Sha1300000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha1Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256)).getEncoded();
+        return pbkdf2Sha1Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256))
+                .getEncoded();
     }
 
     @Benchmark
     public byte[] pbkdf2Sha2561000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha256Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256)).getEncoded();
+        return pbkdf2Sha256Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256))
+                .getEncoded();
     }
 
     @Benchmark
     public byte[] pbkdf2Sha256300000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha256Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256)).getEncoded();
+        return pbkdf2Sha256Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256))
+                .getEncoded();
     }
 
     @Benchmark
     public byte[] pbkdf2Sha5121000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha512Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256)).getEncoded();
+        return pbkdf2Sha512Factory.generateSecret(new PBEKeySpec(password, salt, 1000, 256))
+                .getEncoded();
     }
 
     @Benchmark
     public byte[] pbkdf2Sha512300000Iter() throws InvalidKeySpecException {
-        return pbkdf2Sha512Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256)).getEncoded();
+        return pbkdf2Sha512Factory.generateSecret(new PBEKeySpec(password, salt, 300000, 256))
+                .getEncoded();
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = PBKDF2Benchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

@@ -32,9 +32,7 @@ import org.openjdk.jmh.runner.options.Options;
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
 public class ChaCha20CipherBenchmark extends CipherBase {
 
-    @Param({
-        "ChaCha20/None/NoPadding"
-    })
+    @Param({"ChaCha20/None/NoPadding"})
     private String transformation;
 
     @Param({"1024", "32768"})
@@ -58,16 +56,14 @@ public class ChaCha20CipherBenchmark extends CipherBase {
         return encryptCipher.doFinal(plaintext);
     }
 
-    @Benchmark 
+    @Benchmark
     public byte[] benchmarkDecryption() throws Exception {
         return decryptCipher.doFinal(ciphertext);
     }
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = ChaCha20CipherBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

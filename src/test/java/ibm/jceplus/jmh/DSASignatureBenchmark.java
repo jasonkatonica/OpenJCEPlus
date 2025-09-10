@@ -134,9 +134,7 @@ public class DSASignatureBenchmark extends JMHBase {
 
     public static void main(String[] args) throws RunnerException {
         String testSimpleName = DSASignatureBenchmark.class.getSimpleName();
-        Options opt = optionsBuild(
-            testSimpleName,
-            testSimpleName);
+        Options opt = optionsBuild(testSimpleName, testSimpleName);
 
         new Runner(opt).run();
     }

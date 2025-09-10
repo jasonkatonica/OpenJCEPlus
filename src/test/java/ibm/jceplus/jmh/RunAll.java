@@ -15,9 +15,8 @@ import org.openjdk.jmh.runner.options.Options;
 public class RunAll extends JMHBase {
 
     public static void main(String[] args) throws RunnerException {
-        Options opt = optionsBuild(
-            "Benchmark", // Run all classes that have the word "Benchmark" in their name.
-            RunAll.class.getSimpleName());
+        Options opt = optionsBuild("Benchmark", // Run all classes that have the word "Benchmark" in their name.
+                RunAll.class.getSimpleName());
         new Runner(opt).run();
     }
 }

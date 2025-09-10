@@ -36,27 +36,28 @@ abstract public class CipherBase extends JMHBase {
      * @param provider The provider to use for both key generation and the transformation itself.
      * @throws Exception
      */
-    public void setup(int keySize, String transformation, int payloadSize, String provider) throws Exception {
+    public void setup(int keySize, String transformation, int payloadSize, String provider)
+            throws Exception {
         insertProvider(provider);
         String splitTransformation[] = transformation.split("/");
 
         String algorithm = splitTransformation[0];
 
         String mode = null;
-        if (splitTransformation.length > 1 ) {
+        if (splitTransformation.length > 1) {
             mode = splitTransformation[1];
         }
 
         encryptCipher = Cipher.getInstance(transformation, provider);
         decryptCipher = Cipher.getInstance(transformation, provider);
-        
+
         plaintext = new byte[payloadSize];
         random.nextBytes(plaintext);
 
         KeyGenerator keyGen = null;
         if (algorithm.equals("ChaCha20-Poly1305")) {
             keyGen = KeyGenerator.getInstance("ChaCha20", provider);
-        } else if(algorithm.startsWith("AESWrap")) {
+        } else if (algorithm.startsWith("AESWrap")) {
             keyGen = KeyGenerator.getInstance("AES", provider);
         } else {
             keyGen = KeyGenerator.getInstance(algorithm, provider);
@@ -101,11 +102,8 @@ abstract public class CipherBase extends JMHBase {
     }
 
     private boolean ivRequired(String mode) {
-        return "CBC".equals(mode) ||
-               "CFB".equals(mode) ||
-               "CTR".equals(mode) ||
-               "GCM".equals(mode) ||
-               "None".equals(mode) || // ChaCha20 specific
-               "OFB".equals(mode);
+        return "CBC".equals(mode) || "CFB".equals(mode) || "CTR".equals(mode) || "GCM".equals(mode)
+                || "None".equals(mode) || // ChaCha20 specific
+                "OFB".equals(mode);
     }
 }
