@@ -342,9 +342,11 @@ pipeline {
                                             'ibm.jceplus.jmh.ChaCha20Poly1305CipherBenchmark', \
                                             'ibm.jceplus.jmh.DESedeCipherBenchmark', \
                                             'ibm.jceplus.jmh.DESedeKeyGeneratorBenchmark', \
+                                            'ibm.jceplus.jmh.DHKeyExchangeBenchmark', \
                                             'ibm.jceplus.jmh.DHKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.DSAKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.DSASignatureBenchmark', \
+                                            'ibm.jceplus.jmh.ECDHKeyExchangeBenchmark', \
                                             'ibm.jceplus.jmh.ECKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.EdKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.HmacBenchmark', \
@@ -357,6 +359,9 @@ pipeline {
                                             'ibm.jceplus.jmh.RandomBenchmark', \
                                             'ibm.jceplus.jmh.RSAKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.RSASignatureBenchmark', \
+                                            'ibm.jceplus.jmh.X448KeyExchangeBenchmark', \
+                                            'ibm.jceplus.jmh.X25519KeyExchangeBenchmark', \
+                                            'ibm.jceplus.jmh.XDHKeyExchangeBenchmark', \
                                             'ibm.jceplus.jmh.XDHKeyGeneratorBenchmark'], description: '\
             Specify the performance benchmark you would like to run.')
         separator(name: "ExtendedOptions", sectionHeader: "Extended Options",
