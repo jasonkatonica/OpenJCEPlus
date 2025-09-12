@@ -350,6 +350,7 @@ pipeline {
                                             'ibm.jceplus.jmh.HmacBenchmark', \
                                             'ibm.jceplus.jmh.HMACKeyGeneratorBenchmark', \
                                             'ibm.jceplus.jmh.MessageDigestBenchmark', \
+                                            'ibm.jceplus.jmh.MessageDigestInstanceBenchmark', \
                                             'ibm.jceplus.jmh.MLDSABenchmark', \
                                             'ibm.jceplus.jmh.MLKEMBenchmark', \
                                             'ibm.jceplus.jmh.PBKDF2Benchmark', \
