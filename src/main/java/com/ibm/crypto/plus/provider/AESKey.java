@@ -8,8 +8,6 @@
 
 package com.ibm.crypto.plus.provider;
 
-
-import java.lang.ref.WeakReference;
 import java.security.InvalidKeyException;
 import java.security.KeyRep;
 import java.util.Arrays;
