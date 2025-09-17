@@ -14,6 +14,9 @@ import java.security.Provider;
 import org.openjdk.jmh.profile.ClassloaderProfiler;
 import org.openjdk.jmh.profile.CompilerProfiler;
 import org.openjdk.jmh.profile.GCProfiler;
+import org.openjdk.jmh.profile.LinuxPerfAsmProfiler;
+import org.openjdk.jmh.profile.LinuxPerfNormProfiler;
+import org.openjdk.jmh.profile.LinuxPerfProfiler;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.options.Options;
 import org.openjdk.jmh.runner.options.OptionsBuilder;
@@ -68,6 +71,9 @@ abstract public class JMHBase {
             optionsBuilder.addProfiler(WinPerfAsmProfiler.class);
         }
         */
+        optionsBuilder.addProfiler(LinuxPerfProfiler.class);
+        optionsBuilder.addProfiler(LinuxPerfNormProfiler.class);
+        optionsBuilder.addProfiler(LinuxPerfAsmProfiler.class);
 
         //Add these conditionally based on os and arch:
         //.addProfiler(DTraceAsmProfiler.class)
