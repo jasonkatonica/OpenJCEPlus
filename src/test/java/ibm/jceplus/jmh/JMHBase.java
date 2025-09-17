@@ -49,7 +49,7 @@ abstract public class JMHBase {
         optionsBuilder.addProfiler(CompilerProfiler.class);
         optionsBuilder.jvmArgsAppend("-Xms1G", "-Xmx1G", "--patch-module",
                 "openjceplus=" + projectHomeDir + "/target/classes",
-                "-Dmy.maxMemory=.80",
+                "-Dmy.maxMemory=.60",
                 "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
                 "--add-exports=java.base/sun.security.pkcs=ALL-UNNAMED",
                 "--add-exports=java.base/sun.security.x509=ALL-UNNAMED",
