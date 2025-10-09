@@ -92,7 +92,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                         "BaseTestInteropBC.java:  testAESCCM():  The decryption provider is:  "
                                 + decryptionProvider);
 
-
             // Select which plainText string to encrypt/decrypt.
             Random randomForPlainText = new Random();
             int whichPlainTextString = randomForPlainText.nextInt(3); // The specified value is excluded
@@ -104,15 +103,12 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 plainText = plainTextLong;
             }
 
-
             // IF USED, THIS DEBUG BLOCK OF CODE WILL ENSURE THAT THE SAME plaintext WILL BE USED FOR EVERY ITERATION
             // plainText = plainTextShort;
-
 
             if (printJunitTrace)
                 System.out.println(
                         "BaseTestInteropBC.java:  testAESCCM():  Original Text : " + plainText);
-
 
             // Select which AES key size to use.
             Random randomForKeySize = new Random();
@@ -134,7 +130,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                             "BaseTestInteropBC.java:  testAESCCM():  The AES key size is 256.");
             }
 
-
             KeyGenerator keyGenerator = KeyGenerator.getInstance("AES", encryptionProvider);
             if (printJunitTrace)
                 System.out
@@ -142,11 +137,9 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                                 + keyGenerator.getClass().getName());
             keyGenerator.init(AESKeySize);
 
-
             // Generate Key
             SecretKey key = keyGenerator.generateKey();
             byte[] aesKeyBytes = key.getEncoded();
-
 
             // IF USED, THIS DEBUG BLOCK OF CODE WILL ENSURE THAT THE SAME AES KEY WILL BE USED FOR EVERY ITERATION
             // byte[] encodedAESKey = { (byte)0xE9, (byte)0x48, (byte)0x68, (byte)0x67, (byte)0x80, (byte)0x6E, (byte)0x89, (byte)0x73, (byte)0xF5, (byte)0xFF, (byte)0x72, (byte)0x18, (byte)0x8A, (byte)0x4E, (byte)0x17, (byte)0x42, (byte)0x71, (byte)0x53, (byte)0xF2, (byte)0x1D, (byte)0x9E, (byte)0x6B, (byte)0x83, (byte)0x1C, (byte)0x46, (byte)0x5C, (byte)0xEC, (byte)0xAF, (byte)0x03, (byte)0x54, (byte)0x40, (byte)0x43  };
@@ -154,17 +147,14 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
             // SecretKeyFactory aesKeyFactory = SecretKeyFactory.getInstance( "AES" );
             // key = aesKeyFactory.generateSecret( aesKeySpec );
 
-
             // Generate a random IV
             byte[] IV = new byte[computeIVBufferLength()];
             SecureRandom secureRandom = new SecureRandom();
             secureRandom.nextBytes(IV);
 
-
             // IF USED, THIS DEBUG BLOCK OF CODE WILL ENSURE THAT THE SAME IV WILL BE USED FOR EVERY ITERATION
             // byte[] debugIV = { (byte)0x01, (byte)0x02, (byte)0x03, (byte)0x04, (byte)0x05, (byte)0x06, (byte)0x07, (byte)0x08  };
             // IV = debugIV;
-
 
             if (printJunitTrace)
                 System.out.println(
@@ -172,18 +162,15 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
             if (printJunitTrace)
                 System.out.println(toHexString(IV));
 
-
             // Generate a random AAD (limit the aad byte length to the range 1 thru 2048)
             Random randomForAAD = new Random();
             int aadByteLength = randomForAAD.nextInt(2048) + 1; // Any value in the range 1 thru 2048
             aad = new byte[aadByteLength];
             secureRandom.nextBytes(aad);
 
-
             // IF USED, THIS DEBUG BLOCK OF CODE WILL ENSURE THAT THE SAME IV WILL BE USED FOR EVERY ITERATION
             // byte[] debugAAD = { (byte)0x09, (byte)0x10, (byte)0x11, (byte)0x12, (byte)0x13, (byte)0x14, (byte)0x15, (byte)0x16 };
             // aad=debugAAD;
-
 
             if (printJunitTrace)
                 System.out.println("BaseTestInteropBC.java:  testAESCCM():  There are "
@@ -194,10 +181,8 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
             if (printJunitTrace)
                 System.out.println(toHexString(aad) + "\n");
 
-
             // Generate a random tag length (one of:  128, 112, 96, 80, 64 )
             int ccmTagLength = computeTagLength();
-
 
             // IF USED, THIS DEBUG BLOCK OF CODE WILL ENSURE THAT THE CCM TAG LENGTH WILL BE USED FOR EVERY ITERATION
             // ccmTagLength = 64;  // DEBUG
@@ -205,7 +190,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 System.out.println(
                         "BaseTestInteropBC.java:  testAESCCM():  The random 'tag length' is:  "
                                 + ccmTagLength);
-
 
             // DO ENCRYPTION
             byte[] cipherText = encrypt(plainText.getBytes(), aesKeyBytes, IV, ccmTagLength);
@@ -237,11 +221,8 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 Assertions.fail();
             }
 
-
-
             // DO DECRYPTION
             String decryptedText = decrypt(cipherText, aesKeyBytes, IV, ccmTagLength);
-
 
             if (decryptedText != null) {
                 if (printJunitTrace)
@@ -279,7 +260,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 decryptedText = null;
             }
 
-
             synchronized (myMutexObject) {
                 if (printJunitTrace)
                     System.out.println(
@@ -291,10 +271,7 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                     System.out.println(
                             "===========================================================\n");
             }
-
-
         } // end iteration loop
-
 
         synchronized (myMutexObject) {
             if (printJunitTrace)
@@ -312,11 +289,7 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 System.out.println(
                         "=======================================================================================================\n");
         }
-
-
     } // end testAESCCM()
-
-
 
     private static byte[] encrypt(byte[] plaintext, byte[] aesKeyBytes, byte[] IV, int ccmTagLength)
             throws Exception {
@@ -501,7 +474,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
             if (printJunitTrace)
                 System.out.println(toHexString(cipherText) + "\n");
 
-
             synchronized (myMutexObject) {
                 if (printJunitTrace)
                     System.out.println(
@@ -620,13 +592,11 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 System.out.println(
                         "BaseTestInteropBC.java:  decrypt():  MAKING OCK DECRYPTION CALL FROM decrypt() METHOD !!!");
 
-
             // Perform Decryption
             byte[] decryptedText = null;
             try {
                 Random randomForMethodChoice = new Random();
                 int whichMethod = randomForMethodChoice.nextInt(5); // The specified value is excluded
-
 
                 if (whichMethod == 0) {
                     if (printJunitTrace)
@@ -758,7 +728,6 @@ public class BaseTestAESCCMInteropBC extends BaseTestJunit5Interop {
                 ex.printStackTrace(System.out);
                 Assertions.fail();
             }
-
 
             synchronized (myMutexObject) {
                 if (printJunitTrace)
