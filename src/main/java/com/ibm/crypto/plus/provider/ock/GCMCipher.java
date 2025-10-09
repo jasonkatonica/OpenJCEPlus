@@ -79,6 +79,7 @@ public final class GCMCipher {
     private static final boolean useJavaTLS = true;
 
     private static final Map<Integer, String> ErrorCodes;
+
     static {
         ErrorCodes = new HashMap<Integer, String>();
         ErrorCodes.put(1, "ICC_AES_GCM_CTX_new failed");
@@ -96,6 +97,7 @@ public final class GCMCipher {
         //        }
         //        useJavaTLS = (tls_support_result != 0);
     }
+
     private static final int FastJNIInputBufferSize = 1024 * 2 * 2;
     private static final int FastJNIOutputBufferSize = 1024 * 2 * 2 + 16; //Add Tag length for encryption
     private static final int FastJNIParameterBufferSize = 1024;
@@ -186,7 +188,6 @@ public final class GCMCipher {
         if (GCMHardwareFunctionPtr == 0)
             GCMHardwareFunctionPtr = NativeInterface
                     .do_GCM_checkHardwareGCMSupport(ockContext.getId());
-
 
         if (iv.length + key.length + aadLen <= FastJNIParameterBufferSize && !disableGCMAcceleration
                 && (inputLen <= FastJNIInputBufferSize || GCMHardwareFunctionPtr != -1)) {
@@ -407,8 +408,6 @@ public final class GCMCipher {
                     "Output buffer must be (at least) " + len + " bytes long");
         }
 
-
-
         authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
@@ -468,8 +467,6 @@ public final class GCMCipher {
             throw new IllegalArgumentException("IV is the wrong size");
         }
 
-
-
         if ((output == null) || (outputOffset < 0) || (outputOffset > output.length)) {
             throw new IllegalArgumentException("Output range is invalid");
         }
@@ -477,8 +474,6 @@ public final class GCMCipher {
         // if Encrypting, the output buffer size should be cipherSize + TAG
         // if Decrypting, the output buffer size should be cipherSize - TAG
         int len = 0;
-
-
 
         authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
@@ -512,7 +507,6 @@ public final class GCMCipher {
             IllegalBlockSizeException, BadPaddingException, AEADBadTagException {
         //final String methodName="do_GCM_UpdForUpdateDecrypt ";
         int rc = 0;
-
 
         //OCKDebug.Msg(debPrefix, methodName,  "key :" + key);
         //OCKDebug.Msg(debPrefix, methodName,  "iv :" + iv);
@@ -552,7 +546,6 @@ public final class GCMCipher {
         // if Decrypting, the output buffer size should be cipherSize - TAG
         int len = getOutputSize(inputLen, false /*isEncrypt*/, tagLen, false);
         //OCKDebug.Msg(debPrefix, methodName, "output buffer len = " + len);
-
 
         //authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
@@ -653,14 +646,12 @@ public final class GCMCipher {
             inputOffset = 0;
         }
 
-
         authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
         long gcmCtx = getGCMContext(true, key.length, ockContext);
         //OCKDebug.Msg (debPrefix, methodName, "gcmCtx :" + String.valueOf(gcmCtx));
-
 
         byte[] tag = new byte[tagLen];
 
@@ -743,9 +734,6 @@ public final class GCMCipher {
         //OCKDebug.Msg(debPrefix, methodName, "input :", input);
         //OCKDebug.Msg(debPrefix, methodName, "aad :", aad);
         //OCKDebug.Msg(debPrefix, methodName,  "tagLen :" + tagLen + " inputOffset :" + inputOffset + "outputOffset :" + outputOffset);
-
-
-
         //OCKDebug.Msg(debPrefix, methodName, "checking of overlapping input/output array completed");
         //authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
@@ -803,7 +791,6 @@ public final class GCMCipher {
             throw new IllegalArgumentException("IV is the wrong size");
         }
 
-
         // if Encrypting, the output buffer size should be cipherSize + TAG
         // if Decrypting, the output buffer size should be cipherSize - TAG
         int len = getOutputSize(inputLen, true /* isEncrypt */, tagLen, false);
@@ -820,9 +807,6 @@ public final class GCMCipher {
         //OCKDebug.Msg(debPrefix, methodName, "input :", input);
         //OCKDebug.Msg(debPrefix, methodName, "aad :", aad);
         //OCKDebug.Msg(debPrefix, methodName,  "tagLen :" + tagLen + " inputOffset :" + inputOffset + "outputOffset :" + outputOffset);
-
-
-
         //OCKDebug.Msg(debPrefix, methodName, "checking of overlapping input/output array completed");
         authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 

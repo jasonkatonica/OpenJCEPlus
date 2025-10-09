@@ -184,7 +184,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
                 // OCKDebug.Msg(debPrefix, methodName, "OCKException encountered = " +
                 // e.getMessage());
 
-
                 if (!encrypting) {
                     AEADBadTagException abte = new AEADBadTagException(
                             "Unable to perform engine doFinal; "
@@ -292,7 +291,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
                 //
                 //requireReinit = true;
 
-
                 if (!encrypting) {
                     AEADBadTagException abte = new AEADBadTagException(e.getMessage());
                     provider.setOCKExceptionCause(abte, e);
@@ -389,8 +387,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
             resetVars(true);
             throw provider.providerException("Failure in engineDoFinal", e);
         }
-
-
     }
 
     private byte[] doFinalForUpdates(byte[] input, int inputOffset, int inputLen)
@@ -981,7 +977,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
 
         // Check for IV and Key.
 
-
         // OCKDebug.Msg(debPrefix, methodName, "is length greater than 0 " + len);
         try {
             // first do Init And AAED
@@ -1114,7 +1109,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
                             // outLen += cipher.decrypt(input, inputOffset, inputConsumed,
                             // output, outputOffset);
                         } else {
-
 
                             outLen += GCMCipher.do_GCM_UpdForUpdateEncrypt(ockContext, Key, IV,
                                     tagLenInBytes, input, inputOffset, inputConsumed, output,
@@ -1341,8 +1335,6 @@ public final class AESGCMCipher extends CipherSpi implements AESConstants, GCMCo
         // calculate total input length
         int len = Math.addExact(buffered, inputLen);
         //OCKDebug.Msg(debPrefix, methodName,"buffered=" + buffered + "inputLen=" + inputLen + "len=" +  len);
-
-
 
         /*
          * prepare the final input, assemble a new buffer if any

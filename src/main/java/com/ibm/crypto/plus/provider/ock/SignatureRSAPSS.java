@@ -16,7 +16,7 @@ public final class SignatureRSAPSS {
 
     public enum InitOp {
         INITSIGN, INITVERIFY
-    };
+    }
 
     private OCKContext ockContext = null;
     private long rsaPssId = 0;
@@ -227,7 +227,6 @@ public final class SignatureRSAPSS {
     }
 
     public synchronized boolean verifyFinal(byte[] sigBytes) throws OCKException {
-
 
         // create key length function and check sigbytes against key length?
         if (!this.initialized) {

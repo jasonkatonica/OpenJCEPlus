@@ -5,6 +5,7 @@
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+
 package ibm.jceplus.junit.base;
 
 import java.io.File;
@@ -83,7 +84,6 @@ public class BaseTestKeySerialization extends BaseTestJunit5Signature {
         SecretKey key = null;
         Cipher cp = null;
 
-        
         keyGen = KeyGenerator.getInstance(algorithm, getProviderName());
         keyGen.init(size);
         key = keyGen.generateKey();
@@ -92,7 +92,6 @@ public class BaseTestKeySerialization extends BaseTestJunit5Signature {
         File keyFile = createTempFile();
         serializeKey(key, keyFile);
         SecretKey deserializedKey = (SecretKey) deserializeKey(keyFile);
-
 
         assertArrayEquals(key.getEncoded(), 
             deserializedKey.getEncoded(),

@@ -141,6 +141,7 @@ public final class Digest implements Cloneable {
     /* This wrapper is used to pass a primitive variable as a parameter by reference instead of by value to the cleaner. */
     public class BoolWrapper {
         boolean value;
+
         public BoolWrapper(boolean value) {
             this.value = value;
         }
@@ -244,7 +245,6 @@ public final class Digest implements Cloneable {
             throw new OCKException(badIdMsg);
         }
         //OCKDebug.Msg (debPrefix, methodName, "digestId :" + this.digestId);
-
 
         // push data from the buffer that haven't got updated yet
         int digestLength = getDigestLength();

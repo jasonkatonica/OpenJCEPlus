@@ -5,6 +5,7 @@
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+
 package ibm.jceplus.junit.base;
 
 import ibm.security.internal.spec.RawKeySpec;
@@ -37,8 +38,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
 
     @BeforeEach
     public void setUp() throws Exception {
-
-
     }
 
     @ParameterizedTest
@@ -70,6 +69,7 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
         }
         keyFactoryCreateFromEncoded(Algorithm);
     }
+
     @ParameterizedTest
     @CsvSource({"ML-DSA", "ML-DSA-44", "ML-DSA-65", "ML-KEM", "ML-KEM-512"})
     public void testPQCKeyFactoryCreateFromStaticEncoded(String Algorithm) throws Exception {
