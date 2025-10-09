@@ -171,7 +171,6 @@ public final class DHKey implements AsymmetricKey {
             throw new IllegalArgumentException("The private key parameter is not valid");
         }
 
-
         if (!validId(pubKeyId) || !validId(privKeyId)) {
             throw new OCKException(badIdMsg1);
         }

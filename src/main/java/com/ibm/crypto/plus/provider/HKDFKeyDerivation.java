@@ -50,7 +50,7 @@ public class HKDFKeyDerivation extends KDFSpi {
             this.digestAlg = digestAlg;
             this.hmacLen = hmacLen;
         }
-    };
+    }
 
     /**
      * The sole constructor.
@@ -70,7 +70,6 @@ public class HKDFKeyDerivation extends KDFSpi {
             throw new InvalidAlgorithmParameterException(
                     supportedHmac.hmacAlg + " does not support parameters");
         }
-        
 
         if (!OpenJCEPlusProvider.verifySelfIntegrity(this.getClass())) {
             throw new SecurityException("Integrity check failed for: " + provider.getName());

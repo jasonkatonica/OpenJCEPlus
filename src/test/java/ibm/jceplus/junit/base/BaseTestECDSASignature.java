@@ -670,7 +670,6 @@ public class BaseTestECDSASignature extends BaseTestJunit5Signature {
             doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
         }
 
-
         keyPair = generateKeyPair("secp256r1");
         doSignVerify("SHA256withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
 
@@ -732,8 +731,6 @@ public class BaseTestECDSASignature extends BaseTestJunit5Signature {
         doSignVerify("SHA224withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
         keyPair = generateKeyPair("1.3.132.0.30");
         doSignVerify("SHA224withECDSA", origMsg, keyPair.getPrivate(), keyPair.getPublic());
-
-
     }
 
     @Test
@@ -782,7 +779,6 @@ public class BaseTestECDSASignature extends BaseTestJunit5Signature {
 
     @Test
     public void testX962PrimeCurves() throws Exception {
-
 
         /* ANSI X9.62 prime curves */
 

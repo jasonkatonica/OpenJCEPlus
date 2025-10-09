@@ -22,6 +22,7 @@ public class RawKeySpec implements KeySpec {
     /**
      * @param key contains the key as a byte array
      */
+
     public RawKeySpec(byte[] key) {
         keyBytes = key.clone();
     }

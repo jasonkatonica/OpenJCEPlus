@@ -88,7 +88,6 @@ final class ECPrivateKey extends PKCS8Key implements java.security.interfaces.EC
         algid = new AlgorithmId(AlgorithmId.EC_oid, myAlgorithmParameters);
 
         // generate the encoding
-
         // try {
         // key = ECParameters.trimZeroes(s.toByteArray());
         // encode();
@@ -96,7 +95,6 @@ final class ECPrivateKey extends PKCS8Key implements java.security.interfaces.EC
         // throw new InvalidKeyException("could not DER encode x: " +
         // e.getMessage());
         // }
-
 
         byte[] sArr = s.toByteArray();
         // convert to fixed-length array

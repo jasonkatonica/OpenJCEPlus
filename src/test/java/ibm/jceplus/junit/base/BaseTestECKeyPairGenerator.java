@@ -5,6 +5,7 @@
  * under the terms provided by IBM in the LICENSE file that accompanied
  * this code, including the "Classpath" Exception described therein.
  */
+
 package ibm.jceplus.junit.base;
 
 import java.math.BigInteger;
@@ -155,8 +156,6 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
 
             generictestECKeyGenCurve("secp128r2");
             generictestECKeyGenCurve("1.3.132.0.29");
-
-
         }
 
         generictestECKeyGenCurve("secp160k1");
@@ -206,10 +205,8 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
         generictestECKeyGenCurve("X9.62 prime192v2");
         generictestECKeyGenCurve("1.2.840.10045.3.1.2");
 
-
         generictestECKeyGenCurve("X9.62 prime192v3");
         generictestECKeyGenCurve("1.2.840.10045.3.1.3");
-
 
         generictestECKeyGenCurve("X9.62 prime239v1");
         generictestECKeyGenCurve("1.2.840.10045.3.1.4");
@@ -276,7 +273,6 @@ public class BaseTestECKeyPairGenerator extends BaseTestJunit5 {
             } catch (InvalidAlgorithmParameterException | ProviderException ex) {
                 assertTrue(true);
             }
-
 
             try {
                 generictestECKeyGenCurve("secp112r2");

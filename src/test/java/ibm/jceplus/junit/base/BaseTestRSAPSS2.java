@@ -102,7 +102,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
             verifyingProvidersSignatureAlgorithmName = "RSAPSS";
         }
 
-
         if (printJunitTrace)
             System.out.println(
                     "BaseTestRSAPSS2.java:  setup():  Following the call to setUp(), signingProviderName   = "
@@ -111,7 +110,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
             System.out.println(
                     "BaseTestRSAPSS2.java:  setup():  Following the call to setUp(), verifyingProviderName = "
                             + verifyingProviderName);
-
 
         //================================================================
 
@@ -144,7 +142,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
 
         //================================================================
 
-
         if (signingProviderName.equalsIgnoreCase("SunRsaSign")) {
             // KeyPairs for IBMJCE
             rsaKeyPairGen = KeyPairGenerator.getInstance("RSA", "SunRsaSign");
@@ -174,13 +171,11 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
 
         //================================================================
 
-
         if (signingProviderName.equalsIgnoreCase("OpenJCEPlusFIPS")) {
             // KeyPairs for OpenJCEPlusFIPS
             //rsaKeyPairGen = KeyPairGenerator.getInstance("RSA", "OpenJCEPlusFIPS");
             //rsaKeyPairGen.initialize(512, null);
             //rsaKeyPair_OpenJCEPlusFIPS[0] = rsaKeyPairGen.generateKeyPair();               // rsaKeyPair_OpenJCEPlusFIPS[0] = RSA 512
-
             //rsaKeyPairGen = KeyPairGenerator.getInstance("RSA", "OpenJCEPlusFIPS");
             //rsaKeyPairGen.initialize(1024, null);
             //rsaKeyPair_OpenJCEPlusFIPS[1] = rsaKeyPairGen.generateKeyPair();               // rsaKeyPair_OpenJCEPlusFIPS[1] = RSA 1024
@@ -218,11 +213,9 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
         KeyPair rsaKeyPair = null;
         byte[] dataToBeSigned;
 
-
         if (printJunitTrace)
             System.out.println(
                     "================  BEGINNING OF testRSAPSS()  ================================");
-
 
         //OpenJCEPlusFIPS and SunRsaSign does not support 512
         for (int ii = 0; ii <= 5; ii++) // For each RSA key size
@@ -324,8 +317,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                 }
             }
 
-
-
             for (int jj = 0; jj < 3; jj++) // For each dataToBeSigned string (differing lengths)
             {
 
@@ -340,9 +331,7 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                     dataToBeSigned = dataToBeSignedLong;
                 }
 
-
                 //======================= BEGINNING OF TESTS WITH MATCHING mdName AND MGF1ParameterSpec    ======================================
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -443,12 +432,10 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                                 verifyingProvidersSignatureAlgorithmName, signingProviderName,
                                 verifyingProviderName, pssParameterSpec);
 
-
                         if (printJunitTrace)
                             System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                     + " = " + result);
                         assertTrue(result, "signature is invalid!!");
-
 
                     } catch (Exception ex) {
                         if (printJunitTrace)
@@ -460,7 +447,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                 }
 
                 //======================================================================================================
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -695,7 +681,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -820,7 +805,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -856,7 +840,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                         Assertions.fail();
                     }
                 }
-
 
                 //======================================================================================================
 
@@ -969,7 +952,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -1006,12 +988,10 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                     }
                 }
 
-
                 //======================================================================================================
 
                 //======================= END OF TESTS WITH MATCHING mdName AND MGF1ParameterSpec           ======================================
                 //======================= BEGINNING OF TESTS WITH MIS-MATCHING mdName AND MGF1ParameterSpec ======================================
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -1121,7 +1101,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -1255,7 +1234,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -1387,7 +1365,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -1521,7 +1498,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -1654,7 +1630,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -1678,13 +1653,10 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
 
                 //======================================================================================================
 
-
                 //======================= END OF TESTS WITH MIS-MATCHING mdName AND MGF1ParameterSpec             ======================================
                 //======================= BEGINNING OF TESTS WITH MIS-MATCHING mdName (MD5) AND MGF1ParameterSpec ======================================
 
-
                 // NOTE:  ORACLE DOES NOT SUPPORT mdName = MD5
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -1794,8 +1766,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -2061,7 +2031,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -2082,7 +2051,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                         Assertions.fail();
                     }
                 }
-
 
                 //======================================================================================================
 
@@ -2194,7 +2162,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -2328,7 +2295,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -2354,7 +2320,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
 
                 //======================= END OF TESTS WITH MIS-MATCHING mdName (MD5) AND MGF1ParameterSpec ======================================
                 //======================= BEGINNING OF TESTS WITH VARIOUS saltLen VALUES                    ======================================
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -2454,7 +2419,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                                 signingProvidersSignatureAlgorithmName,
                                 verifyingProvidersSignatureAlgorithmName, signingProviderName,
                                 verifyingProviderName, pssParameterSpec);
-
 
                         if (printJunitTrace)
                             System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -2581,7 +2545,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -2617,7 +2580,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                         Assertions.fail();
                     }
                 }
-
 
                 //======================================================================================================
 
@@ -2730,7 +2692,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -2766,7 +2727,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                         Assertions.fail();
                     }
                 }
-
 
                 //======================================================================================================
 
@@ -2878,7 +2838,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -3027,7 +2986,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -3069,9 +3027,7 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                 //======================= END OF TESTS WITH VARIOUS saltLen VALUES                ======================================
                 //======================= BEGINNNING OF TESTS WITH VARIOUS trailerField VALUES    ======================================
 
-
                 // NOTE:  ORACLE SUPPORTS ONLY A trailerField VALUE OF "1".
-
 
                 if (printJunitTrace)
                     System.out.println(
@@ -3181,7 +3137,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             signingProvidersSignatureAlgorithmName,
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
-
 
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -3298,7 +3253,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                                 signingProvidersSignatureAlgorithmName,
                                 verifyingProvidersSignatureAlgorithmName, signingProviderName,
                                 verifyingProviderName, pssParameterSpec);
-
 
                         if (printJunitTrace)
                             System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
@@ -3427,7 +3381,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -3554,8 +3507,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -3572,7 +3523,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                                 + ex.getMessage());
                     Assertions.fail();
                 }
-
 
                 //======================================================================================================
 
@@ -3686,8 +3636,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                             verifyingProvidersSignatureAlgorithmName, signingProviderName,
                             verifyingProviderName, pssParameterSpec);
 
-
-
                     if (printJunitTrace)
                         System.out.println("testRSAPSS(): TEST RESULT #" + (testCaseNumber - 1)
                                 + " = " + result);
@@ -3705,11 +3653,9 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                     Assertions.fail();
                 }
 
-
                 //=======================  END TESTS WITH VARIOUS trailerField VALUES    ======================================
 
                 //======================================================================================================
-
 
             } // end loop for each dataToBeSigned length
         } // end loop for each RSA key size
@@ -3878,7 +3824,6 @@ public class BaseTestRSAPSS2 extends BaseTestJunit5 {
                 System.out.println("doSignature():  The translated RSA public key is:");
             if (printJunitTrace)
                 System.out.println(translatedPublicKey.toString());
-
 
             //=======================================================
 

@@ -179,8 +179,6 @@ public final class TlsKeyMaterialGenerator extends KeyGeneratorSpi {
 
         int ofs = 0;
 
-
-
         if (macLength != 0) {
             byte[] tmp = new byte[macLength];
             // mac keys
