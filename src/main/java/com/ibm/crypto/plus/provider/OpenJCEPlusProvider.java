@@ -18,6 +18,8 @@ import java.security.ProviderException;
 // stacks show it originating in the specific provider class.
 //
 public abstract class OpenJCEPlusProvider extends java.security.Provider {
+
+    private boolean debug = true;
     private static final long serialVersionUID = 1L;
 
     private static final String PROVIDER_VER = System.getProperty("java.specification.version");
@@ -76,7 +78,15 @@ public abstract class OpenJCEPlusProvider extends java.security.Provider {
         return JAVA_VER;
     }
 
-    abstract ProviderException providerException(String message, Throwable ockException);
+    void setOCKExceptionCause(Exception exception, Throwable ockException) {
+        if (debug && (exception != null) && (exception.getCause() == null)) {
+            exception.initCause(ockException);
+            System.out.println("------Exception------");
+            exception.printStackTrace();
+            ockException.printStackTrace();
+            System.out.println("------CausedBy------");
+        }
+    }
 
-    abstract void setOCKExceptionCause(Exception exception, Throwable ockException);
+    abstract ProviderException providerException(String message, Throwable ockException);
 }
