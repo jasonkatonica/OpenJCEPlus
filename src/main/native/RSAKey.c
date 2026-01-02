@@ -28,30 +28,66 @@ Java_com_ibm_crypto_plus_provider_ock_NativeInterface_RSAKEY_1generate(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jint numBits, jlong e) {
     static const char *functionName = "NativeInterface.RSAKEY_generate";
 
-    ICC_CTX *ockCtx   = (ICC_CTX *)((intptr_t)ockContextId);
-    ICC_RSA *ockRSA   = NULL;
-    jlong    rsaKeyId = 0;
+    ICC_CTX    *ockCtx   = (ICC_CTX *)((intptr_t)ockContextId);
+    ICC_RSA    *ockRSA        = NULL;
+    ICC_BIGNUM *bne      = NULL;
+    jlong       rsaKeyId = 0;
+    int         ret      = 0;
 
     if (debug) {
         gslogFunctionEntry(functionName);
     }
 
-    ockRSA = ICC_RSA_generate_key(ockCtx, (int)numBits, (long)e, NULL, NULL);
+    bne = ICC_BN_new(ockCtx);
+    if (bne == NULL || !ICC_BN_set_word(ockCtx, bne, (unsigned long)e)) {
+#ifdef DEBUG_RSA_DETAIL
+        if (debug) {
+            gslogMessage("DETAIL_RSA FAILURE ICC_BN_new or BN_set_word()");
+        }
+#endif
+        goto cleanup;
+    }
+
+    ockRSA = ICC_RSA_new(ockCtx);
     if (ockRSA == NULL) {
 #ifdef DEBUG_RSA_DETAIL
         if (debug) {
-            gslogMessage("DETAIL_RSA  FAILURE ICC_RSA_generate_key");
+            gslogMessage("DETAIL_RSA  FAILURE ICC_RSA_new");
         }
 #endif
         ockCheckStatus(ockCtx);
-        throwOCKException(env, 0, "ICC_RSA_generate_key() failed");
-    } else {
-        rsaKeyId = (jlong)((intptr_t)ockRSA);
+        throwOCKException(env, 0, "ICC_RSA_new() failed");
+        goto cleanup;
+    }
+
+    ret = ICC_RSA_generate_key_ex(ockCtx, ockRSA, (int)numBits, bne, NULL);
+    if (ret != ICC_OSSL_SUCCESS) {
 #ifdef DEBUG_RSA_DETAIL
         if (debug) {
-            gslogMessage("DETAIL_RSA  rsaKeyId %lx", rsaKeyId);
+            gslogMessage("DETAIL_RSA  FAILURE ICC_RSA_generate_key_ex");
         }
 #endif
+        ockCheckStatus(ockCtx);
+        throwOCKException(env, 0, "ICC_RSA_generate_key_ex() failed");
+        goto cleanup;
+    }
+
+    rsaKeyId = (jlong)((intptr_t)ockRSA);
+#ifdef DEBUG_RSA_DETAIL
+    if (debug) {
+        gslogMessage("DETAIL_RSA  rsaKeyId %lx", rsaKeyId);
+    }
+#endif
+
+cleanup:
+    if (bne != NULL) {
+        ICC_BN_clear_free(ockCtx, bne);
+        bne = NULL;
+    }
+
+    if ((ockRSA != NULL) && (rsaKeyId == 0)) {
+        ICC_RSA_free(ockCtx, ockRSA);
+        ockRSA = NULL;
     }
 
     if (debug) {
