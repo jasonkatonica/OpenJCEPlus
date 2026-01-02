@@ -45,9 +45,15 @@ public final class RSAKey implements AsymmetricKey {
             throw new IllegalArgumentException("provider is null");
         }
 
-        long rsaKeyId = NativeInterface.RSAKEY_generate(ockContext.getId(), numBits, e.longValue());
+        long localKeyID = 0;
+        for (int x=0;x<1000000;x++) {
+            localKeyID = NativeInterface.RSAKEY_generate(ockContext.getId(), numBits, e.longValue());
+            if (x % 10000 == 0) {
+                System.out.println("Key generations: "  + x);
+            }
+        }
         //OCKDebug.Msg (debPrefix, methodName,  "numBits=" + numBits + " rsaKeyId=" + rsaKeyId);
-        return new RSAKey(ockContext, rsaKeyId, unobtainedKeyBytes, unobtainedKeyBytes, provider);
+        return new RSAKey(ockContext, localKeyID, unobtainedKeyBytes, unobtainedKeyBytes, provider);
     }
 
     public static RSAKey createPrivateKey(OCKContext ockContext, byte[] privateKeyBytes, OpenJCEPlusProvider provider)
