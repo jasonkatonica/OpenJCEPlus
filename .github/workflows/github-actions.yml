@@ -272,7 +272,7 @@ jobs:
             -Djacoco.skip=true \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
             -Dsurefire.exitTimeout=120 \
-            test | tee ${{ github.workspace }}/target/valgrind-reports/valgrind-now.log
+            test 2>&1 | tee ${{ github.workspace }}/target/valgrind-reports/valgrind-now.log
 
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
