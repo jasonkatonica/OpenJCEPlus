@@ -243,29 +243,10 @@ jobs:
       - name: Run Valgrind Memory Check on Maven Tests
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
-          # Create valgrind wrapper script
-          cat > /tmp/valgrind-java.sh << 'VGSCRIPT'
-          #!/bin/bash
-          valgrind \
-            --tool=memcheck \
-            --leak-check=full \
-            --show-leak-kinds=definite,possible \
-            --track-origins=yes \
-            --log-file=${{ github.workspace }}/target/valgrind-reports/valgrind-%p.log \
-            --suppressions=${{ github.workspace }}/.github/valgrind.supp \
-            --error-exitcode=0 \
-            --gen-suppressions=all \
-            ${JAVA_HOME}/bin/java "$@"
-          VGSCRIPT
-          chmod +x /tmp/valgrind-java.sh
-          
-          # Run Maven with valgrind wrapper as the Java executable
           mvn --batch-mode \
+            -Pvalgrind \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAES \
-            -DforkCount=1 \
-            -DreuseForks=false \
-            -Djvm=/tmp/valgrind-java.sh \
             test
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
