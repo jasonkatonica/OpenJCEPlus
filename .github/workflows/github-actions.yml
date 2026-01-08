@@ -271,7 +271,6 @@ jobs:
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
             -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
             -Djacoco.skip=true \
-            -Dsurefire.forkNode=org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
             -Dsurefire.exitTimeout=120 \
             -Dsurefire.redirectTestOutputToFile=true \
