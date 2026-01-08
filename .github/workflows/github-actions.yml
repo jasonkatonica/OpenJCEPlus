@@ -246,7 +246,6 @@ jobs:
             "--leak-check=summary"     # Only report summary, not full details
             "--undef-value-errors=no"  # Skip uninitialized value checks for speed
             "--smc-check=all-non-file" # Required for JVM stability
-            "--log-file=${{ github.workspace }}/target/valgrind-reports/valgrind-%p.log"
           )
           # echo "Running in java wrapper script..." >&2
           exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "$@"
