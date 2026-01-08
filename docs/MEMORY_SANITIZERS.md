@@ -66,7 +66,9 @@ make -f jgskit.mak
 UBSan is automatically enabled in the GitHub Actions workflow for Linux x86-64 builds. The workflow sets:
 
 - `ENABLE_SANITIZERS=1` to enable compilation with UBSan and additional protections
-- `UBSAN_OPTIONS` for UndefinedBehaviorSanitizer runtime configuration
+- `UBSAN_OPTIONS` for UndefinedBehaviorSanitizer runtime configuration with log file output
+- Post-test checks that display any detected errors
+- Artifact upload to preserve error reports
 
 The sanitizer runtime library is automatically loaded when the native library (`libjgskit.so`) is loaded by the JVM.
 
@@ -74,17 +76,25 @@ The sanitizer runtime library is automatically loaded when the native library (`
 
 ### UndefinedBehaviorSanitizer Options (UBSAN_OPTIONS)
 
+**GitHub Actions Configuration:**
 ```bash
-export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:suppressions=.github/ubsan.supp"
+export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/.github/ubsan.supp:log_path=${{ github.workspace }}/target/ubsan-reports/ubsan"
 ```
 
+**Local Development Configuration:**
+```bash
+export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:suppressions=.github/ubsan.supp:log_path=target/ubsan-reports/ubsan"
+```
+
+**Option Descriptions:**
 - `print_stacktrace=1`: Print stack traces for errors
 - `halt_on_error=0`: Continue after first error to find multiple issues
 - `suppressions=.github/ubsan.supp`: Path to suppressions file
+- `log_path=target/ubsan-reports/ubsan`: Save reports to files (one per process)
 
-Additional useful options:
-- `log_path=/path/to/ubsan.log`: Write output to file instead of stderr
+**Additional useful options:**
 - `verbosity=1`: Increase verbosity level
+- `halt_on_error=1`: Stop at first error (useful to fail builds)
 
 ## Suppressions
 
