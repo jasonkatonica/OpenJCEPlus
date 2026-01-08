@@ -271,6 +271,8 @@ jobs:
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
             -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
             -Djacoco.skip=true \
+            -Dsurefire.useManifestOnlyJar=false \
+            -Dsurefire.useSystemClassLoader=true \
             test
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
