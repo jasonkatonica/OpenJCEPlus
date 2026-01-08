@@ -273,7 +273,6 @@ jobs:
             -Djacoco.skip=true \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
             -Dsurefire.exitTimeout=120 \
-            -Dsurefire.redirectTestOutputToFile=true \
             test
 
         env:
