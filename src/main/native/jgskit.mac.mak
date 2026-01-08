@@ -9,8 +9,50 @@
 
 TOPDIR=../../..
 
-CFLAGS= -fPIC -DMAC -Werror -std=gnu99 -pedantic -Wall -fstack-protector -m64
-LDFLAGS= -shared -m64
+# Memory safety and hardening flags - can be commented out if needed
+# Note: Some flags are GCC-specific and removed for Clang/macOS compatibility
+SECURITY_CFLAGS = \
+	-fstack-protector-strong \
+	-D_FORTIFY_SOURCE=2 \
+	-fno-common \
+	-fno-delete-null-pointer-checks \
+	-fwrapv \
+	-ftrivial-auto-var-init=zero \
+	-fPIE \
+	-fvisibility=hidden
+
+# Warning flags for better code quality
+# Note: Some GCC-specific warnings removed for Clang compatibility
+# Note: Overly strict warnings removed: -Wconversion, -Wsign-conversion, -Wmissing-prototypes, -Wcast-qual, -Wshadow, -Wwrite-strings, -Wbad-function-cast, -Wundef
+# Note: -Werror=incompatible-pointer-types changed to warning only due to const qualifier issues
+WARNING_CFLAGS = \
+	-Wformat -Wformat-security \
+	-Werror=format-security \
+	-Werror=implicit-function-declaration \
+	-Wincompatible-pointer-types \
+	-Warray-bounds \
+	-Wshift-overflow \
+	-Wnull-dereference \
+	-Wdouble-promotion \
+	-Wunused \
+	-Wuninitialized \
+	-Wstrict-prototypes \
+	-Wold-style-definition \
+	-Wpointer-arith \
+	-Wnested-externs \
+	-Wredundant-decls \
+	-Winline \
+	-Wvla
+
+# Linker hardening flags for macOS
+# Note: macOS linker doesn't support -z flags, using macOS-specific flags
+SECURITY_LDFLAGS = \
+	-pie \
+	-Wl,-bind_at_load \
+	-Wl,-dead_strip
+
+CFLAGS= -fPIC -DMAC -Werror -std=gnu99 -pedantic -Wall -fstack-protector -m64 ${SECURITY_CFLAGS} ${WARNING_CFLAGS}
+LDFLAGS= -shared -m64 ${SECURITY_LDFLAGS}
 CC = gcc
 
 ifeq (${PLATFORM},x86_64-mac)
