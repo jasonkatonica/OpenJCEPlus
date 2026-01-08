@@ -46,10 +46,11 @@ make -f jgskit.mak
 Sanitizers are automatically enabled in the GitHub Actions workflow for Linux x86-64 builds. The workflow sets:
 
 - `ENABLE_SANITIZERS=1` to enable compilation with sanitizer flags
-- `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libasan.so.6` to preload ASan before JVM starts
 - `ASAN_OPTIONS` for AddressSanitizer runtime configuration
 - `UBSAN_OPTIONS` for UndefinedBehaviorSanitizer runtime configuration
 - `LSAN_OPTIONS` for LeakSanitizer runtime configuration
+
+The sanitizer runtime libraries are automatically loaded when the native library (`libjgskit.so`) is loaded by the JVM.
 
 ## Runtime Configuration
 
@@ -67,7 +68,7 @@ export ASAN_OPTIONS="detect_leaks=1:check_initialization_order=1:strict_init_ord
 - `detect_stack_use_after_return=1`: Detect use-after-return bugs
 - `detect_invalid_pointer_pairs=2`: Detect invalid pointer comparisons
 - `strict_string_checks=1`: Enable strict string function checks
-- `verify_asan_link_order=0`: Disable link order verification (needed when using LD_PRELOAD)
+- `verify_asan_link_order=0`: Disable link order verification warnings
 
 Additional useful options:
 - `halt_on_error=0`: Continue after first error (useful for finding multiple issues)
@@ -109,19 +110,15 @@ leak:*Java_*
 
 ### Maven Tests
 
-When sanitizers are enabled, you need to preload the ASan library before running tests:
+When sanitizers are enabled, run tests normally:
 
 ```bash
-# Find the ASan library path
-ASAN_LIB=$(gcc -print-file-name=libasan.so)
-
-# Run tests with LD_PRELOAD
-LD_PRELOAD=$ASAN_LIB mvn clean install -Dock.library.path=/path/to/ock
+mvn clean install -Dock.library.path=/path/to/ock
 ```
 
-The sanitizers will automatically detect and report issues during test execution.
+The sanitizers will automatically detect and report issues during test execution. The sanitizer runtime libraries are automatically loaded when the native library is loaded by the JVM.
 
-**Important**: The `LD_PRELOAD` is required because ASan must be loaded before the JVM to properly intercept memory operations. Without it, you'll see the error: "ASan runtime does not come first in initial library list".
+**Note**: You may see a warning "ASan runtime does not come first in initial library list" - this is expected and can be safely ignored when the native library is built with sanitizers. The `verify_asan_link_order=0` option in `ASAN_OPTIONS` suppresses this warning.
 
 ### Interpreting Results
 

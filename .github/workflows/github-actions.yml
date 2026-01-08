@@ -91,6 +91,7 @@ jobs:
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
+          '-DargLine=-Djava.library.path=${{ github.workspace }}/target/jgskit-xa-64'
           -Dtest='
           ibm.jceplus.junit.openjceplus.TestAll,
           ibm.jceplus.junit.TestMemStressAll,
@@ -101,7 +102,6 @@ jobs:
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
           ENABLE_SANITIZERS: 1
-          LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libasan.so.6
           ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1:verify_asan_link_order=0
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
           LSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/lsan.supp:print_suppressions=0
@@ -110,6 +110,7 @@ jobs:
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
+          '-DargLine=-Djava.library.path=${{ github.workspace }}/target/jgskit-xa-64'
           '-Dgroups=OpenJCEPlus'
           -Dtest='
           ibm.jceplus.junit.suites.TestOpenJCEPlus,
@@ -119,7 +120,6 @@ jobs:
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
           ENABLE_SANITIZERS: 1
-          LD_PRELOAD: /usr/lib/x86_64-linux-gnu/libasan.so.6
           ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1:verify_asan_link_order=0
           UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
           LSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/lsan.supp:print_suppressions=0
