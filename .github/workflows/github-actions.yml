@@ -139,6 +139,18 @@ jobs:
           else
             echo "✅ No UBSan errors detected in second test phase"
           fi
+      - name: List UBSan Report Files
+        if: always()
+        run: |
+          echo "📁 UBSan Report Directories:"
+          if [ -d "${{ github.workspace }}/target/ubsan-reports" ]; then
+            echo "First test phase reports:"
+            ls -lah ${{ github.workspace }}/target/ubsan-reports/ || echo "  (empty)"
+          fi
+          if [ -d "${{ github.workspace }}/target/ubsan-reports-2" ]; then
+            echo "Second test phase reports:"
+            ls -lah ${{ github.workspace }}/target/ubsan-reports-2/ || echo "  (empty)"
+          fi
       - name: Archive UBSan Reports
         if: always()
         uses: actions/upload-artifact@v4
