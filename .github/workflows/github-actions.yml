@@ -243,6 +243,8 @@ jobs:
       - name: Run Valgrind Memory Check on Subset of Tests
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
+          # Set Maven options for Valgrind
+          export MAVEN_OPTS="-Xmx512m"
           valgrind \
             --tool=memcheck \
             --leak-check=full \
@@ -253,7 +255,9 @@ jobs:
             --suppressions=${{ github.workspace }}/.github/valgrind.supp \
             --error-exitcode=0 \
             --gen-suppressions=all \
-            mvn -Dock.library.path=${{ github.workspace }}/OCK/ \
+            --trace-children=yes \
+            mvn --batch-mode \
+              -Dock.library.path=${{ github.workspace }}/OCK/ \
               -Dtest=ibm.jceplus.junit.openjceplus.TestAES \
               test
         env:
