@@ -248,8 +248,18 @@ jobs:
             "--quiet"
             "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
           )
+          
+          # Create a temporary argument file to avoid "Argument list too long" error
+          ARGS_FILE=$(mktemp)
+          trap "rm -f $ARGS_FILE" EXIT
+          
+          # Write all arguments to the file, one per line
+          for arg in "$@"; do
+            echo "$arg" >> "$ARGS_FILE"
+          done
+          
           # echo "Running in java wrapper script..." >&2
-          exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "$@" <&0
+          exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "@$ARGS_FILE" <&0
           EOF
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
