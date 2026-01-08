@@ -266,7 +266,7 @@ jobs:
           
           # Run Maven tests with Valgrind by using custom java executable
           # The javaExecutable parameter tells Surefire to use our wrapper script
-          mvn --batch-mode \
+          mvn -X --batch-mode \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
             -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
