@@ -234,29 +234,27 @@ jobs:
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
           mkdir -p ${{ github.workspace }}/target/valgrind-java/bin
-          
-          # Create Valgrind wrapper script that acts as java executable
+
+
           cat > ${{ github.workspace }}/target/valgrind-java/bin/java << 'EOF'
           #!/bin/bash
-          # Wrapper script to run Java under Valgrind
-          # This script replaces the java executable for Maven Surefire
-          
-          # Find the real java executable
           REAL_JAVA="$JAVA_HOME/bin/java"
           
-          # Valgrind options for comprehensive memory checking
-          VALGRIND_OPTS="--leak-check=full \
-            --show-leak-kinds=all \
-            --track-origins=yes \
-            --verbose \
-            --log-file=${{ github.workspace }}/target/valgrind-reports/valgrind-%p.log \
-            --suppressions=${{ github.workspace }}/.github/valgrind.supp \
-            --error-exitcode=0"
+          # Use an array for options to handle spaces and newlines safely
+          VALGRIND_OPTS=(
+            "--leak-check=full"
+            "--show-leak-kinds=all"
+            "--track-origins=yes"
+            "--verbose"
+            "--log-file=/home/runner/work/OpenJCEPlus/OpenJCEPlus/target/valgrind-reports/valgrind-%p.log"
+            "--suppressions=/home/runner/work/OpenJCEPlus/OpenJCEPlus/.github/valgrind.supp"
+            "--error-exitcode=0"
+          )
           
-          # Execute Java under Valgrind
-          exec valgrind $VALGRIND_OPTS "$REAL_JAVA" "$@"
+          exec valgrind "${VALGRIND_OPTS[@]}" "$REAL_JAVA" "$@"
           EOF
-          
+
+
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
           
           echo "🔍 Running tests under Valgrind..."
