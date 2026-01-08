@@ -184,3 +184,145 @@ jobs:
           name: openjceplus-assemblies.zip
           path: target/openjceplus-assemblies.zip
       - run: echo "🍏 This job's status is ${{ job.status }}."
+  
+  Valgrind-Memory-Check:
+    name: Valgrind Memory Analysis
+    runs-on: ubuntu-22.04
+    permissions:
+      checks: write
+      contents: read
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - name: Install Valgrind
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          valgrind --version
+      - name: 'Checkout Open Cryptography Kit C'
+        uses: actions/checkout@v4
+        with:
+          repository: IBM/OpenCryptographyKitC
+          ref: f3dde51a02675270adf994dc22c7f2853dc86ba6
+          path: ${{ github.workspace }}/OpenCryptographyKitC
+      - name: Compile Open Cryptography Kit C
+        run: |
+          cd ${{ github.workspace }}/OpenCryptographyKitC/icc
+          make -k OPSYS=AMD64_LINUX CONFIG=release create_all
+          export LD_LIBRARY_PATH=${{ github.workspace }}/OpenCryptographyKitC/openssl-1.1.1/
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+          make -k OPSYS=AMD64_LINUX CONFIG=release iccpkg
+          cd ${{ github.workspace }}/OpenCryptographyKitC/iccpkg
+          make -k OPSYS=AMD64_LINUX CONFIG=release all
+      - name: Extract OCK SDK and Binary Tar File
+        run: |
+          mkdir ${{ github.workspace }}/OCK
+          cd ${{ github.workspace }}/OCK
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto.tar .
+          cp ${{ github.workspace }}/OpenCryptographyKitC/package/jgsk_crypto_sdk.tar .
+          tar -xvf jgsk_crypto.tar
+          tar -xvf jgsk_crypto_sdk.tar
+          mkdir jgsk_sdk/lib64
+          cp libjgsk8iccs_64.so jgsk_sdk/lib64
+      - name: Setup Temurin JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '26-ea'
+          distribution: 'temurin'
+          architecture: 'x64'
+      - name: Build OpenJCEPlus without sanitizers
+        run: >
+          mvn
+          --batch-mode
+          '-Dock.library.path=${{ github.workspace }}/OCK/'
+          clean
+          compile
+          test-compile
+        env:
+          GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
+      - name: Run Valgrind Memory Check on Subset of Tests
+        run: |
+          mkdir -p ${{ github.workspace }}/target/valgrind-reports
+          valgrind \
+            --tool=memcheck \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            --verbose \
+            --log-file=${{ github.workspace }}/target/valgrind-reports/valgrind-%p.log \
+            --suppressions=${{ github.workspace }}/.github/valgrind.supp \
+            --error-exitcode=0 \
+            --gen-suppressions=all \
+            mvn -Dock.library.path=${{ github.workspace }}/OCK/ \
+              -Dtest=ibm.jceplus.junit.openjceplus.TestAES \
+              test
+        env:
+          GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
+      - name: Analyze Valgrind Results
+        if: always()
+        run: |
+          echo "📊 Valgrind Memory Analysis Results:"
+          echo "======================================"
+          
+          if [ -d "${{ github.workspace }}/target/valgrind-reports" ] && [ "$(ls -A ${{ github.workspace }}/target/valgrind-reports)" ]; then
+            for report in ${{ github.workspace }}/target/valgrind-reports/valgrind-*.log; do
+              if [ -f "$report" ]; then
+                echo ""
+                echo "📄 Report: $(basename $report)"
+                echo "---"
+                
+                # Extract error summary
+                if grep -q "ERROR SUMMARY:" "$report"; then
+                  grep "ERROR SUMMARY:" "$report"
+                fi
+                
+                # Check for definite leaks
+                if grep -q "definitely lost:" "$report"; then
+                  echo "⚠️ DEFINITE MEMORY LEAKS FOUND:"
+                  grep "definitely lost:" "$report"
+                fi
+                
+                # Check for possible leaks
+                if grep -q "possibly lost:" "$report"; then
+                  echo "⚠️ POSSIBLE MEMORY LEAKS FOUND:"
+                  grep "possibly lost:" "$report"
+                fi
+                
+                # Check for invalid reads/writes
+                if grep -q "Invalid read\|Invalid write" "$report"; then
+                  echo "⚠️ INVALID MEMORY ACCESS FOUND:"
+                  grep -A 5 "Invalid read\|Invalid write" "$report" | head -20
+                fi
+                
+                # Check for use after free
+                if grep -q "Invalid free\|Use of uninitialised" "$report"; then
+                  echo "⚠️ USE-AFTER-FREE OR UNINITIALIZED MEMORY:"
+                  grep -A 5 "Invalid free\|Use of uninitialised" "$report" | head -20
+                fi
+              fi
+            done
+            
+            # Create summary
+            echo ""
+            echo "📋 Summary of all reports:"
+            grep "ERROR SUMMARY:" ${{ github.workspace }}/target/valgrind-reports/valgrind-*.log || true
+            
+            # Check if any errors found
+            if grep -q "ERROR SUMMARY: [1-9]" ${{ github.workspace }}/target/valgrind-reports/valgrind-*.log; then
+              echo ""
+              echo "::warning::Valgrind detected memory issues - see detailed reports in artifacts"
+            else
+              echo ""
+              echo "✅ No memory errors detected by Valgrind"
+            fi
+          else
+            echo "❌ No Valgrind reports found"
+          fi
+      - name: Archive Valgrind Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: valgrind-reports
+          path: ${{ github.workspace }}/target/valgrind-reports/
+          if-no-files-found: warn
+      - run: echo "🔍 Valgrind analysis complete - status is ${{ job.status }}."
