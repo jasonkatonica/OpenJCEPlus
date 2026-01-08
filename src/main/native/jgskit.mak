@@ -58,16 +58,17 @@ else ifeq (${PLATFORM},x86-linux64)
   # Memory sanitizers for detecting memory corruption issues
   # Enable with: ENABLE_SANITIZERS=1 make -f jgskit.mak
   ifeq (${ENABLE_SANITIZERS},1)
-    # AddressSanitizer: detects memory errors (buffer overflows, use-after-free, etc.)
     # UndefinedBehaviorSanitizer: detects undefined behavior
-    # LeakSanitizer: detects memory leaks (included with ASan)
-    SANITIZER_FLAGS = -fsanitize=address -fsanitize=undefined -fsanitize=leak
+    # Note: AddressSanitizer is incompatible with JVM due to shadow memory conflicts
+    # Use Valgrind for memory error detection instead
+    SANITIZER_FLAGS = -fsanitize=undefined
     SANITIZER_FLAGS += -fno-omit-frame-pointer
     SANITIZER_FLAGS += -fno-optimize-sibling-calls
     SANITIZER_FLAGS += -g
-    # Additional memory debugging options
-    SANITIZER_FLAGS += -fsanitize-address-use-after-scope
     SANITIZER_FLAGS += -fsanitize-recover=undefined
+    # Additional bounds checking
+    SANITIZER_FLAGS += -D_FORTIFY_SOURCE=2
+    SANITIZER_FLAGS += -fstack-protector-strong
     CFLAGS += ${SANITIZER_FLAGS}
     LDFLAGS += ${SANITIZER_FLAGS}
   endif

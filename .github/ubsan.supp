@@ -1,0 +1,14 @@
+# UndefinedBehaviorSanitizer suppressions file for OpenJCEPlus
+# This file suppresses known false positives or intentional undefined behavior
+# Format: <check_name>:<function_name_pattern>
+
+# Example suppressions (uncomment and modify as needed):
+# Suppress specific undefined behavior checks in JVM internals
+# alignment:*JVM_*
+# vptr:*Java_*
+
+# Suppress specific checks in OpenSSL/GSKit if needed
+# signed-integer-overflow:*CRYPTO_*
+# unsigned-integer-overflow:*ICC_*
+
+# Add project-specific suppressions below as needed

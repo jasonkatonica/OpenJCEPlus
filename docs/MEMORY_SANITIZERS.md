@@ -1,28 +1,37 @@
-# Memory Sanitizers for OpenJCEPlus
+# Memory Corruption Detection for OpenJCEPlus
 
-This document describes how to use memory sanitizers to detect memory corruption issues in the OpenJCEPlus native library.
+This document describes how to use memory corruption detection tools for the OpenJCEPlus native library.
 
 ## Overview
 
-Memory sanitizers are powerful tools for detecting various types of memory-related bugs:
+### UndefinedBehaviorSanitizer (UBSan)
 
-- **AddressSanitizer (ASan)**: Detects memory errors including:
-  - Buffer overflows (heap, stack, and global)
-  - Use-after-free
-  - Use-after-return
-  - Use-after-scope
-  - Double-free
-  - Invalid pointer pairs
-  - Memory leaks (via LeakSanitizer)
+UBSan is enabled by default in CI builds and detects undefined behavior including:
+- Integer overflow (signed and unsigned)
+- Null pointer dereference
+- Misaligned pointer access
+- Division by zero
+- Invalid shifts
+- Out-of-bounds array access
+- Invalid type casts
+- Invalid function calls
 
-- **UndefinedBehaviorSanitizer (UBSan)**: Detects undefined behavior including:
-  - Integer overflow
-  - Null pointer dereference
-  - Misaligned pointer access
-  - Division by zero
-  - Invalid shifts
+**Why not AddressSanitizer (ASan)?**
 
-- **LeakSanitizer (LSan)**: Detects memory leaks (integrated with ASan)
+AddressSanitizer is incompatible with the JVM due to shadow memory address space conflicts. When ASan tries to initialize its shadow memory, it conflicts with the JVM's memory layout, causing the error:
+
+```
+Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly.
+```
+
+For memory error detection (buffer overflows, use-after-free, etc.), use **Valgrind** instead (see below).
+
+### Additional Protections
+
+The build also enables:
+- **`-D_FORTIFY_SOURCE=2`**: Compile-time and runtime buffer overflow detection
+- **`-fstack-protector-strong`**: Stack smashing protection
+- **`-fno-omit-frame-pointer`**: Better stack traces for debugging
 
 ## Enabling Sanitizers
 
@@ -43,127 +52,118 @@ make -f jgskit.mak
 
 ### For GitHub Actions
 
-Sanitizers are automatically enabled in the GitHub Actions workflow for Linux x86-64 builds. The workflow sets:
+UBSan is automatically enabled in the GitHub Actions workflow for Linux x86-64 builds. The workflow sets:
 
-- `ENABLE_SANITIZERS=1` to enable compilation with sanitizer flags
-- `ASAN_OPTIONS` for AddressSanitizer runtime configuration
+- `ENABLE_SANITIZERS=1` to enable compilation with UBSan and additional protections
 - `UBSAN_OPTIONS` for UndefinedBehaviorSanitizer runtime configuration
-- `LSAN_OPTIONS` for LeakSanitizer runtime configuration
 
-The sanitizer runtime libraries are automatically loaded when the native library (`libjgskit.so`) is loaded by the JVM.
+The sanitizer runtime library is automatically loaded when the native library (`libjgskit.so`) is loaded by the JVM.
 
 ## Runtime Configuration
-
-### AddressSanitizer Options (ASAN_OPTIONS)
-
-The following options are configured in the GitHub Actions workflow:
-
-```bash
-export ASAN_OPTIONS="detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1:verify_asan_link_order=0"
-```
-
-- `detect_leaks=1`: Enable leak detection
-- `check_initialization_order=1`: Detect initialization order bugs
-- `strict_init_order=1`: Strict checking of initialization order
-- `detect_stack_use_after_return=1`: Detect use-after-return bugs
-- `detect_invalid_pointer_pairs=2`: Detect invalid pointer comparisons
-- `strict_string_checks=1`: Enable strict string function checks
-- `verify_asan_link_order=0`: Disable link order verification warnings
-
-Additional useful options:
-- `halt_on_error=0`: Continue after first error (useful for finding multiple issues)
-- `log_path=/path/to/asan.log`: Write output to file instead of stderr
-- `verbosity=1`: Increase verbosity level
 
 ### UndefinedBehaviorSanitizer Options (UBSAN_OPTIONS)
 
 ```bash
-export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0"
+export UBSAN_OPTIONS="print_stacktrace=1:halt_on_error=0:suppressions=.github/ubsan.supp"
 ```
 
 - `print_stacktrace=1`: Print stack traces for errors
-- `halt_on_error=0`: Continue after first error
+- `halt_on_error=0`: Continue after first error to find multiple issues
+- `suppressions=.github/ubsan.supp`: Path to suppressions file
 
-### LeakSanitizer Options (LSAN_OPTIONS)
-
-```bash
-export LSAN_OPTIONS="suppressions=.github/lsan.supp:print_suppressions=0"
-```
-
-- `suppressions=.github/lsan.supp`: Path to suppressions file
-- `print_suppressions=0`: Don't print suppressed leaks
+Additional useful options:
+- `log_path=/path/to/ubsan.log`: Write output to file instead of stderr
+- `verbosity=1`: Increase verbosity level
 
 ## Suppressions
 
-If you encounter false positives or intentional leaks, you can add suppressions to `.github/lsan.supp`:
+If you encounter false positives or intentional undefined behavior, add suppressions to `.github/ubsan.supp`:
 
 ```
-# Suppress leaks from specific functions
-leak:function_name_pattern
+# Suppress specific checks in functions
+<check_name>:function_name_pattern
 
-# Example: Suppress JVM internal leaks
-leak:*JVM_*
-leak:*Java_*
+# Example: Suppress integer overflow in specific functions
+signed-integer-overflow:*calculate_hash*
+alignment:*JVM_*
 ```
+
+Available check names: `alignment`, `bool`, `bounds`, `enum`, `float-cast-overflow`, `float-divide-by-zero`, `function`, `integer-divide-by-zero`, `nonnull-attribute`, `null`, `object-size`, `pointer-overflow`, `return`, `returns-nonnull-attribute`, `shift`, `signed-integer-overflow`, `unreachable`, `unsigned-integer-overflow`, `vla-bound`, `vptr`
 
 ## Running Tests with Sanitizers
 
 ### Maven Tests
 
-When sanitizers are enabled, run tests normally:
+When UBSan is enabled, run tests normally:
 
 ```bash
 mvn clean install -Dock.library.path=/path/to/ock
 ```
 
-The sanitizers will automatically detect and report issues during test execution. The sanitizer runtime libraries are automatically loaded when the native library is loaded by the JVM.
+UBSan will automatically detect and report undefined behavior during test execution.
 
-**Note**: You may see a warning "ASan runtime does not come first in initial library list" - this is expected and can be safely ignored when the native library is built with sanitizers. The `verify_asan_link_order=0` option in `ASAN_OPTIONS` suppresses this warning.
+### Interpreting UBSan Results
 
-### Interpreting Results
+When undefined behavior is detected, UBSan will print:
 
-When a memory error is detected, the sanitizer will print:
-
-1. **Error type**: e.g., "heap-buffer-overflow", "use-after-free"
-2. **Stack trace**: Where the error occurred
-3. **Memory allocation trace**: Where the problematic memory was allocated
-4. **Shadow bytes**: Memory state around the error location
+1. **Error type**: e.g., "signed integer overflow", "null pointer dereference"
+2. **Location**: File and line number where the error occurred
+3. **Stack trace**: Call stack leading to the error
 
 Example output:
 ```
-=================================================================
-==12345==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x60300000eff4 at pc 0x7f8b8c0d4e8a bp 0x7ffc9c8e7a50 sp 0x7ffc9c8e7a48
-WRITE of size 4 at 0x60300000eff4 thread T0
+/path/to/file.c:123:45: runtime error: signed integer overflow: 2147483647 + 1 cannot be represented in type 'int'
     #0 0x7f8b8c0d4e89 in function_name /path/to/file.c:123
     #1 0x7f8b8c0d5123 in caller_function /path/to/file.c:456
-    ...
 ```
 
 ## Performance Impact
 
-Sanitizers add significant runtime overhead:
+UBSan adds minimal runtime overhead:
 
-- **AddressSanitizer**: ~2x slowdown, 2-3x memory overhead
 - **UndefinedBehaviorSanitizer**: ~20% slowdown
-- **Combined**: ~2-3x slowdown
+- **Fortify Source**: Negligible overhead
+- **Stack Protector**: <5% overhead
 
-This is acceptable for testing but should not be used in production builds.
+This is acceptable for testing and can even be used in development builds.
 
 ## Compiler Requirements
 
-- GCC 4.8+ or Clang 3.1+ for AddressSanitizer
 - GCC 4.9+ or Clang 3.3+ for UndefinedBehaviorSanitizer
 - The GitHub Actions workflow uses Ubuntu 22.04 with GCC 11+
 
-## Troubleshooting
+## Using Valgrind for Memory Error Detection
 
-### Sanitizer Library Not Found
-
-If you see errors about missing sanitizer libraries:
+Since AddressSanitizer is incompatible with JVM, use Valgrind for detecting memory errors:
 
 ```bash
-# Install sanitizer libraries
-sudo apt-get install libasan6 libubsan1 liblsan0
+# Install Valgrind
+sudo apt-get install valgrind
+
+# Run tests with Valgrind
+valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
+  --suppressions=.github/valgrind.supp \
+  mvn test -Dock.library.path=/path/to/ock
+```
+
+Valgrind detects:
+- Memory leaks
+- Buffer overflows
+- Use-after-free
+- Invalid memory access
+- Uninitialized memory use
+
+**Note**: Valgrind is much slower (~10-50x) but more thorough than ASan.
+
+## Troubleshooting
+
+### UBSan Library Not Found
+
+If you see errors about missing UBSan library:
+
+```bash
+# Install UBSan library
+sudo apt-get install libubsan1
 ```
 
 ### False Positives
@@ -171,35 +171,28 @@ sudo apt-get install libasan6 libubsan1 liblsan0
 If you encounter false positives:
 
 1. Verify the issue is actually a false positive
-2. Add appropriate suppressions to `.github/lsan.supp`
+2. Add appropriate suppressions to `.github/ubsan.supp`
 3. Document why the suppression is needed
-
-### Performance Issues
-
-If tests are too slow with sanitizers:
-
-1. Run a subset of tests: `-Dtest=SpecificTest`
-2. Disable leak detection: `ASAN_OPTIONS=detect_leaks=0`
-3. Use faster detection: `ASAN_OPTIONS=fast_unwind_on_malloc=1`
 
 ## Best Practices
 
-1. **Run sanitizers regularly**: Enable in CI/CD to catch issues early
-2. **Fix issues immediately**: Don't accumulate sanitizer warnings
-3. **Test thoroughly**: Run comprehensive test suites with sanitizers
+1. **Run UBSan regularly**: Enabled by default in CI/CD
+2. **Fix issues immediately**: Don't accumulate UBSan warnings
+3. **Test thoroughly**: Run comprehensive test suites
 4. **Document suppressions**: Always document why a suppression is needed
-5. **Review reports**: Carefully analyze all sanitizer reports
+5. **Use Valgrind periodically**: Run Valgrind tests weekly or before releases
 
 ## Additional Tools
 
-Consider using these complementary tools:
+Recommended complementary tools:
 
-- **Valgrind**: More thorough but slower memory checking
-- **Electric Fence**: Detects buffer overruns and underruns
-- **Dr. Memory**: Windows-compatible memory debugger
+- **Valgrind**: Essential for memory error detection (use instead of ASan)
+- **Clang Static Analyzer**: Static analysis for finding bugs
+- **Cppcheck**: Static analysis tool
+- **GDB**: Debugger for investigating crashes
 
 ## References
 
-- [AddressSanitizer Documentation](https://github.com/google/sanitizers/wiki/AddressSanitizer)
 - [UndefinedBehaviorSanitizer Documentation](https://clang.llvm.org/docs/UndefinedBehaviorSanitizer.html)
-- [LeakSanitizer Documentation](https://github.com/google/sanitizers/wiki/AddressSanitizerLeakSanitizer)
+- [Valgrind Documentation](https://valgrind.org/docs/manual/manual.html)
+- [GCC Instrumentation Options](https://gcc.gnu.org/onlinedocs/gcc/Instrumentation-Options.html)
