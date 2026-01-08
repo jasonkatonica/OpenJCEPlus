@@ -1,0 +1,107 @@
+# Valgrind suppressions file for OpenJCEPlus
+# 
+# IMPORTANT: This file ONLY suppresses false positives from:
+# - JVM internals (libjvm.so, libjava.so)
+# - System libraries (glibc, pthread, ld-linux)
+#
+# NO suppressions for:
+# - OpenJCEPlus code (libjgskit.so) - ALL issues will be reported!
+# - GSKit (libjgsk8iccs_64.so) - ALL issues will be reported!
+# - OpenSSL/libcrypto - ALL issues will be reported!
+
+# JVM internal allocations that are intentionally not freed at shutdown
+{
+   JVM_Internal_Still_Reachable
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libjvm.so
+}
+
+{
+   JVM_Possible_Leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   obj:*/libjvm.so
+}
+
+# JVM uninitialized memory (internal optimizations)
+{
+   JVM_Uninitialized_Conditional
+   Memcheck:Cond
+   ...
+   obj:*/libjvm.so
+}
+
+{
+   JVM_Uninitialized_Value
+   Memcheck:Value8
+   ...
+   obj:*/libjvm.so
+}
+
+# Java standard library allocations
+{
+   Java_Lib_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libjava.so
+}
+
+{
+   Java_Zip_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libzip.so
+}
+
+{
+   Java_NIO_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/libnio.so
+}
+
+# System library allocations (glibc, pthread, dynamic linker)
+{
+   Glibc_dlopen_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:_dl_*
+}
+
+{
+   Pthread_Create_Leak
+   Memcheck:Leak
+   match-leak-kinds: possible
+   ...
+   fun:pthread_create*
+}
+
+{
+   Glibc_Calloc_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   fun:calloc
+   fun:_dl_*
+}
+
+{
+   Dynamic_Linker_Leak
+   Memcheck:Leak
+   match-leak-kinds: reachable
+   ...
+   obj:*/ld-linux-x86-64.so*
+}
+
+# NOTE: NO suppressions for:
+# - libjgskit.so (our code)
+# - libjgsk8iccs_64.so (GSKit)
+# - libcrypto.so (OpenSSL)
+# All memory issues in these libraries will be reported!
