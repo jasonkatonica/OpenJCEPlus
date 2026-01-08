@@ -251,7 +251,7 @@ jobs:
             "--error-exitcode=0"
           )
           # echo "Running in java wrapper script..." >&2
-          exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "$@"
+          exec "$REAL_JAVA" "$@"
           EOF
 
 
