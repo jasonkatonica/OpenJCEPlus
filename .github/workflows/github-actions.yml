@@ -9,7 +9,7 @@
 
 name: GitHub Actions OpenJCEPlus
 run-name: ${{ github.actor }} is building and testing OpenJCEPlus 🚀
-on: [pull_request]
+on: [push]
 jobs:
   Build-Test-OpenJCEPlus:
     name: Build and Test ${{ matrix.os }}.
@@ -87,7 +87,7 @@ jobs:
       #   run: |
       #     tree ${{ matrix.github_actions_runner_root }}
       - name: Execute Maven Install Target And OpenJCEPlus Provider Tests
-        run: > 
+        run: >
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
@@ -100,8 +100,12 @@ jobs:
           install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
+          ENABLE_SANITIZERS: 1
+          ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/lsan.supp:print_suppressions=0
       - name: Execute Migrated Maven Install Target And OpenJCEPlus Provider Tests
-        run: > 
+        run: >
           mvn
           --batch-mode
           '-Dock.library.path=${{ github.workspace }}/OCK/'
@@ -113,6 +117,10 @@ jobs:
           install
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
+          ENABLE_SANITIZERS: 1
+          ASAN_OPTIONS: detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0
+          LSAN_OPTIONS: suppressions=${{ github.workspace }}/.github/lsan.supp:print_suppressions=0
       #- name: List Files In The Entire Workspace
       #  run: |
       #    tree ${{ github.workspace }}

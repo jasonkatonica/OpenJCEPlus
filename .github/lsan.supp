@@ -1,0 +1,14 @@
+# LeakSanitizer suppressions file for OpenJCEPlus
+# This file suppresses known false positives or intentional leaks
+# Format: leak:<function_name_pattern>
+
+# Example suppressions (uncomment and modify as needed):
+# Suppress leaks from JVM internals
+# leak:*JVM_*
+# leak:*Java_*
+
+# Suppress leaks from OpenSSL/GSKit if they are intentional
+# leak:*CRYPTO_*
+# leak:*ICC_*
+
+# Add project-specific suppressions below as needed

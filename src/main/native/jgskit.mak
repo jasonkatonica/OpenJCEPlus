@@ -54,6 +54,23 @@ else ifeq (${PLATFORM},x86-linux64)
   CFLAGS+= -DLINUX -m64
   LDFLAGS+= -m64
   OSINCLUDEDIR=linux
+  
+  # Memory sanitizers for detecting memory corruption issues
+  # Enable with: ENABLE_SANITIZERS=1 make -f jgskit.mak
+  ifeq (${ENABLE_SANITIZERS},1)
+    # AddressSanitizer: detects memory errors (buffer overflows, use-after-free, etc.)
+    # UndefinedBehaviorSanitizer: detects undefined behavior
+    # LeakSanitizer: detects memory leaks (included with ASan)
+    SANITIZER_FLAGS = -fsanitize=address -fsanitize=undefined -fsanitize=leak
+    SANITIZER_FLAGS += -fno-omit-frame-pointer
+    SANITIZER_FLAGS += -fno-optimize-sibling-calls
+    SANITIZER_FLAGS += -g
+    # Additional memory debugging options
+    SANITIZER_FLAGS += -fsanitize-address-use-after-scope
+    SANITIZER_FLAGS += -fsanitize-recover=undefined
+    CFLAGS += ${SANITIZER_FLAGS}
+    LDFLAGS += ${SANITIZER_FLAGS}
+  endif
 endif
 
 #Setting this flag will result non key material such as handle to OCK Objects etc being logged to the trace file.
