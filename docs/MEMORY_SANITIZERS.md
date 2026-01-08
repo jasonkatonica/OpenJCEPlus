@@ -198,11 +198,12 @@ For comprehensive local testing, you can run Maven tests under Valgrind using th
 # Install Valgrind
 sudo apt-get install valgrind
 
-# Create reports directory
+# Create directories
 mkdir -p target/valgrind-reports
+mkdir -p target/valgrind-java/bin
 
 # Create wrapper script (same as CI uses)
-cat > java-valgrind << 'EOF'
+cat > target/valgrind-java/bin/java << 'EOF'
 #!/bin/bash
 REAL_JAVA="$JAVA_HOME/bin/java"
 VALGRIND_OPTS="--leak-check=full \
@@ -215,12 +216,12 @@ VALGRIND_OPTS="--leak-check=full \
 exec valgrind $VALGRIND_OPTS "$REAL_JAVA" "$@"
 EOF
 
-chmod +x java-valgrind
+chmod +x target/valgrind-java/bin/java
 
 # Run Maven tests with Valgrind wrapper
 mvn test \
   -Dock.library.path=/path/to/ock \
-  -DjavaExecutable=./java-valgrind \
+  -DjavaExecutable=target/valgrind-java/bin/java \
   -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM
 
 # Check for errors
@@ -232,7 +233,7 @@ fi
 ```
 
 **How it works:**
-1. The wrapper script (`java-valgrind`) replaces the Java executable
+1. The wrapper script (`target/valgrind-java/bin/java`) replaces the Java executable
 2. Maven Surefire uses this wrapper via `-DjavaExecutable` parameter (configured in pom.xml)
 3. Every forked JVM process runs under Valgrind
 4. Reports are saved with process ID in filename (`valgrind-12345.log`)

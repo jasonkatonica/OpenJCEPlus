@@ -233,17 +233,16 @@ jobs:
       - name: Run Valgrind Memory Check on Maven Tests
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
+          mkdir -p ${{ github.workspace }}/target/valgrind-java/bin
           
           # Create Valgrind wrapper script that acts as java executable
-          cat > ${{ github.workspace }}/java << 'EOF'
+          cat > ${{ github.workspace }}/target/valgrind-java/bin/java << 'EOF'
           #!/bin/bash
           # Wrapper script to run Java under Valgrind
           # This script replaces the java executable for Maven Surefire
           
           # Find the real java executable
           REAL_JAVA="$JAVA_HOME/bin/java"
-
-          echo "Running in java wrapper script....\n"
           
           # Valgrind options for comprehensive memory checking
           VALGRIND_OPTS="--leak-check=full \
@@ -258,11 +257,7 @@ jobs:
           exec valgrind $VALGRIND_OPTS "$REAL_JAVA" "$@"
           EOF
           
-          chmod +x ${{ github.workspace }}/java
-
-          tree ${{ github.workspace }}
-
-          cat ${{ github.workspace }}/java
+          chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
           
           echo "🔍 Running tests under Valgrind..."
           echo "⚠️  This will be significantly slower than normal test execution"
@@ -273,10 +268,8 @@ jobs:
           mvn --batch-mode \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
-            -DjavaExecutable=${{ github.workspace }}/java \
+            -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
             test
-
-          # tree ${{ github.workspace }}/target
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       - name: Analyze Valgrind Results
