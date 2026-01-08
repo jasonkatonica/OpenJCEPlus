@@ -268,7 +268,7 @@ jobs:
           mvn -X --batch-mode \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
-            -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
+            -Djvm=${{ github.workspace }}/target/valgrind-java/bin/java \
             -Djacoco.skip=true \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
             -Dsurefire.exitTimeout=120 \

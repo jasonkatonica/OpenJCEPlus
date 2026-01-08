@@ -61,6 +61,7 @@ else ifeq (${PLATFORM},x86-linux64)
     # UndefinedBehaviorSanitizer: detects undefined behavior
     # Note: AddressSanitizer is incompatible with JVM due to shadow memory conflicts
     # Use Valgrind for memory error detection instead
+    @echo "Enabling debug sanitizer options...."
     SANITIZER_FLAGS = -fsanitize=undefined
     SANITIZER_FLAGS += -fno-omit-frame-pointer
     SANITIZER_FLAGS += -fno-optimize-sibling-calls
