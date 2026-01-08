@@ -254,7 +254,7 @@ jobs:
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
 
-          tree ${{ github.workspace }}
+          # tree ${{ github.workspace }}
 
           cat ${{ github.workspace }}/target/valgrind-java/bin/java
           ls -al ${{ github.workspace }}/target/valgrind-java/bin/java
