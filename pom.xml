@@ -265,6 +265,7 @@
                       --add-opens=openjceplus/ibm.jceplus.junit.tests=ALL-UNNAMED
                       --patch-module openjceplus="target${file.separator}classes${path.separator}target${file.separator}test-classes"
                     </argLine>
+                    <javaExecutable>${javaExecutable}</javaExecutable>
                     <trimStackTrace>false</trimStackTrace>
                     <groups>${groups}</groups>
                     <systemPropertyVariables>
@@ -403,6 +404,7 @@
                       --add-exports=java.base/sun.security.x509=ALL-UNNAMED
                       --add-exports openjceplus/com.ibm.crypto.plus.provider.ock=ALL-UNNAMED
                     </argLine>
+                    <javaExecutable>${javaExecutable}</javaExecutable>
                     <includes>
                       <include>
                         **/ibm/jceplus/junit/TestIntegration.java,

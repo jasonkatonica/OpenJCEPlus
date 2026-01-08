@@ -233,9 +233,11 @@ fi
 
 **How it works:**
 1. The wrapper script (`java-valgrind`) replaces the Java executable
-2. Maven Surefire uses this wrapper via `-DjavaExecutable` parameter
+2. Maven Surefire uses this wrapper via `-DjavaExecutable` parameter (configured in pom.xml)
 3. Every forked JVM process runs under Valgrind
 4. Reports are saved with process ID in filename (`valgrind-12345.log`)
+
+**Note**: The pom.xml includes `<javaExecutable>${javaExecutable}</javaExecutable>` in the Surefire configuration to enable this feature.
 
 **Key Options:**
 - `--log-file=path/valgrind-%p.log`: Save reports to files (%p = process ID)
