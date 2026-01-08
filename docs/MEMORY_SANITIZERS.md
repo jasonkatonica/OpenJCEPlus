@@ -46,6 +46,7 @@ make -f jgskit.mak
 Sanitizers are automatically enabled in the GitHub Actions workflow for Linux x86-64 builds. The workflow sets:
 
 - `ENABLE_SANITIZERS=1` to enable compilation with sanitizer flags
+- `LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libasan.so.6` to preload ASan before JVM starts
 - `ASAN_OPTIONS` for AddressSanitizer runtime configuration
 - `UBSAN_OPTIONS` for UndefinedBehaviorSanitizer runtime configuration
 - `LSAN_OPTIONS` for LeakSanitizer runtime configuration
@@ -57,7 +58,7 @@ Sanitizers are automatically enabled in the GitHub Actions workflow for Linux x8
 The following options are configured in the GitHub Actions workflow:
 
 ```bash
-export ASAN_OPTIONS="detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1"
+export ASAN_OPTIONS="detect_leaks=1:check_initialization_order=1:strict_init_order=1:detect_stack_use_after_return=1:detect_invalid_pointer_pairs=2:strict_string_checks=1:verify_asan_link_order=0"
 ```
 
 - `detect_leaks=1`: Enable leak detection
@@ -66,6 +67,7 @@ export ASAN_OPTIONS="detect_leaks=1:check_initialization_order=1:strict_init_ord
 - `detect_stack_use_after_return=1`: Detect use-after-return bugs
 - `detect_invalid_pointer_pairs=2`: Detect invalid pointer comparisons
 - `strict_string_checks=1`: Enable strict string function checks
+- `verify_asan_link_order=0`: Disable link order verification (needed when using LD_PRELOAD)
 
 Additional useful options:
 - `halt_on_error=0`: Continue after first error (useful for finding multiple issues)
@@ -107,13 +109,19 @@ leak:*Java_*
 
 ### Maven Tests
 
-When sanitizers are enabled, run tests normally:
+When sanitizers are enabled, you need to preload the ASan library before running tests:
 
 ```bash
-mvn clean install -Dock.library.path=/path/to/ock
+# Find the ASan library path
+ASAN_LIB=$(gcc -print-file-name=libasan.so)
+
+# Run tests with LD_PRELOAD
+LD_PRELOAD=$ASAN_LIB mvn clean install -Dock.library.path=/path/to/ock
 ```
 
 The sanitizers will automatically detect and report issues during test execution.
+
+**Important**: The `LD_PRELOAD` is required because ASan must be loaded before the JVM to properly intercept memory operations. Without it, you'll see the error: "ASan runtime does not come first in initial library list".
 
 ### Interpreting Results
 
