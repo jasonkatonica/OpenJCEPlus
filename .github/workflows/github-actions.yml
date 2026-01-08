@@ -267,7 +267,7 @@ jobs:
           # The javaExecutable parameter tells Surefire to use our wrapper script
           mvn -X --batch-mode \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
-            -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
+            -Dtest=ibm.jceplus.junit.openjceplus.TestRSA \
             -Djvm=${{ github.workspace }}/target/valgrind-java/bin/java \
             -Djacoco.skip=true \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
