@@ -242,15 +242,14 @@ jobs:
           
           # Use an array for options to handle spaces and newlines safely
           VALGRIND_OPTS=(
-            "--tool=memcheck"
-            "--leak-check=summary"     # Only report summary, not full details
-            "--undef-value-errors=no"  # Skip uninitialized value checks for speed
-            "--smc-check=all-non-file" # Required for JVM stability
+            "--leak-check=full"
+            "--show-leak-kinds=all"
+            "--track-origins=yes"
+            "--verbose"
           )
           # echo "Running in java wrapper script..." >&2
           exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "$@" <&0
           EOF
-
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
 
@@ -258,7 +257,7 @@ jobs:
 
           cat ${{ github.workspace }}/target/valgrind-java/bin/java
           ls -al ${{ github.workspace }}/target/valgrind-java/bin/java
-          
+
           echo "🔍 Running tests under Valgrind..."
           echo "⚠️  This will be significantly slower than normal test execution"
           echo "📊 Reports will be saved to target/valgrind-reports/"
