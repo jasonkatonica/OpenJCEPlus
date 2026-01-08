@@ -245,6 +245,7 @@ jobs:
             "--leak-check=full"
             "--show-leak-kinds=all"
             "--track-origins=yes"
+            "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
             "--verbose"
           )
           # echo "Running in java wrapper script..." >&2
