@@ -252,6 +252,8 @@ jobs:
           
           # Find the real java executable
           REAL_JAVA="$JAVA_HOME/bin/java"
+
+          echo "Running in java-valgrind wrapper script....\n"
           
           # Valgrind options for comprehensive memory checking
           VALGRIND_OPTS="--leak-check=full \
