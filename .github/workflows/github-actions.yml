@@ -102,7 +102,17 @@ jobs:
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
           ENABLE_SANITIZERS: 1
-          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/.github/ubsan.supp
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/.github/ubsan.supp:log_path=${{ github.workspace }}/target/ubsan-reports/ubsan
+      - name: Check for UBSan errors in first test phase
+        if: always()
+        run: |
+          if [ -d "${{ github.workspace }}/target/ubsan-reports" ] && [ "$(ls -A ${{ github.workspace }}/target/ubsan-reports)" ]; then
+            echo "⚠️ UndefinedBehaviorSanitizer detected issues in first test phase:"
+            cat ${{ github.workspace }}/target/ubsan-reports/ubsan.* || true
+            echo "::warning::UBSan detected undefined behavior - see logs above"
+          else
+            echo "✅ No UBSan errors detected in first test phase"
+          fi
       - name: Execute Migrated Maven Install Target And OpenJCEPlus Provider Tests
         run: >
           mvn
@@ -118,7 +128,26 @@ jobs:
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
           ENABLE_SANITIZERS: 1
-          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/.github/ubsan.supp
+          UBSAN_OPTIONS: print_stacktrace=1:halt_on_error=0:suppressions=${{ github.workspace }}/.github/ubsan.supp:log_path=${{ github.workspace }}/target/ubsan-reports-2/ubsan
+      - name: Check for UBSan errors in second test phase
+        if: always()
+        run: |
+          if [ -d "${{ github.workspace }}/target/ubsan-reports-2" ] && [ "$(ls -A ${{ github.workspace }}/target/ubsan-reports-2)" ]; then
+            echo "⚠️ UndefinedBehaviorSanitizer detected issues in second test phase:"
+            cat ${{ github.workspace }}/target/ubsan-reports-2/ubsan.* || true
+            echo "::warning::UBSan detected undefined behavior - see logs above"
+          else
+            echo "✅ No UBSan errors detected in second test phase"
+          fi
+      - name: Archive UBSan Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ubsan-reports
+          path: |
+            ${{ github.workspace }}/target/ubsan-reports/
+            ${{ github.workspace }}/target/ubsan-reports-2/
+          if-no-files-found: ignore
       #- name: List Files In The Entire Workspace
       #  run: |
       #    tree ${{ github.workspace }}

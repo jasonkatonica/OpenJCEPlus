@@ -4,9 +4,11 @@ This document describes how to use memory corruption detection tools for the Ope
 
 ## Overview
 
-### UndefinedBehaviorSanitizer (UBSan)
+### Active Tools in CI
 
-UBSan is enabled by default in CI builds and detects undefined behavior including:
+**UndefinedBehaviorSanitizer (UBSan)** - Enabled by default in CI builds
+
+Detects undefined behavior including:
 - Integer overflow (signed and unsigned)
 - Null pointer dereference
 - Misaligned pointer access
@@ -16,22 +18,31 @@ UBSan is enabled by default in CI builds and detects undefined behavior includin
 - Invalid type casts
 - Invalid function calls
 
-**Why not AddressSanitizer (ASan)?**
+**Additional Compile-Time Protections** - Always enabled
 
-AddressSanitizer is incompatible with the JVM due to shadow memory address space conflicts. When ASan tries to initialize its shadow memory, it conflicts with the JVM's memory layout, causing the error:
+- **`-D_FORTIFY_SOURCE=2`**: Compile-time and runtime buffer overflow detection (aborts on error)
+- **`-fstack-protector-strong`**: Stack smashing protection (aborts on stack corruption)
+- **`-fno-omit-frame-pointer`**: Better stack traces for debugging
+
+### Why Not AddressSanitizer (ASan)?
+
+AddressSanitizer is **incompatible with the JVM** due to shadow memory address space conflicts. When ASan tries to initialize its shadow memory, it conflicts with the JVM's memory layout:
 
 ```
 Shadow memory range interleaves with an existing memory mapping. ASan cannot proceed correctly.
 ```
 
-For memory error detection (buffer overflows, use-after-free, etc.), use **Valgrind** instead (see below).
+**For memory error detection** (buffer overflows, use-after-free, memory leaks), use **Valgrind** instead (see below).
 
-### Additional Protections
+### Summary of Error Detection
 
-The build also enables:
-- **`-D_FORTIFY_SOURCE=2`**: Compile-time and runtime buffer overflow detection
-- **`-fstack-protector-strong`**: Stack smashing protection
-- **`-fno-omit-frame-pointer`**: Better stack traces for debugging
+| Tool | What It Detects | Reports Saved? | Continues on Error? | Active in CI? |
+|------|----------------|----------------|---------------------|---------------|
+| **UBSan** | Undefined behavior, integer overflows, null deref | ✅ Yes (files) | ✅ Yes | ✅ Yes |
+| **Fortify Source** | Buffer overflows | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes |
+| **Stack Protector** | Stack corruption | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes |
+| **ASan** | Memory errors, leaks | N/A | N/A | ❌ No (JVM incompatible) |
+| **Valgrind** | Memory errors, leaks | ✅ Yes (files) | ✅ Yes | ❌ No (manual) |
 
 ## Enabling Sanitizers
 
@@ -102,6 +113,19 @@ mvn clean install -Dock.library.path=/path/to/ock
 
 UBSan will automatically detect and report undefined behavior during test execution.
 
+**Behavior when errors are detected:**
+
+1. **Tests continue running**: With `halt_on_error=0`, UBSan reports all errors but doesn't stop execution
+2. **Errors logged to files**: Reports are saved to `target/ubsan-reports/ubsan.*` files
+3. **Console output**: Errors are also printed to stderr during test execution
+4. **GitHub Actions**:
+   - Errors are displayed as warnings in the workflow
+   - Reports are archived as artifacts for download
+   - Build continues but warnings are visible in the Actions UI
+5. **Maven exit code**: Tests may still pass even with UBSan errors (warnings only)
+
+**To make UBSan errors fail the build**, set `halt_on_error=1` in `UBSAN_OPTIONS`, but this will stop at the first error instead of finding all issues.
+
 ### Interpreting UBSan Results
 
 When undefined behavior is detected, UBSan will print:
@@ -134,26 +158,71 @@ This is acceptable for testing and can even be used in development builds.
 
 ## Using Valgrind for Memory Error Detection
 
-Since AddressSanitizer is incompatible with JVM, use Valgrind for detecting memory errors:
+Since AddressSanitizer is incompatible with JVM, use Valgrind for detecting memory errors.
+
+### What Valgrind Detects
+
+- Memory leaks (definite, possible, reachable)
+- Buffer overflows (heap and stack)
+- Use-after-free
+- Invalid memory access
+- Uninitialized memory use
+- Invalid pointer operations
+
+### Running Valgrind with Report Saving
 
 ```bash
 # Install Valgrind
 sudo apt-get install valgrind
 
-# Run tests with Valgrind
-valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes \
+# Create suppressions file if needed
+touch .github/valgrind.supp
+
+# Run tests with Valgrind and save reports
+valgrind \
+  --leak-check=full \
+  --show-leak-kinds=all \
+  --track-origins=yes \
+  --verbose \
+  --log-file=target/valgrind-reports/valgrind-%p.log \
   --suppressions=.github/valgrind.supp \
+  --error-exitcode=0 \
   mvn test -Dock.library.path=/path/to/ock
+
+# Check for errors
+if grep -q "ERROR SUMMARY: [1-9]" target/valgrind-reports/*.log; then
+  echo "⚠️ Valgrind detected memory errors - see reports in target/valgrind-reports/"
+else
+  echo "✅ No Valgrind errors detected"
+fi
 ```
 
-Valgrind detects:
-- Memory leaks
-- Buffer overflows
-- Use-after-free
-- Invalid memory access
-- Uninitialized memory use
+**Key Options:**
+- `--log-file=path/valgrind-%p.log`: Save reports to files (%p = process ID)
+- `--error-exitcode=0`: Continue running even with errors (default behavior)
+- `--error-exitcode=1`: Exit with error code if issues found (fails build)
 
-**Note**: Valgrind is much slower (~10-50x) but more thorough than ASan.
+**Performance Note**: Valgrind is much slower (~10-50x) but more thorough than ASan.
+
+### Valgrind Suppressions
+
+Create `.github/valgrind.supp` for false positives:
+
+```
+{
+   JVM_Internal_Leak
+   Memcheck:Leak
+   ...
+   fun:*JVM_*
+}
+
+{
+   OpenSSL_Known_Issue
+   Memcheck:Cond
+   ...
+   obj:*/libcrypto.so*
+}
+```
 
 ## Troubleshooting
 
