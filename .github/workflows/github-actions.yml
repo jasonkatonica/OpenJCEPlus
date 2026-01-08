@@ -281,6 +281,8 @@ jobs:
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
             -DjavaExecutable=${{ github.workspace }}/java-valgrind \
             test
+
+          tree ${{ github.workspace }}/target
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       - name: Analyze Valgrind Results
