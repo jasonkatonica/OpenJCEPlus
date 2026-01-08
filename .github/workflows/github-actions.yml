@@ -243,14 +243,41 @@ jobs:
       - name: Run Valgrind Memory Check on Maven Tests
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
-          echo "Running subset of tests for Valgrind analysis..."
-          echo "Note: Valgrind integration with Maven is complex."
-          echo "For comprehensive Valgrind analysis, run manually using instructions in docs/MEMORY_SANITIZERS.md"
           
-          # Run a simple test to verify the build works
+          # Create Valgrind wrapper script that acts as java executable
+          cat > ${{ github.workspace }}/java-valgrind << 'EOF'
+          #!/bin/bash
+          # Wrapper script to run Java under Valgrind
+          # This script replaces the java executable for Maven Surefire
+          
+          # Find the real java executable
+          REAL_JAVA="$JAVA_HOME/bin/java"
+          
+          # Valgrind options for comprehensive memory checking
+          VALGRIND_OPTS="--leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            --verbose \
+            --log-file=${{ github.workspace }}/target/valgrind-reports/valgrind-%p.log \
+            --suppressions=${{ github.workspace }}/.github/valgrind.supp \
+            --error-exitcode=0"
+          
+          # Execute Java under Valgrind
+          exec valgrind $VALGRIND_OPTS "$REAL_JAVA" "$@"
+          EOF
+          
+          chmod +x ${{ github.workspace }}/java-valgrind
+          
+          echo "🔍 Running tests under Valgrind..."
+          echo "⚠️  This will be significantly slower than normal test execution"
+          echo "📊 Reports will be saved to target/valgrind-reports/"
+          
+          # Run Maven tests with Valgrind by using custom java executable
+          # The javaExecutable parameter tells Surefire to use our wrapper script
           mvn --batch-mode \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
+            -DjavaExecutable=${{ github.workspace }}/java-valgrind \
             test
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk

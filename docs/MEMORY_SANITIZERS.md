@@ -38,11 +38,11 @@ Shadow memory range interleaves with an existing memory mapping. ASan cannot pro
 
 | Tool | What It Detects | Reports Saved? | Continues on Error? | Active in CI? |
 |------|----------------|----------------|---------------------|---------------|
-| **UBSan** | Undefined behavior, integer overflows, null deref | ✅ Yes (files) | ✅ Yes | ✅ Yes |
-| **Fortify Source** | Buffer overflows | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes |
-| **Stack Protector** | Stack corruption | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes |
+| **UBSan** | Undefined behavior, integer overflows, null deref | ✅ Yes (files) | ✅ Yes | ✅ Yes (all tests) |
+| **Fortify Source** | Buffer overflows | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes (all tests) |
+| **Stack Protector** | Stack corruption | ❌ No (aborts) | ❌ No (aborts) | ✅ Yes (all tests) |
 | **ASan** | Memory errors, leaks | N/A | N/A | ❌ No (JVM incompatible) |
-| **Valgrind** | Memory errors, leaks | ✅ Yes (files) | ✅ Yes | ❌ No (manual) |
+| **Valgrind** | Memory errors, leaks | ✅ Yes (files) | ✅ Yes | ✅ Yes (subset) |
 
 ## Enabling Sanitizers
 
@@ -170,6 +170,17 @@ This is acceptable for testing and can even be used in development builds.
 
 Since AddressSanitizer is incompatible with JVM, use Valgrind for detecting memory errors.
 
+### Valgrind in CI
+
+**Valgrind is now active in GitHub Actions!** A separate job runs a subset of tests under Valgrind:
+
+- **Job**: `Valgrind-Memory-Check`
+- **Tests**: `TestAESGCM` (representative test suite)
+- **Reports**: Saved to `target/valgrind-reports/` and archived as artifacts
+- **Performance**: Runs slower (~10-50x) but provides comprehensive memory error detection
+
+The CI job uses a wrapper script that runs the JVM under Valgrind, allowing full memory analysis of both Java and native code.
+
 ### What Valgrind Detects
 
 - Memory leaks (definite, possible, reachable)
@@ -179,25 +190,38 @@ Since AddressSanitizer is incompatible with JVM, use Valgrind for detecting memo
 - Uninitialized memory use
 - Invalid pointer operations
 
-### Running Valgrind with Report Saving
+### Running Valgrind Locally with Maven
+
+For comprehensive local testing, you can run Maven tests under Valgrind using the same approach as CI:
 
 ```bash
 # Install Valgrind
 sudo apt-get install valgrind
 
-# Create suppressions file if needed
-touch .github/valgrind.supp
+# Create reports directory
+mkdir -p target/valgrind-reports
 
-# Run tests with Valgrind and save reports
-valgrind \
-  --leak-check=full \
+# Create wrapper script (same as CI uses)
+cat > java-valgrind << 'EOF'
+#!/bin/bash
+REAL_JAVA="$JAVA_HOME/bin/java"
+VALGRIND_OPTS="--leak-check=full \
   --show-leak-kinds=all \
   --track-origins=yes \
   --verbose \
   --log-file=target/valgrind-reports/valgrind-%p.log \
   --suppressions=.github/valgrind.supp \
-  --error-exitcode=0 \
-  mvn test -Dock.library.path=/path/to/ock
+  --error-exitcode=0"
+exec valgrind $VALGRIND_OPTS "$REAL_JAVA" "$@"
+EOF
+
+chmod +x java-valgrind
+
+# Run Maven tests with Valgrind wrapper
+mvn test \
+  -Dock.library.path=/path/to/ock \
+  -DjavaExecutable=./java-valgrind \
+  -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM
 
 # Check for errors
 if grep -q "ERROR SUMMARY: [1-9]" target/valgrind-reports/*.log; then
@@ -206,6 +230,12 @@ else
   echo "✅ No Valgrind errors detected"
 fi
 ```
+
+**How it works:**
+1. The wrapper script (`java-valgrind`) replaces the Java executable
+2. Maven Surefire uses this wrapper via `-DjavaExecutable` parameter
+3. Every forked JVM process runs under Valgrind
+4. Reports are saved with process ID in filename (`valgrind-12345.log`)
 
 **Key Options:**
 - `--log-file=path/valgrind-%p.log`: Save reports to files (%p = process ID)
