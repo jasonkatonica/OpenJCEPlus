@@ -250,7 +250,7 @@ jobs:
             "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
             "--error-exitcode=0"
           )
-          echo "Running in java wrapper script....\n"
+          echo "Running in java wrapper script..." >&2
           exec valgrind "${VALGRIND_OPTS[@]}" "$REAL_JAVA" "$@"
           EOF
 
