@@ -261,6 +261,8 @@ jobs:
           chmod +x ${{ github.workspace }}/java-valgrind
 
           tree ${{ github.workspace }}
+
+          cat ${{ github.workspace }}/java-valgrind
           
           echo "🔍 Running tests under Valgrind..."
           echo "⚠️  This will be significantly slower than normal test execution"
