@@ -250,12 +250,17 @@ jobs:
             "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
             "--error-exitcode=0"
           )
-          
+          echo "Running in java wrapper script....\n"
           exec valgrind "${VALGRIND_OPTS[@]}" "$REAL_JAVA" "$@"
           EOF
 
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
+
+          tree ${{ github.workspace }}
+
+          cat ${{ github.workspace }}/target/valgrind-java/bin/java
+          ls -al ${{ github.workspace }}/target/valgrind-java/bin/java
           
           echo "🔍 Running tests under Valgrind..."
           echo "⚠️  This will be significantly slower than normal test execution"
