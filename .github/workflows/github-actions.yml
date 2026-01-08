@@ -259,6 +259,8 @@ jobs:
           EOF
           
           chmod +x ${{ github.workspace }}/java-valgrind
+
+          tree ${{ github.workspace }}
           
           echo "🔍 Running tests under Valgrind..."
           echo "⚠️  This will be significantly slower than normal test execution"
@@ -272,7 +274,7 @@ jobs:
             -DjavaExecutable=${{ github.workspace }}/java-valgrind \
             test
 
-          tree ${{ github.workspace }}/target
+          # tree ${{ github.workspace }}/target
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       - name: Analyze Valgrind Results
