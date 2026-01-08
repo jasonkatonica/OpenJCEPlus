@@ -8,6 +8,7 @@
 # - OpenJCEPlus code (libjgskit.so) - ALL issues will be reported!
 # - GSKit (libjgsk8iccs_64.so) - ALL issues will be reported!
 # - OpenSSL/libcrypto - ALL issues will be reported!
+# All memory issues in these libraries will be reported!
 
 # JVM internal allocations that are intentionally not freed at shutdown
 {
@@ -99,9 +100,3 @@
    ...
    obj:*/ld-linux-x86-64.so*
 }
-
-# NOTE: NO suppressions for:
-# - libjgskit.so (our code)
-# - libjgsk8iccs_64.so (GSKit)
-# - libcrypto.so (OpenSSL)
-# All memory issues in these libraries will be reported!
