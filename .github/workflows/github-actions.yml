@@ -266,7 +266,7 @@ jobs:
           
           # Run Maven tests with Valgrind by using custom java executable
           # The javaExecutable parameter tells Surefire to use our wrapper script
-          mvn -X --batch-mode \
+          mvn -X --batch-mode test \
             -Dock.library.path=${{ github.workspace }}/OCK/ \
             -Dtest=ibm.jceplus.junit.openjceplus.TestAESGCM \
             -DjavaExecutable=${{ github.workspace }}/target/valgrind-java/bin/java \
@@ -274,7 +274,8 @@ jobs:
             -Dsurefire.forkNode=org.apache.maven.plugin.surefire.extensions.SurefireForkNodeFactory \
             -Dsurefire.forkedProcessTimeoutInSeconds=3600 \
             -Dsurefire.exitTimeout=120
-            test
+            -Dsurefire.redirectTestOutputToFile=true
+
         env:
           GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       - name: Analyze Valgrind Results
