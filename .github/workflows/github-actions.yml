@@ -230,16 +230,6 @@ jobs:
           java-version: '26-ea'
           distribution: 'temurin'
           architecture: 'x64'
-      - name: Build OpenJCEPlus without sanitizers
-        run: >
-          mvn
-          --batch-mode
-          '-Dock.library.path=${{ github.workspace }}/OCK/'
-          clean
-          compile
-          test-compile
-        env:
-          GSKIT_HOME: ${{ github.workspace }}/OCK/jgsk_sdk
       - name: Run Valgrind Memory Check on Maven Tests
         run: |
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
