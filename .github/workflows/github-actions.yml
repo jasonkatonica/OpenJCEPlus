@@ -240,16 +240,7 @@ jobs:
           #!/bin/bash
           REAL_JAVA="$JAVA_HOME/bin/java"
           
-          # Use an array for options to handle spaces and newlines safely
-          VALGRIND_OPTS=(
-            "--leak-check=full"
-            "--show-leak-kinds=all"
-            "--track-origins=yes"
-            "--quiet"
-            "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
-          )
-          
-          # Create a temporary argument file to avoid "Argument list too long" error
+          # Create a temporary argument file for Java's @argfile feature
           ARGS_FILE=$(mktemp)
           trap "rm -f $ARGS_FILE" EXIT
           
@@ -258,8 +249,15 @@ jobs:
             echo "$arg" >> "$ARGS_FILE"
           done
           
-          # echo "Running in java wrapper script..." >&2
-          exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "@$ARGS_FILE" <&0
+          # Execute valgrind with minimal command line arguments
+          # Use @argfile to pass all Java arguments, avoiding "Argument list too long"
+          exec valgrind \
+            --leak-check=full \
+            --show-leak-kinds=all \
+            --track-origins=yes \
+            --quiet \
+            --suppressions=${{ github.workspace }}/.github/valgrind.supp \
+            -- "$REAL_JAVA" "@$ARGS_FILE"
           EOF
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
