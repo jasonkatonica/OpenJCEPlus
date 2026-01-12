@@ -82,7 +82,7 @@ public class BaseTestKEM extends BaseTestJunit5 {
         pqcKeyPair.getPrivate();
 
         KEM.Encapsulator encr = kem.newEncapsulator(pqcKeyPair.getPublic());
-        for (int i =0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             int from = 0;
             int to = 0;
             switch (i) {
@@ -119,7 +119,7 @@ public class BaseTestKEM extends BaseTestJunit5 {
         enc = encr.encapsulate(0, 32, "AES");
        
         KEM.Decapsulator decr = kem.newDecapsulator(pqcKeyPair.getPrivate());
-        for (int i =0; i < 4; i++) {
+        for (int i = 0; i < 4; i++) {
             int from = 0;
             int to = 0;
             switch (i) {

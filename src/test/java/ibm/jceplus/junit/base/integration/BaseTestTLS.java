@@ -37,7 +37,7 @@ import javax.net.ssl.TrustManagerFactory;
 public class BaseTestTLS {
     private volatile static boolean clientRenegoReady = false;
 
-    public static void insertProvider(String providerName, String providerClassName, int position) throws Exception{
+    public static void insertProvider(String providerName, String providerClassName, int position) throws Exception {
         Provider provider = java.security.Security.getProvider(providerName);
         if (provider == null) {
             provider = (Provider) Class.forName(providerClassName).getDeclaredConstructor().newInstance();

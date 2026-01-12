@@ -52,7 +52,7 @@ abstract class PBES2Core extends CipherSpi {
         if (cipherAlgo.equalsIgnoreCase("AES")) {
             cipher = new AESCipher(provider);
 
-            switch(kdfAlgo.toLowerCase()) {
+            switch (kdfAlgo.toLowerCase()) {
                 case "hmacsha1":
                     kdf = new PBKDF2Core.HmacSHA1(provider);
                     break;

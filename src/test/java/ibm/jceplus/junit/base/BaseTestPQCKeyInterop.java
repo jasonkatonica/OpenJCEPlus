@@ -438,7 +438,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
 
             KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKeyInterop);
             KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
-            if (enc == null){
+            if (enc == null) {
                 System.out.println("enc = null");
                 assertTrue(false, "KEMPlusCreatesInteropGet failed no enc.");
             }
@@ -480,7 +480,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
 
             KEM.Encapsulator encr = kemPlus.newEncapsulator(publicKeyPlus);
             KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
-            if (enc == null){
+            if (enc == null) {
                 System.out.println("enc = null");
                 assertTrue(false, "KEMPlusCreatesInteropGet failed no enc.");
             }
@@ -520,7 +520,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
 
             KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKeyInterop);
             KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
-            if (enc == null){
+            if (enc == null) {
                 System.out.println("enc = null");
                 assertTrue(false, "KEMPlusCreatesInteropGet failed no enc.");
             }

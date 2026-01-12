@@ -14,7 +14,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class TestPBECipher extends BaseTestPBECipher{
+public class TestPBECipher extends BaseTestPBECipher {
 
     @BeforeAll
     public void beforeAll() {

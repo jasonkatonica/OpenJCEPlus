@@ -14,7 +14,7 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
 
 @TestInstance(Lifecycle.PER_CLASS)
-public class TestXDHKeyAgreementInterop extends BaseTestXDHKeyAgreementInterop{
+public class TestXDHKeyAgreementInterop extends BaseTestXDHKeyAgreementInterop {
     
     @BeforeAll
     public void beforeAll() {

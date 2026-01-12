@@ -40,7 +40,7 @@ public class RawKeySpec implements KeySpec {
     }
 
     private Runnable cleanOCKResources(byte[] keyBytes) {
-        return() -> {
+        return () -> {
             try {
                 if (keyBytes != null) {
                     Arrays.fill(keyBytes, 0, keyBytes.length, (byte) 0);

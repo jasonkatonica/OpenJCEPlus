@@ -19,7 +19,7 @@ public class TestTLS extends BaseTestTLS {
     private static boolean insertProviderUponCleanup = false;
 
     @BeforeAll
-    public static void init() throws Exception{
+    public static void init() throws Exception {
         if (java.security.Security.getProvider("OpenJCEPlusFIPS") != null) {
             insertProviderUponCleanup = true;
             java.security.Security.removeProvider("OpenJCEPlusFIPS");

@@ -226,9 +226,11 @@ public class BaseTestHKDF extends BaseTestJunit5 {
         }
     }
     
-    private static class MyKDFParameters implements KDFParameters {}
+    private static class MyKDFParameters implements KDFParameters {
+    }
 
-    private static class MyKDFParameters2 implements KDFParameters {}
+    private static class MyKDFParameters2 implements KDFParameters {
+    }
 
     private void aesHKDF(int aesKeySize, String hashAlg, String extractAlg, String expandAlg,
             String providerName) throws NoSuchAlgorithmException, NoSuchProviderException,

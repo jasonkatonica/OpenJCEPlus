@@ -25,13 +25,16 @@ public class TestDSAKey extends BaseTestDSAKey {
 
     @Disabled("DSA key generation is not available in FIPS mode.")
     @Override
-    public void testDSAKeyGen_1024() throws Exception {}
+    public void testDSAKeyGen_1024() throws Exception {
+    }
 
     @Disabled("DSA key generation is not available in FIPS mode.")
     @Override
-    public void testDSAKeyGen_2048() throws Exception {}
+    public void testDSAKeyGen_2048() throws Exception {
+    }
 
     @Disabled("DSA algorithm parameters are not available in FIPS mode.")
     @Override
-    public void testDSAKeyGenFromParams_1024() throws Exception {}
+    public void testDSAKeyGenFromParams_1024() throws Exception {
+    }
 }

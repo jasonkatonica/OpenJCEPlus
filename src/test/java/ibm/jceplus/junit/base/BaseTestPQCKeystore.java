@@ -46,7 +46,7 @@ public class BaseTestPQCKeystore extends BaseTestJunit5 {
     String alias = "myalias";
     String password = "mypassword";
     FileOutputStream os = null;
-    KeyStore ks =null;
+    KeyStore ks = null;
     KeyPair kp = null;
 
     @BeforeAll
@@ -57,7 +57,7 @@ public class BaseTestPQCKeystore extends BaseTestJunit5 {
             ks = KeyStore.getInstance("PKCS12");
             ks.load(null, password.toCharArray());
         } catch (Exception e) {
-            System.out.println("Error setting up test: "+e.getMessage());
+            System.out.println("Error setting up test: " + e.getMessage());
             throw e;
         }
     }
@@ -91,7 +91,7 @@ public class BaseTestPQCKeystore extends BaseTestJunit5 {
 
         } catch (Exception e) {
             e.printStackTrace();
-            if (ksFile.exists()){
+            if (ksFile.exists()) {
                 ksFile.delete();
             }
             throw e;

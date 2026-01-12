@@ -126,7 +126,7 @@ public class RSAKeyFactory extends KeyFactorySpi {
         if ((specificModulesLen != null) && (!specificModulesLen.contains(modulusLen))) {
             if (flag.equals("verify")) {
                 throw new InvalidKeyException("In FIPS mode, only 1024, 2048, 3072, or 4096 size of RSA key is accepted.");
-            } else if (flag.equals("sign")){
+            } else if (flag.equals("sign")) {
                 throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size of RSA key is accepted.");
             }
         }
