@@ -235,21 +235,46 @@ jobs:
           mkdir -p ${{ github.workspace }}/target/valgrind-reports
           mkdir -p ${{ github.workspace }}/target/valgrind-java/bin
 
-          # Create Valgrind wrapper script that acts as java executable
+          # Create Valgrind wrapper script using Python to avoid shell argument limits
+          # Python can handle large argument lists better than shell scripts
           cat > ${{ github.workspace }}/target/valgrind-java/bin/java << 'EOF'
-          #!/bin/bash
-          REAL_JAVA="$JAVA_HOME/bin/java"
+          #!/usr/bin/env python3
+          import os
+          import sys
+          import tempfile
+          import subprocess
           
-          # Use an array for options to handle spaces and newlines safely
-          VALGRIND_OPTS=(
-            "--leak-check=full"
-            "--show-leak-kinds=all"
-            "--track-origins=yes"
-            "--quiet"
-            "--suppressions=${{ github.workspace }}/.github/valgrind.supp"
-          )
-          # echo "Running in java wrapper script..." >&2
-          exec valgrind "${VALGRIND_OPTS[@]}" -- "$REAL_JAVA" "$@" <&0
+          # Get the real Java executable
+          java_home = os.environ.get('JAVA_HOME', '/usr')
+          real_java = os.path.join(java_home, 'bin', 'java')
+          
+          # Create a temporary argument file for Java's @argfile feature
+          with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.args') as f:
+              args_file = f.name
+              # Write all arguments to the file, one per line
+              for arg in sys.argv[1:]:
+                  f.write(arg + '\n')
+          
+          try:
+              # Execute valgrind with the argument file
+              valgrind_cmd = [
+                  'valgrind',
+                  '--leak-check=full',
+                  '--show-leak-kinds=all',
+                  '--track-origins=yes',
+                  '--quiet',
+                  '--suppressions=${{ github.workspace }}/.github/valgrind.supp',
+                  '--',
+                  real_java,
+                  '@' + args_file
+              ]
+              
+              # Execute and replace this process
+              os.execvp('valgrind', valgrind_cmd)
+          finally:
+              # Cleanup (only reached if exec fails)
+              if os.path.exists(args_file):
+                  os.unlink(args_file)
           EOF
 
           chmod +x ${{ github.workspace }}/target/valgrind-java/bin/java
