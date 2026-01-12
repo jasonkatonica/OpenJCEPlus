@@ -254,7 +254,7 @@ jobs:
               # Write all arguments to the file, one per line
               for arg in sys.argv[1:]:
                   f.write(arg + '\n')
-          
+          cat @args_file
           try:
               # Execute valgrind with the argument file
               valgrind_cmd = [

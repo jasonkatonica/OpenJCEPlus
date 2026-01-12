@@ -234,6 +234,7 @@
                     </dependency>
                   </dependencies>
                   <configuration>
+                    <useManifestOnlyJar>true</useManifestOnlyJar>
                     <useModulePath>false</useModulePath>
                     <!-- Could add -agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=0.0.0.0:8787 for debug -->
                     <!-- Could add -Djava.security.auth.debug=all for debug -->
@@ -392,6 +393,7 @@
                     </dependency>
                   </dependencies>
                   <configuration>
+                    <useManifestOnlyJar>true</useManifestOnlyJar>
                     <useModulePath>false</useModulePath>
                     <trimStackTrace>false</trimStackTrace>
                     <!-- Could add -Djava.security.auth.debug=all for debug -->
