@@ -10,7 +10,6 @@ package com.ibm.crypto.plus.provider;
 
 import com.ibm.crypto.plus.provider.ock.NativeOCKAdapterFIPS;
 import java.security.NoSuchAlgorithmException;
-import java.security.Provider;
 import java.security.ProviderException;
 import java.util.HashMap;
 import java.util.List;
@@ -111,10 +110,8 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
             }
         }
 
-        final OpenJCEPlusProvider jce = this;
-
-        registerAlgorithms(jce);
-
+        LoadStringConfig(this, DefaultFIPSProviderAttrs.getConfigString());
+  
         if (instance == null) {
             instance = this;
         }
@@ -131,6 +128,7 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
         }
     }
 
+<<<<<<< HEAD
     private void registerAlgorithms(Provider jce) {
 
         String[] aliases = null;
@@ -706,6 +704,8 @@ public final class OpenJCEPlusFIPS extends OpenJCEPlusProvider {
 
     }
 
+=======
+>>>>>>> 79132626 (Add Ability to use Config File to create Providers)
     // Return the instance of this class or create one if needed.
     //
     static OpenJCEPlusFIPS getInstance() {
