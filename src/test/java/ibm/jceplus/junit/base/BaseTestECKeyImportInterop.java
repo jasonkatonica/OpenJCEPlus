@@ -137,15 +137,6 @@ public class BaseTestECKeyImportInterop extends BaseTestJunit5Interop {
         byte[] publicKeyBytes = publicKey.getEncoded();
         byte[] privKeyBytes = privateKey.getEncoded();
 
-        // System.out.println (methodName + " pubKeyBytes length=" +
-        // publicKeyBytes.length);
-        // System.out.println (methodName + " publicKeyBytes = " +
-        // BaseUtils.bytesToHex(publicKeyBytes));
-        // System.out.println (methodName + " privKeyBytes length=" +
-        // privKeyBytes.length);
-        // System.out.println (methodName + " privKeyBytes = " +
-        // BaseUtils.bytesToHex(privKeyBytes));
-
         KeyFactory keyFactory = KeyFactory.getInstance("EC", importProviderName);
         EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(privKeyBytes);
         PrivateKey privateKey2 = keyFactory.generatePrivate(privateKeySpec);
@@ -167,8 +158,8 @@ public class BaseTestECKeyImportInterop extends BaseTestJunit5Interop {
         byte[] publicKey2Bytes = publicKey2.getEncoded();
         byte[] privateKey2Bytes = privateKey2.getEncoded();
 
-        assertTrue(Arrays.equals(publicKey2Bytes, publicKeyBytes));
-        assertTrue(Arrays.equals(privateKey2Bytes, privKeyBytes));
+        assertArrayEquals(publicKeyBytes, publicKey2Bytes);
+        assertArrayEquals(privKeyBytes, privateKey2Bytes);
     }
 
     @Test
