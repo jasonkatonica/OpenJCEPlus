@@ -102,6 +102,13 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
                                                 "Jlk6HKBiJlBvMWVSxEWYNipV2SOgCgYIKoZIzj0DAQegCgYIKoZIzj0DAQehRANC" +
                                                 "AARFcF00hBK8Es2MH29DmA3fsYf4qWFSloVWoFct4CxffJ7hG0O4TXkMaPrAjgXc" +
                                                 "42SPdKRb7FcO0LhzEVpYquVY";
+
+    private static final String private_secp256r1_publickey_parameters =
+                                                "MIGTAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBHkwdwIBAQQg15U0PERqsupn6Hy5" +
+                                                "Jlk6HKBiJlBvMWVSxEWYNipV2SOhRANCAARFcF00hBK8Es2MH29DmA3fsYf4qWFS" +
+                                                "loVWoFct4CxffJ7hG0O4TXkMaPrAjgXc42SPdKRb7FcO0LhzEVpYquVYoAoGCCqG" +
+                                                "SM49AwEH";
+
     private static final String public_secp256r1_parameters_publickey =
                                                 "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERXBdNIQSvBLNjB9vQ5gN37GH+Klh" +
                                                 "UpaFVqBXLeAsX3ye4RtDuE15DGj6wI4F3ONkj3SkW+xXDtC4cxFaWKrlWA==";
@@ -406,12 +413,23 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
 
     @Test
     public void testInvalidEncodings() throws Exception {
-        try {
         KeyFactory kf = KeyFactory.getInstance("EC", getProviderName());
-        kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(private_secp256r1_parameters_twice_publickey)));
-        fail("Expected exception not thrown.");
+        try {
+            // Test encoding with two parameters.
+            kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder()
+                    .decode(private_secp256r1_parameters_twice_publickey)));
+            fail("Expected InvalidKeySpecException not thrown.");
         } catch (InvalidKeySpecException ikse) {
-            // Expected
+            // Expected.
+        }
+
+        try {
+            // Test encoding where the public key is before the parameters.
+            kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder()
+                    .decode(private_secp256r1_publickey_parameters)));
+            fail("Expected InvalidKeySpecException not thrown.");
+        } catch (InvalidKeySpecException ikse) {
+            // Expected.
         }
     }
 
