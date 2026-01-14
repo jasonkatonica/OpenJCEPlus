@@ -227,7 +227,7 @@ final class ECPrivateKey extends PKCS8Key implements java.security.interfaces.EC
                 byte[] encodedParams = this.getAlgorithmId().getEncodedParams();
                 // Check against the existing parameters created by PKCS8Key.
                 if (!Arrays.equals(privateKeyParams, encodedParams)) {
-                    throw new IOException("Decoding EC private key failed. The params are not the same as PKCS8Key's");
+                    throw new InvalidKeyException("Decoding EC private key failed. The params are not the same as PKCS8Key's");
                 }
                 if (data.available() == 0) {
                     return;
