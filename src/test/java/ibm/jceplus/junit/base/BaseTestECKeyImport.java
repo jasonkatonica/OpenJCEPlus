@@ -10,6 +10,7 @@ package ibm.jceplus.junit.base;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -36,6 +37,7 @@ import sun.security.x509.X509Key;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class BaseTestECKeyImport extends BaseTestJunit5 {
 
@@ -94,6 +96,12 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
                                                 "Jlk6HKBiJlBvMWVSxEWYNipV2SOgCgYIKoZIzj0DAQehRANCAARFcF00hBK8Es2M" +
                                                 "H29DmA3fsYf4qWFSloVWoFct4CxffJ7hG0O4TXkMaPrAjgXc42SPdKRb7FcO0Lhz" +
                                                 "EVpYquVY";
+
+    private static final String private_secp256r1_parameters_twice_publickey =
+                                                "MIGfAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBIUwgwIBAQQg15U0PERqsupn6Hy5" +
+                                                "Jlk6HKBiJlBvMWVSxEWYNipV2SOgCgYIKoZIzj0DAQegCgYIKoZIzj0DAQehRANC" +
+                                                "AARFcF00hBK8Es2MH29DmA3fsYf4qWFSloVWoFct4CxffJ7hG0O4TXkMaPrAjgXc" +
+                                                "42SPdKRb7FcO0LhzEVpYquVY";
     private static final String public_secp256r1_parameters_publickey =
                                                 "MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAERXBdNIQSvBLNjB9vQ5gN37GH+Klh" +
                                                 "UpaFVqBXLeAsX3ye4RtDuE15DGj6wI4F3ONkj3SkW+xXDtC4cxFaWKrlWA==";
@@ -394,6 +402,17 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
                 public_secp256r1_no_parameters_no_public
         );
         System.out.println("ALL tests completed.");
+    }
+
+    @Test
+    public void testInvalidEncodings() throws Exception {
+        try {
+        KeyFactory kf = KeyFactory.getInstance("EC", getProviderName());
+        PrivateKey priv = kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(private_secp256r1_parameters_twice_publickey)));
+        fail("Expected exception not thrown.");
+        } catch (InvalidKeyException ike) {
+            // Expected
+        }
     }
 
     private static void testSignAndVerify(
