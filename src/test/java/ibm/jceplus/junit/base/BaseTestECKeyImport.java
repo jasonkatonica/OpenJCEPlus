@@ -10,7 +10,6 @@ package ibm.jceplus.junit.base;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -25,6 +24,7 @@ import java.security.spec.ECPoint;
 import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.EllipticCurve;
 import java.security.spec.EncodedKeySpec;
+import java.security.spec.InvalidKeySpecException;
 import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
@@ -408,9 +408,9 @@ public class BaseTestECKeyImport extends BaseTestJunit5 {
     public void testInvalidEncodings() throws Exception {
         try {
         KeyFactory kf = KeyFactory.getInstance("EC", getProviderName());
-        PrivateKey priv = kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(private_secp256r1_parameters_twice_publickey)));
+        kf.generatePrivate(new PKCS8EncodedKeySpec(Base64.getMimeDecoder().decode(private_secp256r1_parameters_twice_publickey)));
         fail("Expected exception not thrown.");
-        } catch (InvalidKeyException ike) {
+        } catch (InvalidKeySpecException ikse) {
             // Expected
         }
     }
