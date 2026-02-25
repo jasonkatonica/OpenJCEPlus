@@ -71,8 +71,6 @@ Java_com_ibm_crypto_plus_provider_base_NativeInterface_RSAKEY_1generate(
     forceToAscii(bitStr); // Ensure the value is ASCII before passing to OCK
 #endif
 
-    gslogMessage("RSA_KEYGEN: Setting key size to %d bits", (int)numBits);
-
 #ifdef __MVS__
 #pragma convert("ISO8859-1")
 #endif
@@ -120,11 +118,8 @@ Java_com_ibm_crypto_plus_provider_base_NativeInterface_RSAKEY_1generate(
         goto cleanup;
     }
 
-    gslogMessage("RSA_KEYGEN: Calling ICC_EVP_PKEY_keygen with key size %d bits", (int)numBits);
-
     ret = ICC_EVP_PKEY_keygen(ockCtx, pctx, &ockPKey);
     if (ret != ICC_OSSL_SUCCESS || ockPKey == NULL) {
-        gslogMessage("RSA_KEYGEN: FAILURE - ICC_EVP_PKEY_keygen failed for key size %d bits (ret=%d, ockPKey=%p)", (int)numBits, ret, (void*)ockPKey);
 #ifdef DEBUG_RSA_DETAIL
         if (debug) {
             gslogMessage("DETAIL_RSA FAILURE ICC_EVP_PKEY_keygen");
