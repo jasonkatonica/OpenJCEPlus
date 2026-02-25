@@ -48,6 +48,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
@@ -1094,6 +1095,25 @@ public class BaseTestRSA extends BaseTestCipher {
             } else if ((ch >= 'A') && (ch <= 'F')) {
                 return ch - 'A' + 10;
             }
+        }
+    }
+
+    /**
+     * Test that FIPS provider rejects some non-FIPS-compliant RSA key sizes.
+     */
+    @ParameterizedTest
+    @CsvSource({"512", "1024", "1536", "5120", "6144", "7680", "8192"})
+    public void testFIPSBadRSAKeySizes(int keySize) {
+        assumeTrue("OpenJCEPlusFIPS".equals(getProviderName()));
+
+        final String expectedMessage = "In FIPS mode, only 2048, 3072, or 4096 size RSA keys are accepted.";
+        try {
+            KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", getProviderName());
+            keyGen.initialize(keySize, null);
+            keyGen.generateKeyPair();
+            fail("Expected InvalidParameterException for non-FIPS-compliant RSA key size: " + keySize);
+        } catch (Exception e) {
+            assertEquals(expectedMessage, e.getMessage());
         }
     }
 }
