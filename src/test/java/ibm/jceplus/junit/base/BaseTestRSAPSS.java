@@ -198,7 +198,7 @@ public class BaseTestRSAPSS extends BaseTestJunit5 {
                 if (printJunitTrace)
                     System.out.println("keySize=" + i);
                 KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", getProviderName());
-                System.out.println("Running test with keysize: " + i);
+                System.out.println("Running test with keysize: " + i + ", provider: " + getProviderName());
                 keyGen.initialize(i, new java.security.SecureRandom());
                 KeyPair keyPair = keyGen.genKeyPair();
                 dotestSignature(content3, IBM_ALG, keyPair, null);
