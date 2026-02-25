@@ -188,20 +188,23 @@ public class BaseTestRSAPSS extends BaseTestJunit5 {
     public void testRSASignatureWithPSSBigMsgMultiKeySize() throws Exception {
         try {
             int startSize = 1024;
+            int increment = 512;
 
             if (getProviderName().equals("OpenJCEPlusFIPS")) {
                 startSize = 2048;
+                increment = 1024; // FIPS supports 2048, 3072, 4096, etc. (multiples of 1024)
             }
             for (int i = startSize; i < 4096;) {
                 if (printJunitTrace)
                     System.out.println("keySize=" + i);
                 KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", getProviderName());
+                System.out.println("Running test with keysize: " + i);
                 keyGen.initialize(i, new java.security.SecureRandom());
                 KeyPair keyPair = keyGen.genKeyPair();
                 dotestSignature(content3, IBM_ALG, keyPair, null);
                 dotestSignature(oneByte, IBM_ALG, keyPair, null);
                 dotestSignature(content, IBM_ALG, keyPair, null);
-                i = i + 512;
+                i = i + increment;
             }
 
         } catch (Exception e) {
