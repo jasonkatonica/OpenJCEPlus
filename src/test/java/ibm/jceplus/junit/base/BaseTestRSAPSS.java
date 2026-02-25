@@ -194,7 +194,7 @@ public class BaseTestRSAPSS extends BaseTestJunit5 {
                 startSize = 2048;
                 increment = 1024; // FIPS supports 2048, 3072, 4096, etc. (multiples of 1024)
             }
-            for (int i = startSize; i < 4096;) {
+            for (int i = startSize; i <= 4096;) {
                 if (printJunitTrace)
                     System.out.println("keySize=" + i);
                 KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", getProviderName());
