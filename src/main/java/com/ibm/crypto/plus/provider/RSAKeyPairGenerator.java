@@ -19,6 +19,9 @@ import java.security.KeyPairGeneratorSpi;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.security.spec.RSAKeyGenParameterSpec;
+import java.util.Arrays;
+import java.util.List;
+
 import sun.security.x509.AlgorithmId;
 
 abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
@@ -30,6 +33,7 @@ abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
     static final int DEF_RSASSA_PSS_KEY_SIZE = 2048;
     private KeyType type = RSAUtil.KeyType.RSA;
     private AlgorithmId rsaId;
+    public final static List<Integer> ALLOWABLE_MODLEN_FIPS_GENERATION = Arrays.asList(2048, 3072, 4096);
 
     RSAKeyPairGenerator(OpenJCEPlusProvider provider, KeyType type, int keySize) {
         this.provider = provider;
@@ -52,8 +56,9 @@ abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
         // probably user error
         try {
             if (provider.isFIPS()) {
-                RSAKeyFactory.checkKeyLengths(keysize, RSAKeyGenParameterSpec.F4,
-                        RSAKeyFactory.MIN_MODLEN_FIPS, 64 * 1024);
+                if ((ALLOWABLE_MODLEN_FIPS_GENERATION != null) && (!ALLOWABLE_MODLEN_FIPS_GENERATION.contains(keysize))) {
+                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA key is accepted.");
+                }
             } else {
                 RSAKeyFactory.checkKeyLengths(keysize, RSAKeyGenParameterSpec.F4,
                         RSAKeyFactory.MIN_MODLEN_NONFIPS, 64 * 1024);
@@ -90,8 +95,9 @@ abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
         // do not allow unreasonably large key sizes, probably user error
         try {
             if (provider.isFIPS()) {
-                RSAKeyFactory.checkKeyLengths(this.keysize, publicExponent,
-                        RSAKeyFactory.MIN_MODLEN_FIPS, 64 * 1024);
+                if ((ALLOWABLE_MODLEN_FIPS_GENERATION != null) && (!ALLOWABLE_MODLEN_FIPS_GENERATION.contains(keysize))) {
+                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA key is accepted.");
+                }
             } else {
                 RSAKeyFactory.checkKeyLengths(this.keysize, publicExponent,
                         RSAKeyFactory.MIN_MODLEN_NONFIPS, 64 * 1024);
