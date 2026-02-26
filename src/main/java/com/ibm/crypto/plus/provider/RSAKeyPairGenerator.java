@@ -57,7 +57,7 @@ abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
         try {
             if (provider.isFIPS()) {
                 if ((ALLOWABLE_MODLEN_FIPS_GENERATION != null) && (!ALLOWABLE_MODLEN_FIPS_GENERATION.contains(keysize))) {
-                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA key is accepted.");
+                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA keys are accepted.");
                 }
             } else {
                 RSAKeyFactory.checkKeyLengths(keysize, RSAKeyGenParameterSpec.F4,
@@ -96,7 +96,7 @@ abstract class RSAKeyPairGenerator extends KeyPairGeneratorSpi {
         try {
             if (provider.isFIPS()) {
                 if ((ALLOWABLE_MODLEN_FIPS_GENERATION != null) && (!ALLOWABLE_MODLEN_FIPS_GENERATION.contains(keysize))) {
-                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA key is accepted.");
+                    throw new InvalidKeyException("In FIPS mode, only 2048, 3072, or 4096 size RSA keys are accepted.");
                 }
             } else {
                 RSAKeyFactory.checkKeyLengths(this.keysize, publicExponent,
