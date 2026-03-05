@@ -593,6 +593,29 @@ public class BaseTestRSA extends BaseTestCipher {
     }
 
     @Test
+    public void testRSACipherNoPaddingExceedInput() throws Exception {
+        // FIPS does not support non-OAEP paddings.
+        assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
+        try {
+            rsaKeyPairGen.initialize(2048);
+            KeyPair rsaKeyPair = rsaKeyPairGen.generateKeyPair();
+            RSAPublicKey pubKey = (RSAPublicKey) rsaKeyPair.getPublic();
+            Cipher cp = Cipher.getInstance("RSA/ECB/NoPadding", getProviderName());
+            cp.init(Cipher.ENCRYPT_MODE, pubKey);
+
+            BigInteger modulus = ((RSAKey) pubKey).getModulus();
+            byte[] modulusPlusOne = modulus.add(BigInteger.ONE).toByteArray();
+            byte[] plaintext = Arrays.copyOfRange(modulusPlusOne, 1, modulusPlusOne.length); // BigInteger has an extra byte for sign.
+
+            cp.doFinal(plaintext);
+
+            fail("Did not get expected BadPaddingException.");
+        } catch (BadPaddingException bpe) {
+            assertEquals("Message is larger than modulus", bpe.getMessage(), "Exception message is not what's expected.");
+        }
+    }
+
+    @Test
     public void testRSACipher_init_cert() throws Exception {
         // FIXME
     }
