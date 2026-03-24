@@ -69,7 +69,15 @@ abstract public class JMHBase {
         optionsBuilder.addProfiler(StackProfiler.class);
         optionsBuilder.addProfiler(GCProfiler.class);
         optionsBuilder.addProfiler(ClassloaderProfiler.class);
-        optionsBuilder.addProfiler(CompilerProfiler.class);
+        
+        // CompilerProfiler causes issues on ppc64le Linux which causes the Jenkins job to fail.
+        // Add the compiler profiler for all other platforms.
+        String osArch = System.getProperty("os.arch", "").toLowerCase();
+        boolean isPpc64le = osArch.equals("ppc64le");
+        boolean isLinux = osName.contains("linux");
+        if (!(isPpc64le && isLinux)) {
+            optionsBuilder.addProfiler(CompilerProfiler.class);
+        }
         List<String> jvmArgs = new ArrayList<>(Arrays.asList("-Xms1G", "-Xmx1G", "--patch-module",
                 "openjceplus=" + projectHomeDir + "/target/classes",
                 "--add-exports=java.base/sun.security.util=ALL-UNNAMED",
