@@ -107,7 +107,7 @@ def getBinaries(hardware, software) {
  * an alternative method for bootstrapping our builds when official builds wont work
  * from official GA releases from AdoptOpenJDK API.
  */
-def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaVersion, buildTimestamp) {
+def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaVersion) {
     def java_link = ""
     def baseUrl = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/${artifactoryPath}"
 
@@ -321,7 +321,6 @@ return [
     getOCKTarget: this.&getOCKTarget,
     getBinaries: this.&getBinaries,
     getJava: this.&getJava,
-    getJavaWorkaroundUrl: this.&getJavaWorkaroundUrl,
     getMaven: this.&getMaven,
     cloneOpenJCEPlus: this.&cloneOpenJCEPlus,
     runOpenJCEPlus: this.&runOpenJCEPlus,
