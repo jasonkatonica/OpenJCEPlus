@@ -107,27 +107,27 @@ def getBinaries(hardware, software) {
  * an alternative method for bootstrapping our builds when official builds wont work
  * from official GA releases from AdoptOpenJDK API.
  */
-def getJavaWorkaroundUrl(artifactoryPath, hardware, software) {
+def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaRelease) {
     def java_link = ""
     def baseUrl = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/${artifactoryPath}"
 
     def filename = ""
     if (software == "windows") {
-        filename = "ibm-semeru-open-jdk_x64_windows_${javaVersion}_2026-01-03-18-27.zip"
+        filename = "ibm-semeru-open-jdk_x64_windows_${javaRelease}_2026-01-03-18-27.zip"
     } else if ((software == "linux") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if ((software == "linux") && (hardware == "ppc64le")) {
-        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if ((software == "linux") && (hardware == "x64")) {
-        filename = "ibm-semeru-open-jdk_x64_linux_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_x64_linux_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if ((software == "linux") && (hardware == "s390x")) {
-        filename = "ibm-semeru-open-jdk_s390x_linux_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_s390x_linux_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if ((software == "mac") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if ((software == "mac") && (hardware == "x64")) {
-        filename = "ibm-semeru-open-jdk_x64_mac_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_x64_mac_${javaRelease}_2026-01-03-18-27.tar.gz"
     } else if (software == "aix") {
-        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaVersion}_2026-01-03-18-27.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaRelease}_2026-01-03-18-27.tar.gz"
     }
     
     if (filename != "") {
@@ -176,7 +176,7 @@ def getJava(hardware, software) {
     //def java_link = getJavaDownloadUrl(JAVA_VERSION, hardware, software, JAVA_RELEASE)
     
     // Use workaround URL from Artifactory if official builds don't work
-    def java_link = getJavaWorkaroundUrl("openjceplusworkaround050126", hardware, software)
+    def java_link = getJavaWorkaroundUrl("openjceplusworkaround050126", hardware, software, JAVA_RELEASE)
 
     dir("java") {
         sh "curl -u $ARTIFACTORY_USERNAME:$ARTIFACTORY_PASSWORD ${java_link} > java.tar.gz"
