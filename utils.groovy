@@ -115,19 +115,19 @@ def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaRelease) {
     if (software == "windows") {
         filename = "ibm-semeru-open-jdk_x64_windows_${javaRelease}JDK26U_2026-01-02-02-41.zip"
     } else if ((software == "linux") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     } else if ((software == "linux") && (hardware == "ppc64le")) {
-        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     } else if ((software == "linux") && (hardware == "x64")) {
         filename = "ibm-semeru-open-jdk_x64_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
     } else if ((software == "linux") && (hardware == "s390x")) {
-        filename = "ibm-semeru-open-jdk_s390x_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_s390x_linux_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     } else if ((software == "mac") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     } else if ((software == "mac") && (hardware == "x64")) {
-        filename = "ibm-semeru-open-jdk_x64_mac_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_x64_mac_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     } else if (software == "aix") {
-        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaRelease}JDK26U_2026-01-03-18-27.tar.gz"
     }
     
     if (filename != "") {
@@ -172,10 +172,10 @@ def getJava(hardware, software) {
         hardware = "x64"
     }
 
-    // Get the download URL using the helper method
+    // Get the download URL using the helper method that uses an API
     //def java_link = getJavaDownloadUrl(JAVA_VERSION, hardware, software, JAVA_RELEASE)
     
-    // Use workaround URL from Artifactory if official builds don't work
+    // Use workaround URL from Artifactory, if official builds don't work
     def java_link = getJavaWorkaroundUrl("openjceplusworkaround050126", hardware, software, JAVA_RELEASE)
 
     dir("java") {
