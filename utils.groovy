@@ -107,7 +107,7 @@ def getBinaries(hardware, software) {
  * an alternative method for bootstrapping our builds when official builds wont work
  * from official GA releases from AdoptOpenJDK API.
  */
-def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaVersion) {
+def getJavaWorkaroundUrl(artifactoryPath, hardware, software) {
     def java_link = ""
     def baseUrl = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/${artifactoryPath}"
 
@@ -176,10 +176,11 @@ def getJava(hardware, software) {
     //def java_link = getJavaDownloadUrl(JAVA_VERSION, hardware, software, JAVA_RELEASE)
     
     // Use workaround URL from Artifactory if official builds don't work
-    def java_link = getJavaWorkaroundUrl("openjceplusworkaround050126", hardware, software, JAVA_VERSION)
+    def java_link = getJavaWorkaroundUrl("openjceplusworkaround050126", hardware, software)
 
     dir("java") {
-        sh "curl -LJkO ${java_link}"
+        sh "curl -u $ARTIFACTORY_USERNAME:$ARTIFACTORY_PASSWORD ${java_link} > java.tar.gz"
+        //sh "curl -LJkO ${java_link}"
         def java_file = sh (
             script: 'ls | grep \'tar\\|zip\'',
             returnStdout: true
