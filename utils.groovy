@@ -321,6 +321,7 @@ return [
     getOCKTarget: this.&getOCKTarget,
     getBinaries: this.&getBinaries,
     getJava: this.&getJava,
+    getJavaWorkaroundUrl: this.&getJavaWorkaroundUrl,
     getMaven: this.&getMaven,
     cloneOpenJCEPlus: this.&cloneOpenJCEPlus,
     runOpenJCEPlus: this.&runOpenJCEPlus,
