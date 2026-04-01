@@ -113,21 +113,21 @@ def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaRelease) {
 
     def filename = ""
     if (software == "windows") {
-        filename = "ibm-semeru-open-jdk_x64_windows_${javaRelease}JDK26U_2026-01-02-02-41.zip"
+        filename = "ibm-semeru-open-jdk_x64_windows_${javaRelease}JDK26U_2026-01-02-02-417.zip"
     } else if ((software == "linux") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_linux_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if ((software == "linux") && (hardware == "ppc64le")) {
-        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64le_linux_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if ((software == "linux") && (hardware == "x64")) {
         filename = "ibm-semeru-open-jdk_x64_linux_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if ((software == "linux") && (hardware == "s390x")) {
-        filename = "ibm-semeru-open-jdk_s390x_linux_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_s390x_linux_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if ((software == "mac") && (hardware == "aarch64")) {
-        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_aarch64_mac_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if ((software == "mac") && (hardware == "x64")) {
-        filename = "ibm-semeru-open-jdk_x64_mac_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_x64_mac_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     } else if (software == "aix") {
-        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaRelease}JDK26U_2026-01-02-02-41.tar.gz"
+        filename = "ibm-semeru-open-jdk_ppc64_aix_${javaRelease}JDK26U_2026-01-02-02-417.tar.gz"
     }
     
     if (filename != "") {
