@@ -240,28 +240,46 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
     private ObjectIdentifier processOIDSequence(DerInputStream oidInputStream,
             DerOutputStream outStream) throws IOException {
 
+        System.out.println("DEBUG: processOIDSequence called");
+        System.out.println("DEBUG: oidInputStream available bytes: " + oidInputStream.available());
+        
         ObjectIdentifier oid = oidInputStream.getOID();
+        System.out.println("DEBUG: OID read: " + oid);
         CurveUtil.checkOid(oid);
+        System.out.println("DEBUG: OID check passed");
+        
         try { // FFDH curve
             // Check if there's more data available before trying to read sequence
-            if (oidInputStream.available() > 0) {
+            int availableBytes = oidInputStream.available();
+            System.out.println("DEBUG: Available bytes after OID: " + availableBytes);
+            
+            if (availableBytes > 0) {
+                System.out.println("DEBUG: Attempting to read FFDH parameters sequence");
                 DerValue[] params = oidInputStream.getSequence(3);
+                System.out.println("DEBUG: Read " + params.length + " parameters");
                 if (params.length >= 3) {
                     bi1 = params[0].getBigInteger();
                     bi2 = params[1].getBigInteger();
                     bi3 = params[2].getBigInteger();
                     int size = bi1.bitLength();
+                    System.out.println("DEBUG: FFDH curve detected, size: " + size);
                     this.curve = CurveUtil.getCurve(oid, size);
                 } else {
+                    System.out.println("DEBUG: Not enough parameters for FFDH curve");
                     throw new IOException("This curve does not seem to be a valid XEC/FFDHE curve");
                 }
             } else {
                 // XEC curve - no additional parameters after OID
+                System.out.println("DEBUG: No additional data, treating as XEC curve");
                 this.curve = CurveUtil.getCurve(oid, null);
             }
         } catch (IOException e) { // XEC curve
+            System.out.println("DEBUG: IOException caught, treating as XEC curve: " + e.getMessage());
+            e.printStackTrace();
             this.curve = CurveUtil.getCurve(oid, null);
         }
+        
+        System.out.println("DEBUG: Final curve: " + (this.curve != null ? this.curve.name() : "null"));
 
         if (outStream != null) {
             outStream.putOID(oid);
