@@ -243,15 +243,22 @@ final class XDHPrivateKeyImpl extends PKCS8Key implements XECPrivateKey, Seriali
         ObjectIdentifier oid = oidInputStream.getOID();
         CurveUtil.checkOid(oid);
         try { // FFDH curve
-            DerValue[] params = oidInputStream.getSequence(3);
-            if (params.length >= 3) {
-                bi1 = params[0].getBigInteger();
-                bi2 = params[1].getBigInteger();
-                bi3 = params[2].getBigInteger();
-                int size = bi1.bitLength();
-                this.curve = CurveUtil.getCurve(oid, size);
-            } else
-                throw new IOException("This curve does not seem to be a valid XEC/FFDHE curve");
+            // Check if there's more data available before trying to read sequence
+            if (oidInputStream.available() > 0) {
+                DerValue[] params = oidInputStream.getSequence(3);
+                if (params.length >= 3) {
+                    bi1 = params[0].getBigInteger();
+                    bi2 = params[1].getBigInteger();
+                    bi3 = params[2].getBigInteger();
+                    int size = bi1.bitLength();
+                    this.curve = CurveUtil.getCurve(oid, size);
+                } else {
+                    throw new IOException("This curve does not seem to be a valid XEC/FFDHE curve");
+                }
+            } else {
+                // XEC curve - no additional parameters after OID
+                this.curve = CurveUtil.getCurve(oid, null);
+            }
         } catch (IOException e) { // XEC curve
             this.curve = CurveUtil.getCurve(oid, null);
         }
