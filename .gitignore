@@ -49,3 +49,4 @@
 
 # Igore JMH lock file
 jmh.lock
+testkeys.p12
