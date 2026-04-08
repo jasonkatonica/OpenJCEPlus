@@ -41,15 +41,14 @@ import org.openjdk.jmh.runner.options.Options;
 
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@State(Scope.Thread)
+@State(Scope.Benchmark)
 @Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
-@Fork(1)
 public class TLSHandshakeBenchmark extends JMHBase {
 
     private static final String PAYLOAD_1KB = "1024";
 
-    @Param({"X25519", "X25519MLKEM768"})
+    @Param({"X25519", "X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
     @Param({"cached", "non-cached"})
