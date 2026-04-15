@@ -48,7 +48,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
 
     private static final String PAYLOAD_1KB = "1024";
 
-    @Param({"X25519", "X25519MLKEM768", "SecP256r1MLKEM768", "SecP384r1MLKEM1024"})
+    @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
     @Param({"cached", "non-cached"})
