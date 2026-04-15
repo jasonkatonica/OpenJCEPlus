@@ -60,6 +60,9 @@ public class TLSHandshakeBenchmark extends JMHBase {
     @Param({PAYLOAD_1KB})
     public int payload;
 
+    @Param({"OpenJCEPlus", "SunJCE"})
+    private String provider;
+
     private SSLServerSocket serverSocket;
     private SSLContext sslContext;
     private SSLSocketFactory clientFactory;
@@ -70,7 +73,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
-        super.setup("OpenJCEPlus");
+        super.setup(provider);
 
         generateKeyStore();
 
