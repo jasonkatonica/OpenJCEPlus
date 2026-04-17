@@ -51,19 +51,14 @@ import org.openjdk.jmh.runner.options.Options;
 @Threads(1) // Vital: Prevents multiple clients from deadlocking a single-threaded server
 public class TLSHandshakeBenchmark extends JMHBase {
 
-    private static final String PAYLOAD_1KB = "1024";
+    private static final int payload = 1024;
+    private static final String cipherSuite = "TLS_AES_256_GCM_SHA384";
 
     @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
     @Param({"cached", "non-cached"})
     public String useCache;
-
-    @Param({"TLS_AES_256_GCM_SHA384"})
-    public String cipherSuite;
-
-    @Param({PAYLOAD_1KB})
-    public int payload;
 
     @Param({"OpenJCEPlus", "SunJCE"})
     private String provider;
@@ -106,14 +101,14 @@ public class TLSHandshakeBenchmark extends JMHBase {
         sslContext = SSLContext.getInstance("TLS");
         sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), null);
         
-        SSLServerSocketFactory ssf = (SSLServerSocketFactory) sslContext.getServerSocketFactory();
+        SSLServerSocketFactory ssf = sslContext.getServerSocketFactory();
         serverSocket = (SSLServerSocket) ssf.createServerSocket(0);
 
         serverSocket.setEnabledCipherSuites(new String[]{cipherSuite});
         serverSocket.setEnabledProtocols(new String[]{"TLSv1.3"});
         
         port = serverSocket.getLocalPort();
-        clientFactory = (SSLSocketFactory) sslContext.getSocketFactory();
+        clientFactory = sslContext.getSocketFactory();
 
         // Capture the current namedGroup and payload values for this trial
         final String currentNamedGroup = namedGroup;
