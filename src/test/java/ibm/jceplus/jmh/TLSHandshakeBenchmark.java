@@ -74,7 +74,6 @@ public class TLSHandshakeBenchmark extends JMHBase {
     private SSLSocketFactory clientFactory;
     private int port;
     private Thread serverThread;
-    private SSLSession cachedSession;
     private ExecutorService executor;
 
     @Setup(Level.Trial)
@@ -166,10 +165,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
 
             byte[] response = is.readNBytes(payload);
             
-            if ("cached".equals(useCache)) {
-                // Cache the session for reuse in subsequent handshakes
-                cachedSession = clientSocket.getSession();
-            } else {
+            if ("non-cached".equals(useCache)) {
                 // Invalidate the session to force full handshake
                 clientSocket.getSession().invalidate();
             }
@@ -210,6 +206,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
         } catch (SocketTimeoutException e) {
             System.err.println("ERROR: Server socket timeout occurred after 5 minutes - this is unexpected!");
             e.printStackTrace();
+            throw new RuntimeException("Server timeout - terminating benchmark", e);
         } catch (IOException e) {
             if (!Thread.interrupted() && !serverSocket.isClosed()) {
                 e.printStackTrace();
