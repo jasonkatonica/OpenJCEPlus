@@ -53,6 +53,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
 
     private static final int payload = 1024;
     private static final String cipherSuite = "TLS_AES_256_GCM_SHA384";
+    private static final int MAX_SERVER_POOL_THREADS = 10;
 
     @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
@@ -77,7 +78,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
         generateKeyStore();
         
         // Create ExecutorService for handling client connections (max 10 threads)
-        executor = Executors.newFixedThreadPool(10);
+        executor = Executors.newFixedThreadPool(MAX_SERVER_POOL_THREADS);
 
         // Load keystore and truststore programmatically
         String keystorePath = "testkeys.p12";
