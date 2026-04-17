@@ -13,7 +13,10 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketTimeoutException;
 import java.security.KeyStore;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -26,7 +29,6 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Level;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
@@ -73,12 +75,16 @@ public class TLSHandshakeBenchmark extends JMHBase {
     private int port;
     private Thread serverThread;
     private SSLSession cachedSession;
+    private ExecutorService executor;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
         super.setup(provider);
 
         generateKeyStore();
+        
+        // Create ExecutorService for handling client connections (max 10 threads)
+        executor = Executors.newFixedThreadPool(10);
 
         // Load keystore and truststore programmatically
         String keystorePath = "testkeys.p12";
@@ -119,27 +125,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
             while (!Thread.interrupted()) {
                 try {
                     SSLSocket socket = (SSLSocket) serverSocket.accept();
-                    
-                    socket.setEnabledProtocols(new String[]{"TLSv1.3"});
-                    socket.setEnabledCipherSuites(new String[]{cipherSuite});
-                    
-                    // Set named groups if the method is available (Java 19+)
-                    SSLParameters params = socket.getSSLParameters();
-                    params.setNamedGroups(new String[]{currentNamedGroup});
-                    socket.setSSLParameters(params);
-                    
-                    socket.startHandshake();
-
-                    // Read exactly 'payload' bytes
-                    InputStream is = socket.getInputStream();
-                    byte[] buffer = is.readNBytes(currentPayload);
-                    
-                    // Write back the response
-                    OutputStream os = socket.getOutputStream();
-                    os.write(buffer);
-                    os.flush();
-                    
-                    socket.close();
+                    executor.submit(() -> handleClient(socket, currentNamedGroup, currentPayload));
                 } catch (IOException e) {
                     if (!Thread.interrupted() && !serverSocket.isClosed()) {
                         // Only log if not intentionally interrupted or socket closed
@@ -160,18 +146,15 @@ public class TLSHandshakeBenchmark extends JMHBase {
     @Benchmark
     public byte[] testHandshake() throws Exception {
         try (SSLSocket clientSocket = (SSLSocket) clientFactory.createSocket("localhost", port)) {
+            // Set socket timeout to prevent hanging (5 minutes)
+            clientSocket.setSoTimeout(300000);
+            
             clientSocket.setEnabledProtocols(new String[]{"TLSv1.3"});
             clientSocket.setEnabledCipherSuites(new String[]{cipherSuite});
 
             SSLParameters params = clientSocket.getSSLParameters();
             params.setNamedGroups(new String[]{namedGroup});
             clientSocket.setSSLParameters(params);
-            
-            // Session Resumption Logic
-            if (useCache.equals("cached") && cachedSession != null) {
-                // SSLSocket handles session resumption automatically if the session is still valid
-                // for the target host/port, but we can verify it here.
-            }
 
             clientSocket.startHandshake();
             
@@ -192,6 +175,45 @@ public class TLSHandshakeBenchmark extends JMHBase {
             }
             
             return response; // Prevents Dead Code Elimination
+        } catch (SocketTimeoutException e) {
+            System.err.println("ERROR: Client socket timeout occurred after 5 minutes - this is unexpected!");
+            e.printStackTrace();
+            throw e;
+        }
+    }
+
+    private void handleClient(SSLSocket socket, String currentNamedGroup, int currentPayload) {
+        try {
+            // Set socket timeout to prevent hanging (5 minutes)
+            socket.setSoTimeout(300000);
+            
+            socket.setEnabledProtocols(new String[]{"TLSv1.3"});
+            socket.setEnabledCipherSuites(new String[]{cipherSuite});
+            
+            // Set named groups if the method is available (Java 19+)
+            SSLParameters params = socket.getSSLParameters();
+            params.setNamedGroups(new String[]{currentNamedGroup});
+            socket.setSSLParameters(params);
+            
+            socket.startHandshake();
+
+            // Read exactly 'payload' bytes
+            InputStream is = socket.getInputStream();
+            byte[] buffer = is.readNBytes(currentPayload);
+            
+            // Write back the response
+            OutputStream os = socket.getOutputStream();
+            os.write(buffer);
+            os.flush();
+            
+            socket.close();
+        } catch (SocketTimeoutException e) {
+            System.err.println("ERROR: Server socket timeout occurred after 5 minutes - this is unexpected!");
+            e.printStackTrace();
+        } catch (IOException e) {
+            if (!Thread.interrupted() && !serverSocket.isClosed()) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -202,6 +224,17 @@ public class TLSHandshakeBenchmark extends JMHBase {
         }
         if (serverThread != null) {
             serverThread.join(2000);
+        }
+        if (executor != null) {
+            executor.shutdown();
+            try {
+                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
         }
     }
 
