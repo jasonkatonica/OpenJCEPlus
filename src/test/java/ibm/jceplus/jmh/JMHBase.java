@@ -62,6 +62,11 @@ abstract public class JMHBase {
         System.out.println("Thread count: " + threads);
         System.out.println("Allowed providers: " + allowedProv);
 
+        // Print Java version information
+        System.out.println("Java Version: " + System.getProperty("java.version"));
+        System.out.println("Java Runtime Version: " + System.getProperty("java.runtime.version"));
+        System.out.println("Java VM Version: " + System.getProperty("java.vm.version"));
+
         String logFileWithThreads = logFileRoot + "-" + threads + "t";
 
         OptionsBuilder optionsBuilder = new OptionsBuilder();
