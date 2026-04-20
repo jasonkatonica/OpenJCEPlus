@@ -8,13 +8,18 @@
 
 package ibm.jceplus.jmh;
 
-import java.io.File;
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.SocketTimeoutException;
+import java.security.KeyFactory;
 import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateFactory;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.Base64;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +60,31 @@ public class TLSHandshakeBenchmark extends JMHBase {
     private static final String cipherSuite = "TLS_AES_256_GCM_SHA384";
     private static final int MAX_SERVER_POOL_THREADS = 10;
 
+    // Hardcoded EC certificate (P-256) from BaseTestTLS.java (ecdsa_sha256 enum)
+    // Source: src/test/java/ibm/jceplus/junit/base/integration/BaseTestTLS.java
+    // Signature Algorithm: ecdsa-with-SHA256
+    // Subject: CN = Unknown
+    // Public Key Algorithm: id-ecPublicKey (P-256/secp256r1)
+    private static final String EC_CERT =
+            "-----BEGIN CERTIFICATE-----\n"
+            + "MIIB7jCCAZWgAwIBAgIIGIixIyeIjEYwCgYIKoZIzj0EAwIwbDEQMA4GA1UEBhMH\n"
+            + "VW5rbm93bjEQMA4GA1UECBMHVW5rbm93bjEQMA4GA1UEBxMHVW5rbm93bjEQMA4G\n"
+            + "A1UEChMHVW5rbm93bjEQMA4GA1UECxMHVW5rbm93bjEQMA4GA1UEAxMHVW5rbm93\n"
+            + "bjAeFw0yNDA0MTAwMDMwNTlaFw0yNTA0MTAwMDMwNTlaMGwxEDAOBgNVBAYTB1Vu\n"
+            + "a25vd24xEDAOBgNVBAgTB1Vua25vd24xEDAOBgNVBAcTB1Vua25vd24xEDAOBgNV\n"
+            + "BAoTB1Vua25vd24xEDAOBgNVBAsTB1Vua25vd24xEDAOBgNVBAMTB1Vua25vd24w\n"
+            + "WTATBgcqhkjOPQIBBggqhkjOPQMBBwNCAARwPhB02a4D7RBqRXoBxfc2x1Z99TQB\n"
+            + "WiLjIqZeHszkvhOPccQif7aDK/E+L8ur/AIb2uAHJKNwjtLsob6PHEqVoyEwHzAd\n"
+            + "BgNVHQ4EFgQUZe+pp4Aw90o3yY0eW+Yp8E/wa8owCgYIKoZIzj0EAwIDRwAwRAIg\n"
+            + "NB8N+LlBQK8WfPoM1xEjP+Y3+ExwOI0oIYIJ33JncMoCIEXNfzv70SKG5Nz8Zv39\n"
+            + "dc7Z4hBtsoS/qhbxhlFn79UR\n"
+            + "-----END CERTIFICATE-----\n";
+
+    // EC Private Key (P-256)
+    private static final String EC_PRIVATE_KEY =
+            "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCA9ITv74v78ktu2lX31\n"
+            + "tCuSKJSlEjx7RBlRVgloxeY0fA==";
+
     @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
@@ -74,29 +104,42 @@ public class TLSHandshakeBenchmark extends JMHBase {
     @Setup(Level.Trial)
     public void setup() throws Exception {
         super.setup(provider);
-
-        generateKeyStore();
         
         // Create ExecutorService for handling client connections (max 10 threads)
         executor = Executors.newFixedThreadPool(MAX_SERVER_POOL_THREADS);
 
-        // Load keystore and truststore programmatically
-        String keystorePath = "testkeys.p12";
-        String keystorePassword = "password";
+        // Create keystore and truststore programmatically using hardcoded EC certificate
+        char[] passphrase = "passphrase".toCharArray();
         
-        // Load the keystore
+        // Generate certificate from cert string
+        CertificateFactory cf = CertificateFactory.getInstance("X.509");
+        Certificate cert = cf.generateCertificate(
+                new ByteArrayInputStream(EC_CERT.getBytes()));
+        
+        // Generate the private key
+        PKCS8EncodedKeySpec priKeySpec = new PKCS8EncodedKeySpec(
+                Base64.getMimeDecoder().decode(EC_PRIVATE_KEY));
+        KeyFactory kf = KeyFactory.getInstance("EC");
+        PrivateKey privateKey = kf.generatePrivate(priKeySpec);
+        
+        // Create keystore with the EC certificate and private key
         KeyStore keyStore = KeyStore.getInstance("PKCS12");
-        try (FileInputStream fis = new FileInputStream(keystorePath)) {
-            keyStore.load(fis, keystorePassword.toCharArray());
-        }
+        keyStore.load(null, null);
+        Certificate[] chain = new Certificate[]{cert};
+        keyStore.setKeyEntry("ec-cert", privateKey, passphrase, chain);
+        
+        // Create truststore with the same certificate
+        KeyStore trustStore = KeyStore.getInstance("PKCS12");
+        trustStore.load(null, null);
+        trustStore.setCertificateEntry("trusted-ec-cert", cert);
         
         // Initialize KeyManagerFactory
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-        kmf.init(keyStore, keystorePassword.toCharArray());
+        kmf.init(keyStore, passphrase);
         
         // Initialize TrustManagerFactory
         TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
-        tmf.init(keyStore);
+        tmf.init(trustStore);
 
         // Create SSLContext with the key and trust managers
         sslContext = SSLContext.getInstance("TLS");
@@ -227,35 +270,6 @@ public class TLSHandshakeBenchmark extends JMHBase {
                 executor.shutdownNow();
                 Thread.currentThread().interrupt();
             }
-        }
-    }
-
-    private void generateKeyStore() throws Exception {
-        File keystoreFile = new File("testkeys.p12");
-        if (keystoreFile.exists()) {
-            return;
-        }
-
-        System.out.println("Generating testkeys keystore with EC...");
-        ProcessBuilder processBuilder = new ProcessBuilder(
-                "keytool",
-                "-genkeypair",
-                "-keyalg", "EC",
-                "-keysize", "256",
-                "-validity", "365",
-                "-keystore", "testkeys.p12",
-                "-storetype", "PKCS12",
-                "-storepass", "password",
-                "-keypass", "password",
-                "-dname", "CN=localhost"
-        );
-
-        processBuilder.inheritIO();
-        Process process = processBuilder.start();
-        int exitCode = process.waitFor();
-
-        if (exitCode != 0) {
-            throw new RuntimeException("Failed to generate testkeys using keytool. Exit code: " + exitCode);
         }
     }
 
