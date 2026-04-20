@@ -80,11 +80,23 @@ public class TLSHandshakeBenchmark extends JMHBase {
             + "dc7Z4hBtsoS/qhbxhlFn79UR\n"
             + "-----END CERTIFICATE-----\n";
 
-    // EC Private Key (P-256)
-    private static final String EC_PRIVATE_KEY =
-            "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCA9ITv74v78ktu2lX31\n"
-            + "tCuSKJSlEjx7RBlRVgloxeY0fA==";
-
+    /**
+     * EC Private Key (P-256)
+     * 
+     * PrivateKeyInfo SEQUENCE (3 elem)
+     * version Version INTEGER 0
+     *  privateKeyAlgorithm AlgorithmIdentifier SEQUENCE (2 elem)
+     *    algorithm OBJECT IDENTIFIER 1.2.840.10045.2.1 ecPublicKey (ANSI X9.62 public key type)
+     *    parameters ANY OBJECT IDENTIFIER 1.2.840.10045.3.1.7 prime256v1 (ANSI X9.62 named elliptic curve)
+     * privateKey PrivateKey OCTET STRING (39 byte) 302502010104203D213BFBE2FEFC92DBB6957DF5B42B922894A5123C7B441951560968…
+     *    SEQUENCE (2 elem)
+     *        INTEGER 1
+     *        OCTET STRING (32 byte) 3D213BFBE2FEFC92DBB6957DF5B42B922894A5123C7B441951560968C5E6347C
+     * private static final String EC_PRIVATE_KEY =
+     *        "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCA9ITv74v78ktu2lX31\n"
+     *        + "tCuSKJSlEjx7RBlRVgloxeY0fA==";
+     * 
+     */
     @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
