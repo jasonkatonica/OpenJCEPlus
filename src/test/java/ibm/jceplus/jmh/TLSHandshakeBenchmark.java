@@ -92,11 +92,12 @@ public class TLSHandshakeBenchmark extends JMHBase {
      *    SEQUENCE (2 elem)
      *        INTEGER 1
      *        OCTET STRING (32 byte) 3D213BFBE2FEFC92DBB6957DF5B42B922894A5123C7B441951560968C5E6347C
-     * private static final String EC_PRIVATE_KEY =
-     *        "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCA9ITv74v78ktu2lX31\n"
-     *        + "tCuSKJSlEjx7RBlRVgloxeY0fA==";
      * 
      */
+    private static final String EC_PRIVATE_KEY =
+            "MEECAQAwEwYHKoZIzj0CAQYIKoZIzj0DAQcEJzAlAgEBBCA9ITv74v78ktu2lX31\n"
+            + "tCuSKJSlEjx7RBlRVgloxeY0fA==";
+
     @Param({"X25519", "X25519MLKEM768", "SecP256r1", "SecP256r1MLKEM768", "SecP384r1", "SecP384r1MLKEM1024"})
     public String namedGroup;
 
