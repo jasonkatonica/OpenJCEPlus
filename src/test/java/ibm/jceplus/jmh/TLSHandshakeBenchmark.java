@@ -20,8 +20,6 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -58,7 +56,6 @@ public class TLSHandshakeBenchmark extends JMHBase {
 
     private static final int payload = 1024;
     private static final String cipherSuite = "TLS_AES_256_GCM_SHA384";
-    private static final int MAX_SERVER_POOL_THREADS = 10;
 
     // Hardcoded EC certificate (P-256) from BaseTestTLS.java (ecdsa_sha256 enum)
     // Source: src/test/java/ibm/jceplus/junit/base/integration/BaseTestTLS.java
@@ -112,14 +109,10 @@ public class TLSHandshakeBenchmark extends JMHBase {
     private SSLSocketFactory clientFactory;
     private int port;
     private Thread serverThread;
-    private ExecutorService executor;
 
     @Setup(Level.Trial)
     public void setup() throws Exception {
         super.setup(provider);
-        
-        // Create ExecutorService for handling client connections (max 10 threads)
-        executor = Executors.newFixedThreadPool(MAX_SERVER_POOL_THREADS);
 
         // Create keystore and truststore programmatically using hardcoded EC certificate
         char[] passphrase = "passphrase".toCharArray();
@@ -175,7 +168,7 @@ public class TLSHandshakeBenchmark extends JMHBase {
             while (!Thread.interrupted()) {
                 try {
                     SSLSocket socket = (SSLSocket) serverSocket.accept();
-                    executor.submit(() -> handleClient(socket, currentNamedGroup, currentPayload));
+                    handleClient(socket, currentNamedGroup, currentPayload);
                 } catch (IOException e) {
                     if (!Thread.interrupted() && !serverSocket.isClosed()) {
                         // Only log if not intentionally interrupted or socket closed
@@ -272,17 +265,6 @@ public class TLSHandshakeBenchmark extends JMHBase {
         }
         if (serverThread != null) {
             serverThread.join(2000);
-        }
-        if (executor != null) {
-            executor.shutdown();
-            try {
-                if (!executor.awaitTermination(5, TimeUnit.SECONDS)) {
-                    executor.shutdownNow();
-                }
-            } catch (InterruptedException e) {
-                executor.shutdownNow();
-                Thread.currentThread().interrupt();
-            }
         }
     }
 
