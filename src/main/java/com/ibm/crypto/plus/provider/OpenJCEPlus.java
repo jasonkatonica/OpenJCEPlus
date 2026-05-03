@@ -484,12 +484,16 @@ public final class OpenJCEPlus extends OpenJCEPlusProvider {
          * PQC key factories
          * =======================================================================
          */
+        aliases = null;
+        putService(new OpenJCEPlusService(jce, "KeyFactory", "ML-KEM",
+                  "com.ibm.crypto.plus.provider.PQCKeyFactory$MLKEM", aliases));
+
         aliases = new String[] {"ML_KEM_512", "MLKEM512", "OID.2.16.840.1.101.3.4.4.1", "2.16.840.1.101.3.4.4.1"};
 
         putService(new OpenJCEPlusService(jce, "KeyFactory", "ML-KEM-512",
                   "com.ibm.crypto.plus.provider.PQCKeyFactory$MLKEM512", aliases));
 
-        aliases = new String[] {"ML-KEM", "ML_KEM_768", "MLKEM768", "OID.2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.2"};
+        aliases = new String[] {"ML_KEM_768", "MLKEM768", "OID.2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.2"};
 
         putService(new OpenJCEPlusService(jce, "KeyFactory", "ML-KEM-768",
                "com.ibm.crypto.plus.provider.PQCKeyFactory$MLKEM768", aliases));
@@ -864,12 +868,16 @@ public final class OpenJCEPlus extends OpenJCEPlusProvider {
          * PQC key encapsulation mechanisms
          * =======================================================================
          */
+        aliases = null;
+        putService(new OpenJCEPlusService(jce, "KEM", "ML-KEM",
+               "com.ibm.crypto.plus.provider.MLKEMImpl$MLKEM", aliases));
+
         aliases = new String[] {"ML_KEM_512", "MLKEM512", "OID.2.16.840.1.101.3.4.4.1", "2.16.840.1.101.3.4.4.1"};
 
         putService(new OpenJCEPlusService(jce, "KEM", "ML-KEM-512",
                "com.ibm.crypto.plus.provider.MLKEMImpl$MLKEM512", aliases));
 
-        aliases = new String[] {"ML-KEM", "ML_KEM_768", "MLKEM768", "OID.2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.2"};
+        aliases = new String[] {"ML_KEM_768", "MLKEM768", "OID.2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.2"};
 
         putService(new OpenJCEPlusService(jce, "KEM", "ML-KEM-768",
                "com.ibm.crypto.plus.provider.MLKEMImpl$MLKEM768", aliases));
