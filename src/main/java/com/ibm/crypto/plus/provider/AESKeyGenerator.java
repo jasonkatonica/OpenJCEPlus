@@ -35,10 +35,11 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     private static final ThreadLocal<byte[]> KEY_BUFFER_256 = ThreadLocal.withInitial(() -> new byte[32]);
 
     /**
-     * Empty constructor
+     * Constructor - initializes cryptoRandom to eliminate null checks in hot path
      */
     public AESKeyGenerator(OpenJCEPlusProvider provider) {
         this.provider = provider;
+        this.cryptoRandom = provider.getSecureRandom(null);
     }
 
     /**
@@ -47,36 +48,21 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      * Performance optimizations:
      * - Uses thread-local buffers to avoid repeated allocations
      * - Skips redundant validation in AESKey constructor (size pre-validated in engineInit)
-     * - Minimizes branching in the hot path
+     * - Minimizes branching in the hot path (cryptoRandom guaranteed non-null)
      * - Maintains FIPS compliance by clearing buffers after use
      *
      * @return the new AES key
      */
     @Override
     protected SecretKey engineGenerateKey() {
-        // Optimization: Ensure SecureRandom is initialized once
-        // This eliminates the null check overhead on every key generation
-        if (cryptoRandom == null) {
-            cryptoRandom = provider.getSecureRandom(null);
-        }
+        // cryptoRandom is guaranteed to be non-null here (initialized in constructor/engineInit)
+        // This eliminates a branch check on every key generation
 
         // Use thread-local buffer based on key size to avoid allocation overhead
-        // This provides cache-friendly reuse of buffers across multiple key generations
-        byte[] keyBuffer;
-        switch (this.keysize) {
-            case 16:
-                keyBuffer = KEY_BUFFER_128.get();
-                break;
-            case 24:
-                keyBuffer = KEY_BUFFER_192.get();
-                break;
-            case 32:
-                keyBuffer = KEY_BUFFER_256.get();
-                break;
-            default:
-                // Fallback for non-standard sizes (should not happen in practice)
-                keyBuffer = new byte[this.keysize];
-        }
+        // Optimized lookup: Direct array access pattern for better branch prediction
+        final byte[] keyBuffer = (this.keysize == 16) ? KEY_BUFFER_128.get()
+                : (this.keysize == 24) ? KEY_BUFFER_192.get()
+                : KEY_BUFFER_256.get();
 
         // Generate random key material directly into the buffer
         cryptoRandom.nextBytes(keyBuffer);
