@@ -13,13 +13,10 @@ class AESUtils {
     private AESUtils() {}
 
     static final boolean isKeySizeValid(int keySize) {
-        final int[] keySizes = AESConstants.AES_KEYSIZES;
-        for (int index = 0; index < keySizes.length; index++) {
-            if (keySize == keySizes[index]) {
-                return true;
-            }
-        }
-        return false;
+        // Optimization: Direct comparison is faster than array iteration
+        // This benefits all key sizes uniformly by eliminating loop overhead
+        // AES supports only 128-bit (16 bytes), 192-bit (24 bytes), and 256-bit (32 bytes)
+        return keySize == 16 || keySize == 24 || keySize == 32;
     }
 
 }
