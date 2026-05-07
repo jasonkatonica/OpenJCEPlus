@@ -26,6 +26,12 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     private OpenJCEPlusProvider provider = null;
     private int keysize = 16; // default keysize (in bytes)
     private SecureRandom cryptoRandom = null;
+    
+    // Performance optimization: Pre-allocated thread-local buffers for key generation
+    // to reduce allocation overhead. Each thread gets its own buffer to avoid contention.
+    private static final ThreadLocal<byte[]> KEY_BUFFER_128 = ThreadLocal.withInitial(() -> new byte[16]);
+    private static final ThreadLocal<byte[]> KEY_BUFFER_192 = ThreadLocal.withInitial(() -> new byte[24]);
+    private static final ThreadLocal<byte[]> KEY_BUFFER_256 = ThreadLocal.withInitial(() -> new byte[32]);
 
     /**
      * Empty constructor
@@ -36,27 +42,51 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
 
     /**
      * Generates an AES key.
+     * 
+     * Performance optimizations:
+     * - Uses thread-local buffers to avoid repeated allocations
+     * - Minimizes array operations in the hot path
+     * - Maintains FIPS compliance by clearing buffers after use
      *
      * @return the new AES key
      */
     @Override
     protected SecretKey engineGenerateKey() {
+        // Lazy initialization of SecureRandom (only once per instance)
         if (cryptoRandom == null) {
             cryptoRandom = provider.getSecureRandom(null);
         }
 
-        byte[] keyBytes = new byte[this.keysize];
-        cryptoRandom.nextBytes(keyBytes);
+        // Use thread-local buffer based on key size to avoid allocation overhead
+        byte[] keyBuffer;
+        switch (this.keysize) {
+            case 16:
+                keyBuffer = KEY_BUFFER_128.get();
+                break;
+            case 24:
+                keyBuffer = KEY_BUFFER_192.get();
+                break;
+            case 32:
+                keyBuffer = KEY_BUFFER_256.get();
+                break;
+            default:
+                // Fallback for non-standard sizes (should not happen in practice)
+                keyBuffer = new byte[this.keysize];
+        }
+
+        // Generate random key material directly into the buffer
+        cryptoRandom.nextBytes(keyBuffer);
 
         try {
-            return new AESKey(provider, keyBytes);
+            // Create the AES key - AESKey constructor will copy the bytes
+            return new AESKey(provider, keyBuffer);
         } catch (InvalidKeyException e) {
-            // Should never happen
+            // Should never happen with valid key sizes
             throw new ProviderException(e.getMessage());
         } finally {
-            // fill keybytes with 0x00 - FIPS requirement to reset arrays that
-            // got filled with random bytes from random
-            Arrays.fill(keyBytes, (byte) 0x00);
+            // FIPS requirement: Clear the buffer after use
+            // Note: Thread-local buffers are reused, so clearing is essential
+            Arrays.fill(keyBuffer, (byte) 0x00);
         }
     }
 
