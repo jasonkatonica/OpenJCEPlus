@@ -37,8 +37,29 @@ final class AESKey implements SecretKey {
      *                if the given key has wrong size
      */
     AESKey(OpenJCEPlusProvider provider, byte[] key) throws InvalidKeyException {
-        if ((key == null) || !AESUtils.isKeySizeValid(key.length)) {
-            throw new InvalidKeyException("Wrong key size");
+        this(provider, key, false);
+    }
+
+    /**
+     * Create an AES key from a given key with optional validation skip.
+     *
+     * @param provider
+     *            the provider
+     * @param key
+     *            the given key
+     * @param skipValidation
+     *            if true, skips key size validation (for internal use when size is pre-validated)
+     *
+     * @exception InvalidKeyException
+     *                if the given key has wrong size (when validation is not skipped)
+     */
+    AESKey(OpenJCEPlusProvider provider, byte[] key, boolean skipValidation) throws InvalidKeyException {
+        // Optimization: Skip validation when called from AESKeyGenerator
+        // where key size is already validated in engineInit
+        if (!skipValidation) {
+            if ((key == null) || !AESUtils.isKeySizeValid(key.length)) {
+                throw new InvalidKeyException("Wrong key size");
+            }
         }
         if (provider == null) {
             throw new IllegalArgumentException("provider is null");
