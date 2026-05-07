@@ -41,12 +41,14 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      */
     @Override
     protected SecretKey engineGenerateKey() {
-        if (cryptoRandom == null) {
-            cryptoRandom = provider.getSecureRandom(null);
+        SecureRandom random = cryptoRandom;
+        if (random == null) {
+            random = provider.getSecureRandom(null);
+            cryptoRandom = random;
         }
 
         byte[] keyBytes = new byte[this.keysize];
-        cryptoRandom.nextBytes(keyBytes);
+        random.nextBytes(keyBytes);
 
         try {
             return new AESKey(provider, keyBytes);
@@ -71,9 +73,7 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
         // If in FIPS mode, SecureRandom must be internal and FIPS approved.
         // For FIPS mode, user provided random generator will be ignored.
         //
-        if (cryptoRandom == null) {
-            cryptoRandom = provider.getSecureRandom(random);
-        }
+        cryptoRandom = provider.getSecureRandom(random);
     }
 
     /**
