@@ -478,7 +478,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
         // Run 20,000 iterations to catch intermittent failures
-        int totalIterations = 20000;
+        int totalIterations = 2000000;
         int failureCount = 0;
         
         System.out.println("Starting stress test for " + Algorithm + " with " + totalIterations + " iterations");
