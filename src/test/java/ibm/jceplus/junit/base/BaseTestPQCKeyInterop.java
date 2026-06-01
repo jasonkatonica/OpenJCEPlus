@@ -83,93 +83,154 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        KEM kemInterop = KEM.getInstance(pqcAlgorithm, getProviderName());
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testPQCKeyGenKEMAutoKeyConvertion with " + totalIterations + " iterations");
+        
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                KEM kemInterop = KEM.getInstance(pqcAlgorithm, getProviderName());
 
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
-        KeyPair keyPair = generateKeyPair(keyPairGen);
+                KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
+                KeyPair keyPair = generateKeyPair(keyPairGen);
 
-        PublicKey publicKey = keyPair.getPublic();
-        PrivateKey privateKey = keyPair.getPrivate();
-            
-        KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKey);
-        KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
-        if (enc == null) {
-            System.out.println("enc = null");
-            fail("KEMPlusCreatesInteropGet failed no enc.");
+                PublicKey publicKey = keyPair.getPublic();
+                PrivateKey privateKey = keyPair.getPrivate();
+                    
+                KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKey);
+                KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
+                if (enc == null) {
+                    System.out.println("enc = null");
+                    fail("KEMPlusCreatesInteropGet failed no enc.");
+                }
+                SecretKey keyE = enc.key();
+
+                KEM.Decapsulator decr = kemInterop.newDecapsulator(privateKey);
+                SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
+
+                assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(),
+                    "Secrets do NOT match at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed");
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testPQCKeyGenKEMAutoKeyConvertion");
+                ex.printStackTrace();
+                throw ex;
+            }
         }
-        SecretKey keyE = enc.key();
-
-        KEM.Decapsulator decr = kemInterop.newDecapsulator(privateKey);
-        SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
-
-        assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(), "Secrets do NOT match");
-    } 
+        
+        System.out.println("Stress test completed for testPQCKeyGenKEMAutoKeyConvertion: " + totalIterations + " iterations, " + failureCount + " failures");
+    }
 
     @Test
     public void testPQCKeyGenKEM_Interop() throws Exception {
         String pqcAlgorithm = "ML-KEM-512";
-        boolean same = false;
 
         //This is not in the FIPS provider yet.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
-        keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
-        keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
-        keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
-        keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
+        
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testPQCKeyGenKEM_Interop with " + totalIterations + " iterations");
+        
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                boolean same = false;
+                keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
+                keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
+                keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
+                keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
 
-        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
-        PublicKey publicKeyInterop = keyPairInterop.getPublic();
-        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
-        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+                byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
-        EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
-        PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
-        PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+                PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
+                EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
+                PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+                PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
 
-        // BC private keys do not currently conform to the Draft standard for these keys
-        // So we know the keys will not compare
-        if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
-            assertTrue(same);
+                // BC private keys do not currently conform to the Draft standard for these keys
+                // So we know the keys will not compare
+                if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
+                    same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
+                    assertTrue(same, "Private keys do not match at iteration " + iteration + "/" + totalIterations);
+                }
+
+                same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
+                assertTrue(same, "Public keys do not match at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed");
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testPQCKeyGenKEM_Interop");
+                ex.printStackTrace();
+                throw ex;
+            }
         }
-
-        same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
-        assertTrue(same);
-
+        
+        System.out.println("Stress test completed for testPQCKeyGenKEM_Interop: " + totalIterations + " iterations, " + failureCount + " failures");
     }
 
     @Test
     public void testPQCKeyGenKEM_PlusToInteropRAW() throws Exception {
         String pqcAlgorithm = "ML-KEM-512";
-        boolean same = false;
 
         //This is not in the FIPS provider yet and Bouncy Castle does not support this test.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
-        keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
-        keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
-        keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
-
-        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
-        PublicKey publicKeyInterop = keyPairInterop.getPublic();
-        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
-        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
-
-        EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
-        PublicKey pub = keyFactoryPlus.generatePublic(eksInterop); 
-        EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
-        PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
-        same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
-        assertTrue(same);
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testPQCKeyGenKEM_PlusToInteropRAW with " + totalIterations + " iterations");
         
-        // The original and new keys are the same
-        same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
-        assertTrue(same);
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                boolean same = false;
+                keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
+                keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
+                keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
+                keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
+
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+                byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
+
+                EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
+                PublicKey pub = keyFactoryPlus.generatePublic(eksInterop);
+                EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
+                PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
+                same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
+                assertTrue(same, "Private keys do not match at iteration " + iteration + "/" + totalIterations);
+                
+                // The original and new keys are the same
+                same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
+                assertTrue(same, "Public keys do not match at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed");
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testPQCKeyGenKEM_PlusToInteropRAW");
+                ex.printStackTrace();
+                throw ex;
+            }
+        }
+        
+        System.out.println("Stress test completed for testPQCKeyGenKEM_PlusToInteropRAW: " + totalIterations + " iterations, " + failureCount + " failures");
     }
 
     @Test
@@ -208,75 +269,115 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
     } 
 
     @Test
-    public void testPQCKeyGenMLDSA_Interop() throws Exception {        
+    public void testPQCKeyGenMLDSA_Interop() throws Exception {
         String pqcAlgorithm = "ML-DSA-65";
-        boolean same = false;
 
         //This is not in the FIPS provider yet.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
 
-        keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
-        keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
-        keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
-        keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testPQCKeyGenMLDSA_Interop with " + totalIterations + " iterations");
+        
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                boolean same = false;
+                keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
+                keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
+                keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
+                keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
 
-        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
-        PublicKey publicKeyInterop = keyPairInterop.getPublic();
-        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
-        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+                byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
-        EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
-        PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
-        PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+                PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
+                EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
+                PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+                PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
 
-        //BC is using a different encoding today for thier ML-DSA private keys.
-        // So we can not compare these today.
-        if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
-            assertTrue(same);
-        }  
+                //BC is using a different encoding today for thier ML-DSA private keys.
+                // So we can not compare these today.
+                if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
+                    same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
+                    assertTrue(same, "Private keys do not match at iteration " + iteration + "/" + totalIterations);
+                }
 
-        same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
-        assertTrue(same);
+                same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
+                assertTrue(same, "Public keys do not match at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed");
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testPQCKeyGenMLDSA_Interop");
+                ex.printStackTrace();
+                throw ex;
+            }
+        }
+        
+        System.out.println("Stress test completed for testPQCKeyGenMLDSA_Interop: " + totalIterations + " iterations, " + failureCount + " failures");
     }
 
     @Test
     public void testPQCKeyGenMLDSA_PlusToInteropRAW() throws Exception {
         String pqcAlgorithm = "ML-DSA-65";
-        boolean same = false;
 
         //This is not in the FIPS provider yet and Bouncy Castle does not support this test.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
-        keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
-        keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
-        keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
-
-        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
-        PublicKey publicKeyInterop = keyPairInterop.getPublic();
-        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
-        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
-
-        EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
-        PublicKey pub = keyFactoryPlus.generatePublic(eksInterop); 
-        EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
-        PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testPQCKeyGenMLDSA_PlusToInteropRAW with " + totalIterations + " iterations");
         
-        //BC is using a different encoding today for thier ML-DSA private keys.
-        // So we can not compare these today.
-        if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
-            assertTrue(same);
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                boolean same = false;
+                keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
+                keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
+                keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
+                keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
+
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+                byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
+
+                EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
+                PublicKey pub = keyFactoryPlus.generatePublic(eksInterop);
+                EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
+                PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
+                
+                //BC is using a different encoding today for thier ML-DSA private keys.
+                // So we can not compare these today.
+                if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
+                    same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
+                    assertTrue(same, "Private keys do not match at iteration " + iteration + "/" + totalIterations);
+                }
+                
+                // The original and new keys are the same
+                same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
+                assertTrue(same, "Public keys do not match at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed");
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testPQCKeyGenMLDSA_PlusToInteropRAW");
+                ex.printStackTrace();
+                throw ex;
+            }
         }
         
-        // The original and new keys are the same
-        same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
-        assertTrue(same);
+        System.out.println("Stress test completed for testPQCKeyGenMLDSA_PlusToInteropRAW: " + totalIterations + " iterations, " + failureCount + " failures");
     }
 
     protected KeyPair generateKeyPair(KeyPairGenerator keyPairGen) throws Exception {
@@ -335,31 +436,47 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName2()));
 
-        try {
-            keyPairGenInterop = KeyPairGenerator.getInstance(algorithm, getInteropProviderName2());
-            KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testSignInteropKeysPlusSignVerify with " + totalIterations + " iterations for " + algorithm);
+        
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                keyPairGenInterop = KeyPairGenerator.getInstance(algorithm, getInteropProviderName2());
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
 
-            PublicKey publicKeyInterop = keyPairInterop.getPublic();
-            PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-            PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
-            EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
-            KeyFactory keyFactoryPlus = KeyFactory.getInstance(algorithm, getProviderName());
-            PrivateKey privPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
-            PublicKey pubPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
+                EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
+                KeyFactory keyFactoryPlus = KeyFactory.getInstance(algorithm, getProviderName());
+                PrivateKey privPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+                PublicKey pubPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
 
-            Signature signingInterop = Signature.getInstance(algorithm, getProviderName());
-            signingInterop.initSign(privPlus);
-            signingInterop.update(origMsg);
-            byte[] signedBytesInterop = signingInterop.sign();
+                Signature signingInterop = Signature.getInstance(algorithm, getProviderName());
+                signingInterop.initSign(privPlus);
+                signingInterop.update(origMsg);
+                byte[] signedBytesInterop = signingInterop.sign();
 
-            Signature verifyingPlus = Signature.getInstance(algorithm, getProviderName());
-            verifyingPlus.initVerify(pubPlus);
-            verifyingPlus.update(origMsg);
-            assertTrue(verifyingPlus.verify(signedBytesInterop), "Signature verification failed");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            fail("SignInteropAndVerifyPlus failed");
+                Signature verifyingPlus = Signature.getInstance(algorithm, getProviderName());
+                verifyingPlus.initVerify(pubPlus);
+                verifyingPlus.update(origMsg);
+                assertTrue(verifyingPlus.verify(signedBytesInterop),
+                    "Signature verification failed at iteration " + iteration + "/" + totalIterations + " for " + algorithm);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed for " + algorithm);
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testSignInteropKeysPlusSignVerify with " + algorithm);
+                ex.printStackTrace();
+                fail("SignInteropAndVerifyPlus failed at iteration " + iteration);
+            }
         }
+        
+        System.out.println("Stress test completed for testSignInteropKeysPlusSignVerify: " + totalIterations + " iterations, " + failureCount + " failures for " + algorithm);
     }
 
     @ParameterizedTest
@@ -478,7 +595,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
         // Run 20,000 iterations to catch intermittent failures
-        int totalIterations = 2000000;
+        int totalIterations = 20000;
         int failureCount = 0;
         
         System.out.println("Starting stress test for " + Algorithm + " with " + totalIterations + " iterations");
@@ -657,27 +774,47 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        // Generate key pair using NamedParameterSpec with interop provider
-        KeyPairGenerator keyPairGenInterop = KeyPairGenerator.getInstance("ML-KEM", getInteropProviderName());
-        keyPairGenInterop.initialize(new NamedParameterSpec(parameterSet));
-        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        int totalIterations = 20000;
+        int failureCount = 0;
+        System.out.println("Starting stress test for testMLKEMInteropEmptyParamsWithNamedParameterSpec with " + totalIterations + " iterations for " + parameterSet);
         
-        // Encapsulate using interop provider (no from/to parameters)
-        KEM kemInterop = KEM.getInstance("ML-KEM", getInteropProviderName());
-        KEM.Encapsulator encapsulator = kemInterop.newEncapsulator(keyPairInterop.getPublic());
-        KEM.Encapsulated encapsulated = encapsulator.encapsulate();
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                // Generate key pair using NamedParameterSpec with interop provider
+                KeyPairGenerator keyPairGenInterop = KeyPairGenerator.getInstance("ML-KEM", getInteropProviderName());
+                keyPairGenInterop.initialize(new NamedParameterSpec(parameterSet));
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                
+                // Encapsulate using interop provider (no from/to parameters)
+                KEM kemInterop = KEM.getInstance("ML-KEM", getInteropProviderName());
+                KEM.Encapsulator encapsulator = kemInterop.newEncapsulator(keyPairInterop.getPublic());
+                KEM.Encapsulated encapsulated = encapsulator.encapsulate();
+                
+                SecretKey encapKey = encapsulated.key();
+                byte[] encapsulation = encapsulated.encapsulation();
+                
+                // Decapsulate using provider (no from/to parameters)
+                KEM kemPlus = KEM.getInstance("ML-KEM", getProviderName());
+                KEM.Decapsulator decapsulator = kemPlus.newDecapsulator(keyPairInterop.getPrivate());
+                SecretKey decapKey = decapsulator.decapsulate(encapsulation);
+                
+                // Verify that both keys match
+                assertArrayEquals(encapKey.getEncoded(), decapKey.getEncoded(),
+                        "Encapsulated and decapsulated keys do not match for " + parameterSet + " at iteration " + iteration + "/" + totalIterations);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations + " iterations completed for " + parameterSet);
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations + " for testMLKEMInteropEmptyParamsWithNamedParameterSpec with " + parameterSet);
+                ex.printStackTrace();
+                throw ex;
+            }
+        }
         
-        SecretKey encapKey = encapsulated.key();
-        byte[] encapsulation = encapsulated.encapsulation();
-        
-        // Decapsulate using provider (no from/to parameters)
-        KEM kemPlus = KEM.getInstance("ML-KEM", getProviderName());
-        KEM.Decapsulator decapsulator = kemPlus.newDecapsulator(keyPairInterop.getPrivate());
-        SecretKey decapKey = decapsulator.decapsulate(encapsulation);
-        
-        // Verify that both keys match
-        assertArrayEquals(encapKey.getEncoded(), decapKey.getEncoded(),
-                "Encapsulated and decapsulated keys do not match for " + parameterSet);
+        System.out.println("Stress test completed for testMLKEMInteropEmptyParamsWithNamedParameterSpec: " + totalIterations + " iterations, " + failureCount + " failures for " + parameterSet);
     }
 
     /**
