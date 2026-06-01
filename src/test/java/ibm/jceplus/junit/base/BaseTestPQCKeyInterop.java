@@ -477,37 +477,60 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        try {
-            KEM kemPlus = KEM.getInstance(Algorithm, getProviderName());
+        // Run 20,000 iterations to catch intermittent failures
+        int totalIterations = 20000;
+        int failureCount = 0;
+        
+        System.out.println("Starting stress test for " + Algorithm + " with " + totalIterations + " iterations");
+        
+        for (int iteration = 1; iteration <= totalIterations; iteration++) {
+            try {
+                KEM kemPlus = KEM.getInstance(Algorithm, getProviderName());
 
-            keyPairGenInterop = KeyPairGenerator.getInstance(Algorithm, getInteropProviderName());
-            KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+                keyPairGenInterop = KeyPairGenerator.getInstance(Algorithm, getInteropProviderName());
+                KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
 
-            PublicKey publicKeyInterop = keyPairInterop.getPublic();
-            PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
-            
-            PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
-            EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
-            KeyFactory keyFactoryPlus = KeyFactory.getInstance(Algorithm, getProviderName());
-            PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
-            PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+                PublicKey publicKeyInterop = keyPairInterop.getPublic();
+                PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+                
+                PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
+                EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
+                KeyFactory keyFactoryPlus = KeyFactory.getInstance(Algorithm, getProviderName());
+                PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+                PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
 
-            KEM.Encapsulator encr = kemPlus.newEncapsulator(publicKeyPlus);
-            KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
-            if (enc == null) {
-                System.out.println("enc = null");
-                fail("KEMPlusCreatesInteropGet failed no enc.");
+                KEM.Encapsulator encr = kemPlus.newEncapsulator(publicKeyPlus);
+                KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
+                if (enc == null) {
+                    failureCount++;
+                    System.err.println("FAILURE at iteration " + iteration + "/" + totalIterations +
+                                     " for " + Algorithm + ": enc = null");
+                    fail("KEMPlusCreatesInteropGet failed no enc at iteration " + iteration);
+                }
+                SecretKey keyE = enc.key();
+
+                KEM.Decapsulator decr = kemPlus.newDecapsulator(privateKeyPlus);
+                SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
+
+                assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(),
+                    "Secrets do NOT match at iteration " + iteration + "/" + totalIterations + " for " + Algorithm);
+                
+                // Progress reporting every 1000 iterations
+                if (iteration % 1000 == 0) {
+                    System.out.println("  Progress: " + iteration + "/" + totalIterations +
+                                     " iterations completed for " + Algorithm);
+                }
+            } catch (Exception ex) {
+                failureCount++;
+                System.err.println("EXCEPTION at iteration " + iteration + "/" + totalIterations +
+                                 " for " + Algorithm);
+                ex.printStackTrace();
+                fail("KEMPlusCreatesInteropGet failed at iteration " + iteration + ": " + ex.getMessage());
             }
-            SecretKey keyE = enc.key();
-
-            KEM.Decapsulator decr = kemPlus.newDecapsulator(privateKeyPlus);
-            SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
-
-            assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(), "Secrets do NOT match");
-        } catch (Exception ex) {
-            ex.printStackTrace();
-            fail("KEMPlusCreatesInteropGet failed");
         }
+        
+        System.out.println("Stress test completed for " + Algorithm + ": " +
+                         totalIterations + " iterations, " + failureCount + " failures");
     }
         
     @ParameterizedTest
