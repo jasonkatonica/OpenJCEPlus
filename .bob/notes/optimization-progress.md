@@ -260,9 +260,64 @@ Error: package jdk.internal.vm.annotation is not visible
 - Build UUID: b500a05a-b71d-4132-b874-a5b9f54126d6
 - Notes: All four optimization attempts either resulted in < 1% changes within measurement noise or compilation failures. Baseline remains the best performing state.
 
+### Iteration 7: Aggressive JNI Layer Optimizations
+- Status: COMPLETE
+- Commit Hash: 19aa57335b0f9e6d6c3b75076f918e595d638e0b
+- Files Modified: 1 file (KEM.c - 78 insertions, 32 deletions)
+
+**Approach**: Aggressive compiler optimization hints and prefetching in JNI layer
+
+**Changes Implemented**:
+1. **Compiler Optimization Hints**:
+   - Added HOT attribute to mark encapsulation/decapsulation as hot functions
+   - Implemented PREFETCH_READ/PREFETCH_WRITE macros for cache optimization
+   - Added ASSUME_ALIGNED hints for better code generation
+   - Enhanced LIKELY/UNLIKELY branch prediction hints
+
+2. **Prefetching Strategy**:
+   - Prefetch key data structures before use
+   - Prefetch Java array metadata before GetPrimitiveArrayCritical
+   - Prefetch read sources (wrapped keys, key data)
+   - Prefetch write destinations (output buffers)
+
+3. **Memory Access Optimization**:
+   - Strategic prefetching to reduce cache misses
+   - Alignment hints for better SIMD code generation
+   - Optimized critical section with prefetch instructions
+
+4. **Code Generation Improvements**:
+   - HOT attribute guides compiler to optimize for performance
+   - ASSUME_ALIGNED enables better vectorization
+   - Reduced cache line misses through prefetching
+
+**Technical Details**:
+- Prefetch with locality hint 3 (highest - keep in all cache levels)
+- 8-byte alignment assumptions for cryptographic buffers
+- Prefetching applied to both encapsulation and decapsulation hot paths
+- Compiler hints work with GCC/Clang (no-op on other compilers)
+
+**Expected Impact**:
+- Reduced cache misses through strategic prefetching
+- Better instruction scheduling from HOT attribute
+- Improved vectorization from alignment hints
+- Lower branch misprediction penalties
+
+**Analysis**:
+This iteration targets the JNI layer with aggressive low-level optimizations:
+- Prefetching can reduce memory latency by 50-200 cycles
+- Alignment hints enable better SIMD code generation
+- HOT attribute improves register allocation and inlining decisions
+- These optimizations complement the underlying OCK cryptographic operations
+
+**Note**: While these optimizations improve the JNI wrapper efficiency, the core
+cryptographic operations in OCK (NTT, polynomial arithmetic) remain the primary
+performance bottleneck. These changes optimize the data flow into/out of the
+cryptographic functions but cannot fundamentally change the algorithmic complexity.
+
 ## Next Steps
 1. Profile native OCK ML-KEM implementation to identify true bottlenecks
 2. Focus optimization efforts on native polynomial arithmetic and NTT operations
 3. Consider hardware-specific optimizations (SIMD, assembly)
 4. Evaluate algorithmic improvements in native code
 5. Measure impact of compiler optimization flags and PGO
+6. Benchmark iteration 7 to measure actual performance impact
