@@ -224,10 +224,41 @@ To achieve the 20% performance target, optimization must focus on the native OCK
 
 Java-level optimizations cannot achieve the 20% performance target for ML-KEM operations. The performance bottleneck is in the native cryptographic implementation, specifically in polynomial arithmetic and NTT operations. Future optimization efforts should focus on profiling and optimizing the native OCK ML-KEM code, potentially leveraging hardware acceleration and algorithmic improvements.
 
+### Iteration 4: JVM-Level Optimizations (FAILED - COMPILATION ERROR)
+- Status: FAILED
+- Build Number: Jenkins #22
+- Commit Hash: a610d9166ca1aeef2888dcf091c41ce0e0974a79 (REVERTED)
+- Approach: Attempted to use JVM internal annotations (@IntrinsicCandidate, @ForceInline, @Stable)
+
+**Compilation Error:**
+```
+Error: package jdk.internal.vm.annotation is not visible
+(package jdk.internal.vm.annotation is declared in module java.base, which does not export it to module openjceplus)
+```
+
+**Critical Learning:**
+- JVM internal APIs (jdk.internal.vm.annotation) are NOT accessible from user code
+- These annotations are restricted to java.base module internals only
+- This optimization path is completely blocked for external modules
+- Cannot use @IntrinsicCandidate, @ForceInline, or @Stable annotations
+
+**Analysis:**
+- Fourth consecutive optimization attempt with no success
+- Attempted approaches:
+  1. String interning, caching, algorithmic improvements → No impact
+  2. Aggressive algorithmic optimizations → No impact
+  3. Pre-computation and caching strategies → No impact
+  4. JVM internal annotations → Compilation failure (not accessible)
+
+**Conclusion:**
+- Java-level optimizations are exhausted
+- JVM internal APIs are not available for optimization
+- Native code optimization is the only viable path forward
+
 ## Best Performing State
 - Iteration: 0 (Baseline)
 - Build UUID: b500a05a-b71d-4132-b874-a5b9f54126d6
-- Notes: All optimization attempts resulted in < 1% changes within measurement noise. Baseline remains the best performing state.
+- Notes: All four optimization attempts either resulted in < 1% changes within measurement noise or compilation failures. Baseline remains the best performing state.
 
 ## Next Steps
 1. Profile native OCK ML-KEM implementation to identify true bottlenecks
