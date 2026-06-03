@@ -18,23 +18,35 @@
 #include <stdint.h>
 #include <string.h>
 
-/* Iteration 4: Compiler hints for optimization */
+/* Iteration 7: Aggressive compiler optimization hints */
 #ifdef __GNUC__
 #define LIKELY(x)   __builtin_expect(!!(x), 1)
 #define UNLIKELY(x) __builtin_expect(!!(x), 0)
 #define INLINE      __attribute__((always_inline)) inline
 #define NOINLINE    __attribute__((noinline))
+#define PREFETCH_READ(addr)  __builtin_prefetch((addr), 0, 3)
+#define PREFETCH_WRITE(addr) __builtin_prefetch((addr), 1, 3)
+#define ASSUME_ALIGNED(ptr, align) __builtin_assume_aligned((ptr), (align))
+#define HOT         __attribute__((hot))
+#define COLD        __attribute__((cold))
 #else
 #define LIKELY(x)   (x)
 #define UNLIKELY(x) (x)
 #define INLINE      inline
 #define NOINLINE
+#define PREFETCH_READ(addr)
+#define PREFETCH_WRITE(addr)
+#define ASSUME_ALIGNED(ptr, align) (ptr)
+#define HOT
+#define COLD
 #endif
 
-/* Iteration 5: Optimized memory operations - reduced threshold */
+/* Iteration 7: Cache line size for alignment optimization */
+#define CACHE_LINE_SIZE 64
+
+/* Iteration 7: Optimized memory operations with prefetching */
 static INLINE void fast_memcpy(void *dest, const void *src, size_t n) {
-    /* Iteration 5: Reduced threshold to 32 - memcpy is highly optimized by compiler
-     * Manual loop only beneficial for very small copies (secrets are 32 bytes) */
+    /* For small copies, use direct loop - compiler will optimize */
     if (n <= 32) {
         unsigned char *d = (unsigned char *)dest;
         const unsigned char *s = (const unsigned char *)src;
@@ -42,12 +54,16 @@ static INLINE void fast_memcpy(void *dest, const void *src, size_t n) {
             *d++ = *s++;
         }
     } else {
+        /* For larger copies, prefetch and use memcpy */
+        PREFETCH_READ(src);
+        PREFETCH_WRITE(dest);
         memcpy(dest, src, n);
     }
 }
 
-/* Iteration 4: Fast zero for security-sensitive buffers */
+/* Iteration 7: Fast zero with prefetching for security-sensitive buffers */
 static INLINE void secure_zero(void *ptr, size_t n) {
+    PREFETCH_WRITE(ptr);
     volatile unsigned char *p = (volatile unsigned char *)ptr;
     while (n--) {
         *p++ = 0;
@@ -60,7 +76,7 @@ static INLINE void secure_zero(void *ptr, size_t n) {
  * Method:    KEM_encapsulate
  * Signature: (JJ[B[B)V
  */
-JNIEXPORT void JNICALL
+JNIEXPORT void JNICALL HOT
 Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jlong ockPKeyId,
     jbyteArray wrappedKey, jbyteArray randomKey) {
@@ -70,20 +86,21 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
     ICC_EVP_PKEY     *pa              = (ICC_EVP_PKEY *)((intptr_t)ockPKeyId);
     size_t            wrappedkeylen   = 0;
     size_t            genkeylen       = 0;
-    unsigned char    *wrappedKeyLocal = NULL;
-    unsigned char    *genkeylocal     = NULL;
     jbyte            *wrappedKeyBytes = NULL;
     jbyte            *randomKeyBytes  = NULL;
     int               rc              = ICC_OSSL_SUCCESS;
 
-    /* Iteration 4: Create context once - optimized path */
+    /* Iteration 7: Prefetch key data for better cache utilization */
+    PREFETCH_READ(pa);
+
+    /* Iteration 7: Create context - optimized hot path */
     evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, pa, NULL);
     if (UNLIKELY(!evp_pk)) {
         throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
         return;
     }
 
-    /* Iteration 4: Initialize encapsulation - fast path */
+    /* Iteration 7: Initialize encapsulation - fast path with prefetch */
     rc = ICC_EVP_PKEY_encapsulate_init(ockCtx, NULL, NULL);
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -91,7 +108,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
-    /* Iteration 4: Get required buffer sizes - optimized */
+    /* Iteration 7: Get required buffer sizes - optimized with prefetch */
     rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, NULL, &wrappedkeylen, NULL,
                                   &genkeylen);
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
@@ -101,8 +118,11 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
-    /* Iteration 5: Get Java arrays with direct access BEFORE encapsulation */
-    /* This eliminates intermediate buffer allocation and copy overhead */
+    /* Iteration 7: Get Java arrays with direct access - critical section */
+    /* Prefetch array metadata for faster access */
+    PREFETCH_READ(wrappedKey);
+    PREFETCH_READ(randomKey);
+    
     wrappedKeyBytes = (*env)->GetPrimitiveArrayCritical(env, wrappedKey, NULL);
     if (UNLIKELY(wrappedKeyBytes == NULL)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -118,16 +138,24 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
-    /* Iteration 5: Perform encapsulation directly into Java arrays - hot path */
-    /* This eliminates malloc, alignment overhead, and memcpy operations */
-    rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, (unsigned char *)wrappedKeyBytes,
-                                  &wrappedkeylen, (unsigned char *)randomKeyBytes, &genkeylen);
+    /* Iteration 7: Prefetch write destinations for better cache performance */
+    PREFETCH_WRITE(wrappedKeyBytes);
+    PREFETCH_WRITE(randomKeyBytes);
 
-    /* Iteration 5: Release arrays and cleanup */
+    /* Iteration 7: HOT PATH - Perform encapsulation directly into Java arrays */
+    /* This eliminates malloc, alignment overhead, and memcpy operations */
+    /* Assume aligned pointers for better code generation */
+    unsigned char *wrappedAligned = (unsigned char *)ASSUME_ALIGNED(wrappedKeyBytes, 8);
+    unsigned char *randomAligned = (unsigned char *)ASSUME_ALIGNED(randomKeyBytes, 8);
+    
+    rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, wrappedAligned,
+                                  &wrappedkeylen, randomAligned, &genkeylen);
+
+    /* Iteration 7: Release arrays - optimized path */
     (*env)->ReleasePrimitiveArrayCritical(env, randomKey, randomKeyBytes, 
-                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
+                                          LIKELY(rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
     (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes,
-                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
+                                          LIKELY(rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
 
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -143,7 +171,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
  * Method:    KEM_decapsulate
  * Signature: (JJ[B)[B
  */
-JNIEXPORT jbyteArray JNICALL
+JNIEXPORT jbyteArray JNICALL HOT
 Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jlong ockPKeyId,
     jbyteArray wrappedKey) {
@@ -158,17 +186,19 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
     size_t            wrappedkeylen    = 0;
     size_t            genkeylen        = 0;
     unsigned char    *wrappedKeyNative = NULL;
-    unsigned char    *genkeylocal      = NULL;
     unsigned char    *genKeyNative     = NULL;
 
-    /* Iteration 4: Create context - optimized path */
+    /* Iteration 7: Prefetch key data for better cache utilization */
+    PREFETCH_READ(ockPKey);
+
+    /* Iteration 7: Create context - optimized hot path */
     evp_pk = ICC_EVP_PKEY_CTX_new(ockCtx, ockPKey, NULL);
     if (UNLIKELY(!evp_pk)) {
         throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
         return retRndKeyBytes;
     }
 
-    /* Iteration 4: Initialize decapsulation - fast path */
+    /* Iteration 7: Initialize decapsulation - fast path with prefetch */
     rc = ICC_EVP_PKEY_decapsulate_init(ockCtx, NULL, NULL);
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -176,7 +206,10 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* Iteration 4: Get wrapped key with direct access */
+    /* Iteration 7: Prefetch array metadata for faster access */
+    PREFETCH_READ(wrappedKey);
+    
+    /* Iteration 7: Get wrapped key with direct access - critical section */
     wrappedKeyNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(
         env, wrappedKey, &isCopy));
     if (UNLIKELY(NULL == wrappedKeyNative)) {
@@ -187,7 +220,10 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
 
     wrappedkeylen = (*env)->GetArrayLength(env, wrappedKey);
 
-    /* Iteration 5: Get required buffer size for secret */
+    /* Iteration 7: Prefetch wrapped key data for decapsulation */
+    PREFETCH_READ(wrappedKeyNative);
+
+    /* Iteration 7: Get required buffer size for secret - optimized */
     rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, NULL, &genkeylen, NULL,
                                   wrappedkeylen);
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
@@ -199,7 +235,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* Iteration 5: Create result array BEFORE decapsulation */
+    /* Iteration 7: Create result array BEFORE decapsulation */
     randomKey = (*env)->NewByteArray(env, genkeylen);
     if (UNLIKELY(randomKey == NULL)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -209,7 +245,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* Iteration 5: Get direct access to result array */
+    /* Iteration 7: Get direct access to result array */
     genKeyNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(
         env, randomKey, &isCopy));
     if (UNLIKELY(genKeyNative == NULL)) {
@@ -220,14 +256,21 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* Iteration 5: Perform decapsulation directly into Java array - hot path */
-    /* This eliminates malloc, alignment overhead, and memcpy operations */
-    rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genKeyNative, &genkeylen,
-                                  wrappedKeyNative, wrappedkeylen);
+    /* Iteration 7: Prefetch write destination for better cache performance */
+    PREFETCH_WRITE(genKeyNative);
 
-    /* Iteration 5: Release arrays */
+    /* Iteration 7: HOT PATH - Perform decapsulation directly into Java array */
+    /* This eliminates malloc, alignment overhead, and memcpy operations */
+    /* Assume aligned pointers for better code generation */
+    unsigned char *wrappedAligned = (unsigned char *)ASSUME_ALIGNED(wrappedKeyNative, 8);
+    unsigned char *genKeyAligned = (unsigned char *)ASSUME_ALIGNED(genKeyNative, 8);
+    
+    rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genKeyAligned, &genkeylen,
+                                  wrappedAligned, wrappedkeylen);
+
+    /* Iteration 7: Release arrays - optimized path */
     (*env)->ReleasePrimitiveArrayCritical(env, randomKey, genKeyNative,
-                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
+                                          LIKELY(rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
     (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyNative,
                                           JNI_ABORT);
 
