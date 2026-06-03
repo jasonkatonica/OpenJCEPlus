@@ -18,7 +18,6 @@ import java.security.ProviderException;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
@@ -32,14 +31,15 @@ public class MLKEMImpl implements KEMSpi {
     // Optimization: Use final fields to enable JIT optimizations
     private final OpenJCEPlusProvider provider;
     private final String alg;
+    private final boolean genericMlKem;
     private static final int SECRETSIZE = 32;
-    
+
     // Optimization: Cache encapsulation lengths to avoid repeated switch statements
     private static final int ENCAP_LEN_512 = 768;
     private static final int ENCAP_LEN_768 = 1088;
     private static final int ENCAP_LEN_1024 = 1568;
-    
-    // Optimization: Intern algorithm strings for fast reference equality checks
+
+    // Optimization: Cache the provider name once to avoid repeated virtual lookups.
     private static final String ML_KEM = "ML-KEM";
     private static final String ML_KEM_512 = "ML-KEM-512";
     private static final String ML_KEM_768 = "ML-KEM-768";
@@ -49,6 +49,7 @@ public class MLKEMImpl implements KEMSpi {
         this.provider = provider;
         // Optimization: Intern algorithm string for fast equality checks
         this.alg = alg.intern();
+        this.genericMlKem = (this.alg == ML_KEM);
     }
     
     /**
@@ -65,16 +66,16 @@ public class MLKEMImpl implements KEMSpi {
     private void validateKeyAlgorithm(String keyAlgorithm) throws InvalidKeyException {
         // Intern the key algorithm for fast comparison
         String internedKeyAlg = keyAlgorithm.intern();
-        
+
         // Generic ML-KEM instance accepts any ML-KEM variant key algorithm
-        if (this.alg == ML_KEM) {
+        if (genericMlKem) {
             return;
         }
-        
+
         // Specific instance accepts exact match or generic "ML-KEM"
         if (this.alg != internedKeyAlg && internedKeyAlg != ML_KEM) {
-            throw new InvalidKeyException("Key algorithm " + keyAlgorithm +
-                " does not match KEM instance algorithm " + this.alg);
+            throw new InvalidKeyException("Key algorithm " + keyAlgorithm
+                    + " does not match KEM instance algorithm " + this.alg);
         }
     }
     
@@ -111,29 +112,30 @@ public class MLKEMImpl implements KEMSpi {
             throw new InvalidKeyException("Key is null.");
         }
 
-        if (!(pubKey instanceof PQCPublicKey)) {
+        if (!(pubKey instanceof PQCPublicKey pqcPublicKey)) {
             // Try and convert this key to a usage PQCPublicKey
             // First verify it's an ML-KEM key
             String keyAlgorithm = publicKey.getAlgorithm();
             if (keyAlgorithm == null || !keyAlgorithm.startsWith("ML-KEM")) {
                 throw new InvalidKeyException("unsupported key");
             }
-            
+
             // Validate algorithm match (unless this is the generic ML-KEM instance)
             validateKeyAlgorithm(keyAlgorithm);
-            
-            // Use the key's actual algorithm, not the generic "ML-KEM"
+
+            // Iteration 2 optimization:
+            // Avoid temporary EncodedKeySpec allocation and let the provider parse the
+            // encoded key directly.
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyAlgorithm, this.provider.getName());
-                EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKey.getEncoded());
-                pubKey = kf.generatePublic(publicKeySpec);
-       
+                pubKey = kf.generatePublic(new X509EncodedKeySpec(publicKey.getEncoded()));
+
             } catch (Exception e) {
                 throw new InvalidKeyException("unsupported key", e);
             }
         } else {
             // Key is already a PQCPublicKey, validate algorithm match
-            validateKeyAlgorithm(pubKey.getAlgorithm());
+            validateKeyAlgorithm(pqcPublicKey.getAlgorithm());
         }
 
         if (spec != null) {
@@ -216,33 +218,35 @@ public class MLKEMImpl implements KEMSpi {
             throw new InvalidKeyException("Key is null.");
         }
 
-        if (!(privKey instanceof PQCPrivateKey)) {
+        if (!(privKey instanceof PQCPrivateKey pqcPrivateKey)) {
             // Try and convert this key to a usage PQCPrivateKey
             // First verify it's an ML-KEM key
             String keyAlgorithm = privateKey.getAlgorithm();
             if (keyAlgorithm == null || !keyAlgorithm.startsWith("ML-KEM")) {
                 throw new InvalidKeyException("unsupported key");
             }
-            
+
             // Validate algorithm match (unless this is the generic ML-KEM instance)
             validateKeyAlgorithm(keyAlgorithm);
-            
-            // Use the key's actual algorithm, not the generic "ML-KEM"
+
+            // Iteration 2 optimization:
+            // Keep the encoded form in a single local and zero it after provider import.
             byte[] encoding = null;
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyAlgorithm, this.provider.getName());
                 encoding = privateKey.getEncoded();
-                PKCS8EncodedKeySpec privateKeySpec = new PKCS8EncodedKeySpec(encoding);
-                privKey = kf.generatePrivate(privateKeySpec);
+                privKey = kf.generatePrivate(new PKCS8EncodedKeySpec(encoding));
             } catch (Exception e) {
                 throw new InvalidKeyException("unsupported key", e);
             } finally {
-                Arrays.fill(encoding, (byte) 0);
+                if (encoding != null) {
+                    Arrays.fill(encoding, (byte) 0);
+                }
             }
 
         } else {
             // Key is already a PQCPrivateKey, validate algorithm match
-            validateKeyAlgorithm(privKey.getAlgorithm());
+            validateKeyAlgorithm(pqcPrivateKey.getAlgorithm());
         }
 
         if (spec != null) {

@@ -81,14 +81,38 @@ Analysis:
 - Need more aggressive optimizations
 - Target still 20% improvement across all operations
 
+### Iteration 2: Structural Hot-Path Optimizations
+- Status: COMPLETE
+- Validation Status: Compile passed, ML-KEM tests passed, checkstyle passed
+- Files Modified: 2 files (`src/main/java/com/ibm/crypto/plus/provider/base/PQCKey.java`, `src/main/java/com/ibm/crypto/plus/provider/MLKEMImpl.java`)
+
+Optimizations Applied:
+1. `PQCKey.java`
+   - Replaced repeated `algName.replace('-', '_')` conversions with a cached fast-path mapper for ML-KEM and ML-DSA variants.
+   - Made provider/native interface/algorithm fields final to improve JIT optimization opportunities and reduce mutable state in hot paths.
+   - Centralized native algorithm-name translation so repeated key generation/import paths avoid transient string allocation.
+
+2. `MLKEMImpl.java`
+   - Cached generic ML-KEM mode as a boolean to avoid repeated algorithm identity checks during validation.
+   - Streamlined public/private key conversion paths with pattern matching and tighter local handling.
+   - Fixed private-key zeroization path to avoid null-sensitive cleanup while preserving secure wiping.
+   - Removed redundant temporary handling and kept encapsulation/decapsulation setup focused on validated hot-path work.
+
+Analysis:
+- The repository does not expose Java-side NTT, polynomial multiplication, sampling, compression, or Barrett-reduction implementations; ML-KEM arithmetic is delegated to the native OCK library.
+- Because of that boundary, iteration 2 focused on the highest-impact accessible structural costs in the Java/provider layer: repeated algorithm normalization, key conversion overhead, and validation-path branching.
+- These changes are more aggressive than iteration 1 in the accessible code, but benchmark data was not produced in this environment, so measurable throughput improvement remains unverified.
+
+Validation:
+- `mvn -Dock.library.path=/ock clean compile` ✅
+- `mvn -Dock.library.path=/ock test -Dtest=*MLKEM*` ✅
+- `mvn -Dock.library.path=/ock checkstyle:checkstyle` ✅
+
 ## Best Performing State
 - Iteration: 0 (Baseline)
 - Build UUID: b500a05a-b71d-4132-b874-a5b9f54126d6
-- Notes: No improvement achieved yet in Iteration 1
+- Notes: Iteration 2 completed with validated structural optimizations, but no benchmark results were collected in this environment to prove improvement over baseline.
 
 ## Next Steps
-- Iteration 2: Apply more aggressive optimizations focusing on:
-  1. Native code integration for critical polynomial operations
-  2. SIMD optimizations for array operations
-  3. Algorithm-level improvements (better NTT implementation)
-  4. Memory layout optimizations for cache efficiency
+- Run `ibm.jceplus.jmh.MLKEMBenchmark` on the target benchmark platform to quantify iteration 2 impact.
+- If gains remain below target, the next meaningful step is optimizing the native OCK ML-KEM implementation where polynomial/NTT work actually occurs.
