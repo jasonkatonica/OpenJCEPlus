@@ -27,6 +27,10 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 abstract public class JMHBase {
     private List<String> allowedProviders = null;
+    // Cache provider instances to avoid repeated reflection and instantiation
+    private static Provider cachedOpenJCEPlus = null;
+    private static Provider cachedOpenJCEPlusFIPS = null;
+    private static Provider cachedBC = null;
 
     static Options optionsBuild(String regexClassName, String logFileRoot) {
         // This is necessary to pass various classpath values to the forked JVM we are about to create.
@@ -170,8 +174,11 @@ abstract public class JMHBase {
         if (provider.equalsIgnoreCase("OpenJCEPlus")) {
             Provider myProvider = java.security.Security.getProvider("OpenJCEPlus");
             if (myProvider == null) {
-                myProvider = (Provider) Class.forName("com.ibm.crypto.plus.provider.OpenJCEPlus")
-                        .getDeclaredConstructor().newInstance();
+                if (cachedOpenJCEPlus == null) {
+                    cachedOpenJCEPlus = (Provider) Class.forName("com.ibm.crypto.plus.provider.OpenJCEPlus")
+                            .getDeclaredConstructor().newInstance();
+                }
+                myProvider = cachedOpenJCEPlus;
             } else {
                 java.security.Security.removeProvider("OpenJCEPlus");
             }
@@ -179,8 +186,11 @@ abstract public class JMHBase {
         } else if (provider.equalsIgnoreCase("OpenJCEPlusFIPS")) {
             Provider myProvider = java.security.Security.getProvider("OpenJCEPlusFIPS");
             if (myProvider == null) {
-                myProvider = (Provider) Class.forName("com.ibm.crypto.plus.provider.OpenJCEPlusFIPS")
-                        .getDeclaredConstructor().newInstance();
+                if (cachedOpenJCEPlusFIPS == null) {
+                    cachedOpenJCEPlusFIPS = (Provider) Class.forName("com.ibm.crypto.plus.provider.OpenJCEPlusFIPS")
+                            .getDeclaredConstructor().newInstance();
+                }
+                myProvider = cachedOpenJCEPlusFIPS;
             } else {
                 java.security.Security.removeProvider("OpenJCEPlusFIPS");
             }
@@ -188,9 +198,12 @@ abstract public class JMHBase {
         } else if (provider.equalsIgnoreCase("BC")) {
             Provider myProvider = java.security.Security.getProvider("BC");
             if (myProvider == null) {
-                myProvider = (Provider) Class
-                        .forName("org.bouncycastle.jce.provider.BouncyCastleProvider")
-                        .getDeclaredConstructor().newInstance();
+                if (cachedBC == null) {
+                    cachedBC = (Provider) Class
+                            .forName("org.bouncycastle.jce.provider.BouncyCastleProvider")
+                            .getDeclaredConstructor().newInstance();
+                }
+                myProvider = cachedBC;
             } else {
                 java.security.Security.removeProvider("BC");
             }

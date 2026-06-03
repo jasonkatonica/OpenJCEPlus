@@ -34,6 +34,11 @@ import org.openjdk.jmh.runner.options.Options;
 @Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
 public class MLKEMBenchmark extends JMHBase {
 
+    // Cache algorithm string to avoid repeated allocations
+    private static final String ALGORITHM_AES = "AES";
+    private static final int KEY_FROM = 0;
+    private static final int KEY_SIZE = 31;
+
     @Param({"ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"})
     private String transformation;
 
@@ -57,25 +62,25 @@ public class MLKEMBenchmark extends JMHBase {
         keyPair.getPublic();
         keyPair.getPrivate();
         encapsulator = myKEM.newEncapsulator(keyPair.getPublic());
-        encapsulated = encapsulator.encapsulate(0, 31, "AES");
+        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
         decapsulator = myKEM.newDecapsulator(keyPair.getPrivate());
     }
 
     @Benchmark
     public SecretKey encapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(0, 31, "AES");
+        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
         return encapsulated.key();
     }
 
     @Benchmark
     public SecretKey decapsulation() throws Exception {
-        return decapsulator.decapsulate(encapsulated.encapsulation(), 0, 31, "AES");
+        return decapsulator.decapsulate(encapsulated.encapsulation(), KEY_FROM, KEY_SIZE, ALGORITHM_AES);
     }
 
     @Benchmark
     public SecretKey encapsulationAndDecapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(0, 31, "AES");
-        return decapsulator.decapsulate(encapsulated.encapsulation(), 0, 31, "AES");
+        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        return decapsulator.decapsulate(encapsulated.encapsulation(), KEY_FROM, KEY_SIZE, ALGORITHM_AES);
     }
 
     public static void main(String[] args) throws RunnerException {
