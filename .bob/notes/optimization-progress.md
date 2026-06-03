@@ -53,81 +53,42 @@ Encapsulation + Decapsulation:
 - Build UUID: b500a05a-b71d-4132-b874-a5b9f54126d6
 - Notes: Initial baseline measurement established
 
-### Iteration 1: Java and JNI Layer Optimizations
-- Status: COMPLETE (Code Ready, Awaiting x86_64 Testing)
-- Date: 2026-06-03
-- Compilation: ✅ SUCCESS
-- Checkstyle: ✅ PASSED
-- Unit Tests: ⚠️ SKIPPED (Environment issue - aarch64 vs x86_64)
+### Iteration 1: Initial Optimizations
+- Status: COMPLETE
+- Build UUID: 59136f74-d1c4-4d09-8144-326e97297495
+- Commit Hash: be0382f74584c34742c9d0ce224af825ae0756e8
+- Files Modified: 4 files (196 lines added, 82 removed)
 
-#### Optimizations Applied
+Results (ops/s):
+Encapsulation:
+- ML-KEM-512: 20414.01 (baseline: 20403.30) = +0.05% improvement
+- ML-KEM-768: 12879.37 (baseline: 12892.44) = -0.10% regression
+- ML-KEM-1024: 8906.47 (baseline: 8914.08) = -0.09% regression
 
-**Java Layer (MLKEMImpl.java):**
-1. **Field Optimization:**
-   - Made provider and alg fields final to enable JIT optimizations
-   - Added static final constants for encapsulation lengths (ENCAP_LEN_512, ENCAP_LEN_768, ENCAP_LEN_1024)
-   - Added static final interned algorithm strings (ML_KEM, ML_KEM_512, ML_KEM_768, ML_KEM_1024)
+Decapsulation:
+- ML-KEM-512: 15779.97 (baseline: 15779.53) = +0.003% improvement
+- ML-KEM-768: 10286.33 (baseline: 10293.63) = -0.07% regression
+- ML-KEM-1024: 7320.39 (baseline: 7323.85) = -0.05% regression
 
-2. **String Comparison Optimization:**
-   - Replaced String.equals() with reference equality (==) for interned strings
-   - Applied string interning in constructor and validation methods
-   - Reduces string comparison overhead in hot paths
+Encapsulation + Decapsulation:
+- ML-KEM-512: 8876.92 (baseline: 8914.07) = -0.42% regression
+- ML-KEM-768: 5707.52 (baseline: 5725.96) = -0.32% regression
+- ML-KEM-1024: 4015.11 (baseline: 4001.66) = +0.34% improvement
 
-3. **Method Call Reduction:**
-   - Replaced switch statement with if-else chain using cached constants
-   - Cached keyAlgorithm and encapsulation length in Encapsulator/Decapsulator constructors
-   - Eliminated repeated getAlgorithm() and getEncapsulationLength() calls
-
-4. **Validation Ordering:**
-   - Moved parameter validation before array allocation in encapsulate/decapsulate
-   - Prevents unnecessary allocations when validation fails
-
-**Native Layer (KEM.c):**
-1. **JNI Memory Access Optimization:**
-   - Replaced GetByteArrayElements() with GetPrimitiveArrayCritical() for direct memory access
-   - Reduces JNI overhead and memory copying in encapsulation path
-   - Improved error handling and resource cleanup
-
-2. **Code Structure:**
-   - Simplified error handling paths
-   - Reduced redundant null checks
-   - Cleaner resource management
-
-#### Files Modified
-- `/workspace/src/main/java/com/ibm/crypto/plus/provider/MLKEMImpl.java`
-- `/workspace/src/main/native/ock/KEM.c`
-
-#### Expected Performance Impact
-- **Reduced allocations:** Caching values eliminates repeated object creation
-- **Faster comparisons:** Reference equality (==) is faster than String.equals()
-- **Better JIT optimization:** Final fields and cached values enable compiler optimizations
-- **Lower JNI overhead:** GetPrimitiveArrayCritical provides direct memory access
-- **Improved cache locality:** Reduced method calls and better data access patterns
-
-#### Testing Notes
-- Code compiles successfully without errors
-- Checkstyle validation passes with no violations
-- Unit tests cannot run in current environment (aarch64 architecture, requires x86_64)
-- Native library loading fails: "Could not load dependent ock library for os.name=Linux, os.arch=aarch64"
-- **Action Required:** Tests must be run on x86_64 platform to validate correctness and measure performance
-
-#### Estimated Improvement
-Based on optimization types applied:
-- String interning and reference equality: 2-5% improvement
-- Cached values and reduced method calls: 5-10% improvement
-- JNI optimization (GetPrimitiveArrayCritical): 3-7% improvement
-- Combined effect: **10-20% improvement expected**
+Analysis:
+- All changes are within measurement noise (< 1%)
+- No significant performance improvement achieved
+- Need more aggressive optimizations
+- Target still 20% improvement across all operations
 
 ## Best Performing State
-- Iteration: 1 (pending x86_64 validation)
-- Build UUID: TBD (awaiting benchmark run)
+- Iteration: 0 (Baseline)
+- Build UUID: b500a05a-b71d-4132-b874-a5b9f54126d6
+- Notes: No improvement achieved yet in Iteration 1
 
 ## Next Steps
-1. Deploy and test on x86_64 platform
-2. Run ML-KEM benchmarks to measure actual performance improvement
-3. Validate unit tests pass on correct architecture
-4. If target not met, proceed to Iteration 2 with additional optimizations:
-   - Analyze polynomial arithmetic operations
-   - Optimize NTT (Number Theoretic Transform) operations
-   - Review sampling and compression algorithms
-   - Consider SIMD optimizations if available
+- Iteration 2: Apply more aggressive optimizations focusing on:
+  1. Native code integration for critical polynomial operations
+  2. SIMD optimizations for array operations
+  3. Algorithm-level improvements (better NTT implementation)
+  4. Memory layout optimizations for cache efficiency
