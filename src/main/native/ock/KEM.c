@@ -31,10 +31,11 @@
 #define NOINLINE
 #endif
 
-/* Iteration 4: Fast memory operations for small buffers */
+/* Iteration 5: Optimized memory operations - reduced threshold */
 static INLINE void fast_memcpy(void *dest, const void *src, size_t n) {
-    /* For small buffers, direct copy is faster than memcpy */
-    if (n <= 64) {
+    /* Iteration 5: Reduced threshold to 32 - memcpy is highly optimized by compiler
+     * Manual loop only beneficial for very small copies (secrets are 32 bytes) */
+    if (n <= 32) {
         unsigned char *d = (unsigned char *)dest;
         const unsigned char *s = (const unsigned char *)src;
         while (n--) {
@@ -100,69 +101,39 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
-    /* Iteration 4: Allocate buffers with alignment for better cache performance */
-    wrappedKeyLocal = (unsigned char *)malloc(wrappedkeylen + 64);
-    genkeylocal     = (unsigned char *)malloc(genkeylen + 64);
-    if (UNLIKELY(wrappedKeyLocal == NULL || genkeylocal == NULL)) {
-        free(wrappedKeyLocal);
-        free(genkeylocal);
+    /* Iteration 5: Get Java arrays with direct access BEFORE encapsulation */
+    /* This eliminates intermediate buffer allocation and copy overhead */
+    wrappedKeyBytes = (*env)->GetPrimitiveArrayCritical(env, wrappedKey, NULL);
+    if (UNLIKELY(wrappedKeyBytes == NULL)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        throwOCKException(env, 0, "malloc failed");
+        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
         return;
     }
 
-    /* Iteration 4: Align pointers to 64-byte boundary for cache optimization */
-    unsigned char *wrappedKeyAligned = (unsigned char *)(((uintptr_t)wrappedKeyLocal + 63) & ~63);
-    unsigned char *genkeyAligned = (unsigned char *)(((uintptr_t)genkeylocal + 63) & ~63);
+    randomKeyBytes = (*env)->GetPrimitiveArrayCritical(env, randomKey, NULL);
+    if (UNLIKELY(randomKeyBytes == NULL)) {
+        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes, JNI_ABORT);
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
+        return;
+    }
 
-    /* Iteration 4: Perform encapsulation - hot path */
-    rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, wrappedKeyAligned,
-                                  &wrappedkeylen, genkeyAligned, &genkeylen);
+    /* Iteration 5: Perform encapsulation directly into Java arrays - hot path */
+    /* This eliminates malloc, alignment overhead, and memcpy operations */
+    rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, (unsigned char *)wrappedKeyBytes,
+                                  &wrappedkeylen, (unsigned char *)randomKeyBytes, &genkeylen);
+
+    /* Iteration 5: Release arrays and cleanup */
+    (*env)->ReleasePrimitiveArrayCritical(env, randomKey, randomKeyBytes, 
+                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
+    (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes,
+                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
 
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
-        secure_zero(genkeylocal, genkeylen + 64);
-        free(wrappedKeyLocal);
-        free(genkeylocal);
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
         throwOCKException(env, 0, "ICC_EVP_PKEY_encapsulate failed");
         return;
     }
-
-    /* Iteration 4: Use GetPrimitiveArrayCritical for direct memory access (faster) */
-    /* This locks the array in memory and provides direct pointer access */
-    wrappedKeyBytes = (*env)->GetPrimitiveArrayCritical(env, wrappedKey, NULL);
-    if (UNLIKELY(wrappedKeyBytes == NULL)) {
-        secure_zero(genkeylocal, genkeylen + 64);
-        free(wrappedKeyLocal);
-        free(genkeylocal);
-        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
-        return;
-    }
-    
-    /* Iteration 4: Fast copy for wrapped key */
-    fast_memcpy(wrappedKeyBytes, wrappedKeyAligned, wrappedkeylen);
-    (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes, 0);
-
-    /* Iteration 4: Get random key array */
-    randomKeyBytes = (*env)->GetPrimitiveArrayCritical(env, randomKey, NULL);
-    if (UNLIKELY(randomKeyBytes == NULL)) {
-        secure_zero(genkeylocal, genkeylen + 64);
-        free(wrappedKeyLocal);
-        free(genkeylocal);
-        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
-        return;
-    }
-    
-    /* Iteration 4: Fast copy for secret key */
-    fast_memcpy(randomKeyBytes, genkeyAligned, genkeylen);
-    (*env)->ReleasePrimitiveArrayCritical(env, randomKey, randomKeyBytes, 0);
-
-    /* Iteration 4: Secure cleanup - zero sensitive data */
-    secure_zero(genkeylocal, genkeylen + 64);
-    free(wrappedKeyLocal);
-    free(genkeylocal);
     ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
 }
 
@@ -216,7 +187,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
 
     wrappedkeylen = (*env)->GetArrayLength(env, wrappedKey);
 
-    /* Iteration 4: Get required buffer size for secret */
+    /* Iteration 5: Get required buffer size for secret */
     rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, NULL, &genkeylen, NULL,
                                   wrappedkeylen);
     if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
@@ -228,63 +199,45 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* Iteration 4: Allocate aligned buffer for better cache performance */
-    genkeylocal = (unsigned char *)malloc(genkeylen + 64);
-    if (UNLIKELY(genkeylocal == NULL)) {
-        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyNative,
-                                              JNI_ABORT);
-        throwOCKException(env, 0, "malloc failed");
-        return retRndKeyBytes;
-    }
-
-    /* Iteration 4: Align pointer to 64-byte boundary */
-    unsigned char *genkeyAligned = (unsigned char *)(((uintptr_t)genkeylocal + 63) & ~63);
-
-    /* Iteration 4: Perform decapsulation - hot path */
-    rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genkeyAligned, &genkeylen,
-                                  wrappedKeyNative, wrappedkeylen);
-
-    if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
-        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        secure_zero(genkeylocal, genkeylen + 64);
-        free(genkeylocal);
-        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey,
-                                              wrappedKeyNative, JNI_ABORT);
-        throwOCKException(env, 0, "ICC_EVP_PKEY_decapsulate failed");
-        return retRndKeyBytes;
-    }
-
-    /* Iteration 4: Create result array */
+    /* Iteration 5: Create result array BEFORE decapsulation */
     randomKey = (*env)->NewByteArray(env, genkeylen);
     if (UNLIKELY(randomKey == NULL)) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-        secure_zero(genkeylocal, genkeylen + 64);
-        free(genkeylocal);
         (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey,
                                               wrappedKeyNative, JNI_ABORT);
         throwOCKException(env, 0, "NewByteArray failed");
         return retRndKeyBytes;
     }
 
-    /* Iteration 4: Copy result with direct access */
+    /* Iteration 5: Get direct access to result array */
     genKeyNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(
         env, randomKey, &isCopy));
-    if (LIKELY(genKeyNative != NULL)) {
-        fast_memcpy(genKeyNative, genkeyAligned, genkeylen);
-        (*env)->ReleasePrimitiveArrayCritical(env, randomKey, genKeyNative, 0);
-        retRndKeyBytes = randomKey;
-    } else {
+    if (UNLIKELY(genKeyNative == NULL)) {
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey,
+                                              wrappedKeyNative, JNI_ABORT);
         throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical");
+        return retRndKeyBytes;
     }
 
-    /* Iteration 4: Cleanup - release wrapped key */
+    /* Iteration 5: Perform decapsulation directly into Java array - hot path */
+    /* This eliminates malloc, alignment overhead, and memcpy operations */
+    rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genKeyNative, &genkeylen,
+                                  wrappedKeyNative, wrappedkeylen);
+
+    /* Iteration 5: Release arrays */
+    (*env)->ReleasePrimitiveArrayCritical(env, randomKey, genKeyNative,
+                                          (rc == ICC_OSSL_SUCCESS) ? 0 : JNI_ABORT);
     (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyNative,
                                           JNI_ABORT);
 
-    /* Iteration 4: Secure cleanup - zero sensitive data */
-    secure_zero(genkeylocal, genkeylen + 64);
-    free(genkeylocal);
+    if (UNLIKELY(rc != ICC_OSSL_SUCCESS)) {
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        throwOCKException(env, 0, "ICC_EVP_PKEY_decapsulate failed");
+        return retRndKeyBytes;
+    }
+
+    retRndKeyBytes = randomKey;
     ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
 
     return retRndKeyBytes;

@@ -50,19 +50,9 @@ public class MLKEMImpl implements KEMSpi {
     private static final String ML_KEM_768 = "ML-KEM-768";
     private static final String ML_KEM_1024 = "ML-KEM-1024";
 
-    // Iteration 4: Thread-local array pools to reduce GC pressure
-    private static final ThreadLocal<byte[]> ENCAP_BUFFER_512 = 
-        ThreadLocal.withInitial(() -> new byte[ENCAP_LEN_512]);
-    private static final ThreadLocal<byte[]> ENCAP_BUFFER_768 = 
-        ThreadLocal.withInitial(() -> new byte[ENCAP_LEN_768]);
-    private static final ThreadLocal<byte[]> ENCAP_BUFFER_1024 = 
-        ThreadLocal.withInitial(() -> new byte[ENCAP_LEN_1024]);
-    private static final ThreadLocal<byte[]> SECRET_BUFFER = 
-        ThreadLocal.withInitial(() -> new byte[SECRETSIZE]);
-
-    // Iteration 4: VarHandle for low-level array operations
-    private static final VarHandle BYTE_ARRAY_HANDLE = 
-        MethodHandles.byteArrayViewVarHandle(byte[].class, ByteOrder.nativeOrder());
+    // Iteration 5: Removed thread-local pools - direct allocation is faster
+    // Modern JVMs optimize small array allocations extremely well
+    // Thread-local overhead outweighs benefits for small, short-lived arrays
 
     public MLKEMImpl(OpenJCEPlusProvider provider, String alg) {
         this.provider = provider;
@@ -119,30 +109,7 @@ public class MLKEMImpl implements KEMSpi {
         }
     }
 
-    // Iteration 4: Get pooled buffer for encapsulation
-    @ForceInline
-    private byte[] getEncapBuffer(int length) {
-        if (length == ENCAP_LEN_512) {
-            return ENCAP_BUFFER_512.get();
-        } else if (length == ENCAP_LEN_768) {
-            return ENCAP_BUFFER_768.get();
-        } else {
-            return ENCAP_BUFFER_1024.get();
-        }
-    }
-
-    // Iteration 4: Fast array copy using VarHandle (avoids bounds checks)
-    @ForceInline
-    private static void fastArrayCopy(byte[] src, int srcPos, byte[] dest, int destPos, int length) {
-        // For small arrays, direct copy is faster than System.arraycopy
-        if (length <= 32) {
-            for (int i = 0; i < length; i++) {
-                dest[destPos + i] = src[srcPos + i];
-            }
-        } else {
-            System.arraycopy(src, srcPos, dest, destPos, length);
-        }
-    }
+    // Iteration 5: Removed unused helper methods - direct allocation is more efficient
 
     /*
      * spec - The AlgorithmParameterSpec is not used and should be null. If not null
@@ -219,7 +186,7 @@ public class MLKEMImpl implements KEMSpi {
 
         @Override
         public KEM.Encapsulated engineEncapsulate(int from, int to, String algorithm) {
-            // Iteration 4: Validate parameters first (branch prediction - most calls are valid)
+            // Iteration 5: Validate parameters first (branch prediction - most calls are valid)
             if (from < 0 || to > SECRETSIZE || ((to - from) < 0) || (from >= SECRETSIZE)) {
                 throw new IndexOutOfBoundsException();
             }
@@ -227,24 +194,22 @@ public class MLKEMImpl implements KEMSpi {
                 throw new NullPointerException();
             }
 
-            // Iteration 4: Use pooled buffers to reduce GC pressure
-            byte[] encapsulation = getEncapBuffer(encapLen);
-            byte[] secret = SECRET_BUFFER.get();
+            // Iteration 5: Allocate final arrays directly - eliminate intermediate copy
+            // This reduces memory operations and GC pressure
+            byte[] encapsulation = new byte[encapLen];
+            byte[] secret = new byte[SECRETSIZE];
 
             try {
-                // Iteration 4: Use cached pKeyId instead of virtual method call
+                // Iteration 5: Use cached pKeyId instead of virtual method call
                 OJPKEM.KEM_encapsulate(pKeyId, encapsulation, secret, provider);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             }
 
-            // Iteration 4: Create result arrays only after successful encapsulation
-            byte[] encapResult = new byte[encapLen];
-            fastArrayCopy(encapsulation, 0, encapResult, 0, encapLen);
-
+            // Iteration 5: No copy needed - arrays already in final form
             return new KEM.Encapsulated(
                     new SecretKeySpec(secret, from, to - from, algorithm),
-                    encapResult, null);
+                    encapsulation, null);
         }
 
         @Override
