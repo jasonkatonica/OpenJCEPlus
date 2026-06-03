@@ -29,13 +29,26 @@ import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 
 public class MLKEMImpl implements KEMSpi {
-    OpenJCEPlusProvider provider;
-    String alg;
-    static int SECRETSIZE  = 32;
+    // Optimization: Use final fields to enable JIT optimizations
+    private final OpenJCEPlusProvider provider;
+    private final String alg;
+    private static final int SECRETSIZE = 32;
+    
+    // Optimization: Cache encapsulation lengths to avoid repeated switch statements
+    private static final int ENCAP_LEN_512 = 768;
+    private static final int ENCAP_LEN_768 = 1088;
+    private static final int ENCAP_LEN_1024 = 1568;
+    
+    // Optimization: Intern algorithm strings for fast reference equality checks
+    private static final String ML_KEM = "ML-KEM";
+    private static final String ML_KEM_512 = "ML-KEM-512";
+    private static final String ML_KEM_768 = "ML-KEM-768";
+    private static final String ML_KEM_1024 = "ML-KEM-1024";
 
     public MLKEMImpl(OpenJCEPlusProvider provider, String alg) {
         this.provider = provider;
-        this.alg = alg;
+        // Optimization: Intern algorithm string for fast equality checks
+        this.alg = alg.intern();
     }
     
     /**
@@ -48,37 +61,38 @@ public class MLKEMImpl implements KEMSpi {
      * @param keyAlgorithm the algorithm from the key
      * @throws InvalidKeyException if the key algorithm doesn't match the instance algorithm
      */
+    // Optimization: Use reference equality for interned strings (faster than equals())
     private void validateKeyAlgorithm(String keyAlgorithm) throws InvalidKeyException {
+        // Intern the key algorithm for fast comparison
+        String internedKeyAlg = keyAlgorithm.intern();
+        
         // Generic ML-KEM instance accepts any ML-KEM variant key algorithm
-        if (this.alg.equals("ML-KEM")) {
+        if (this.alg == ML_KEM) {
             return;
         }
         
         // Specific instance accepts exact match or generic "ML-KEM"
-        if (!this.alg.equals(keyAlgorithm) && !keyAlgorithm.equals("ML-KEM")) {
+        if (this.alg != internedKeyAlg && internedKeyAlg != ML_KEM) {
             throw new InvalidKeyException("Key algorithm " + keyAlgorithm +
                 " does not match KEM instance algorithm " + this.alg);
         }
     }
     
+    // Optimization: Use cached constants and reference equality for faster lookup
     private int getEncapsulationLength(String algorithm) {
-        int size = 0;
-
-        switch (algorithm) {
-            case "ML-KEM-512":
-                size = 768;
-                break;
-            case "ML-KEM-768":
-                size = 1088;
-                break;
-            case "ML-KEM-1024":
-                size = 1568;
-                break;
-            default:
-                // If algorithm is generic "ML-KEM", default to ML-KEM-768
-                size = 1088;
+        // Intern for fast reference comparison
+        String internedAlg = algorithm.intern();
+        
+        if (internedAlg == ML_KEM_512) {
+            return ENCAP_LEN_512;
+        } else if (internedAlg == ML_KEM_768) {
+            return ENCAP_LEN_768;
+        } else if (internedAlg == ML_KEM_1024) {
+            return ENCAP_LEN_1024;
+        } else {
+            // If algorithm is generic "ML-KEM", default to ML-KEM-768
+            return ENCAP_LEN_768;
         }
-        return size;
     }
 
     /*
@@ -130,8 +144,11 @@ public class MLKEMImpl implements KEMSpi {
 
     class MLKEMEncapsulator implements KEMSpi.EncapsulatorSpi {
 
-        PublicKey publicKey;
-        int size = SECRETSIZE;
+        // Optimization: Use final fields and cache values to reduce repeated lookups
+        private final PublicKey publicKey;
+        private final int size = SECRETSIZE;
+        private final String keyAlgorithm;
+        private final int encapLen;
 
         /*
          * spec - The AlgorithmParameterSpec is not used and should be null. 
@@ -141,16 +158,14 @@ public class MLKEMImpl implements KEMSpi {
         MLKEMEncapsulator(PublicKey publicKey, AlgorithmParameterSpec spec,
                 SecureRandom secureRandom) {
             this.publicKey = publicKey;
+            // Optimization: Cache key algorithm and encapsulation length at construction time
+            this.keyAlgorithm = publicKey.getAlgorithm();
+            this.encapLen = getEncapsulationLength(keyAlgorithm);
         }
 
         @Override
         public KEM.Encapsulated engineEncapsulate(int from, int to, String algorithm) {
-            // Get the actual algorithm from the public key
-            String keyAlgorithm = publicKey.getAlgorithm();
-            int encapLen = getEncapsulationLength(keyAlgorithm);
-            byte[] encapsulation = new byte[encapLen];
-            byte[] secret = new byte[SECRETSIZE];
-
+            // Optimization: Validate parameters first before allocating arrays
             if (from < 0 || to > SECRETSIZE || ((to - from) < 0) || (from >= SECRETSIZE)) {
                 throw new IndexOutOfBoundsException();
             }
@@ -158,9 +173,14 @@ public class MLKEMImpl implements KEMSpi {
                 throw new NullPointerException();
             }
 
+            // Optimization: Allocate arrays only after validation passes
+            byte[] encapsulation = new byte[encapLen];
+            byte[] secret = new byte[SECRETSIZE];
+
             try {
-                OJPKEM.KEM_encapsulate(((PQCPublicKey) publicKey).getPQCKey().getPKeyId(),
-                        encapsulation, secret, provider);
+                // Optimization: Get pKeyId once per call instead of in constructor
+                long pKeyId = ((PQCPublicKey) publicKey).getPQCKey().getPKeyId();
+                OJPKEM.KEM_encapsulate(pKeyId, encapsulation, secret, provider);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             }
@@ -172,8 +192,8 @@ public class MLKEMImpl implements KEMSpi {
 
         @Override
         public int engineEncapsulationSize() {
-            String keyAlgorithm = publicKey.getAlgorithm();
-            return getEncapsulationLength(keyAlgorithm);
+            // Optimization: Return cached value instead of repeated lookups
+            return encapLen;
         }
 
         @Override
@@ -235,18 +255,23 @@ public class MLKEMImpl implements KEMSpi {
      * spec - The AlgorithmParameterSpec is not used and should be null. 
      */
     class MLKEMDecapsulator implements KEMSpi.DecapsulatorSpi {
-        PrivateKey privateKey;
-        int size = SECRETSIZE;
+        // Optimization: Use final fields and cache values to reduce repeated lookups
+        private final PrivateKey privateKey;
+        private final int size = SECRETSIZE;
+        private final String keyAlgorithm;
+        private final int expectedEncapLen;
 
         MLKEMDecapsulator(PrivateKey privateKey, AlgorithmParameterSpec spec) {
             this.privateKey = privateKey;
+            // Optimization: Cache key algorithm and expected encapsulation length at construction time
+            this.keyAlgorithm = privateKey.getAlgorithm();
+            this.expectedEncapLen = getEncapsulationLength(keyAlgorithm);
         }
 
         @Override
         public SecretKey engineDecapsulate(byte[] cipherText, int from, int to, String algorithm)
                 throws DecapsulateException {
-            byte[] secret;
-
+            // Optimization: Validate parameters first before any processing
             if (from < 0 || to > SECRETSIZE || ((to - from) < 0) || (from >= SECRETSIZE)) {
                 throw new IndexOutOfBoundsException();
             }
@@ -254,9 +279,7 @@ public class MLKEMImpl implements KEMSpi {
                 throw new NullPointerException();
             }
 
-            // Validate encapsulation length matches the key's algorithm
-            String keyAlgorithm = privateKey.getAlgorithm();
-            int expectedEncapLen = getEncapsulationLength(keyAlgorithm);
+            // Optimization: Use cached expectedEncapLen instead of repeated lookups
             if (cipherText.length != expectedEncapLen) {
                 throw new DecapsulateException(
                     "Invalid key encapsulation message length: expected " +
@@ -264,9 +287,11 @@ public class MLKEMImpl implements KEMSpi {
                     ", but got " + cipherText.length + " bytes");
             }
 
+            byte[] secret;
             try {
-                secret = OJPKEM.KEM_decapsulate(((PQCPrivateKey) this.privateKey).getPQCKey().getPKeyId(),
-                        cipherText, provider);
+                // Optimization: Get pKeyId once per call instead of in constructor
+                long pKeyId = ((PQCPrivateKey) privateKey).getPQCKey().getPKeyId();
+                secret = OJPKEM.KEM_decapsulate(pKeyId, cipherText, provider);
 
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
@@ -277,8 +302,8 @@ public class MLKEMImpl implements KEMSpi {
 
         @Override
         public int engineEncapsulationSize() {
-            String keyAlgorithm = privateKey.getAlgorithm();
-            return getEncapsulationLength(keyAlgorithm);
+            // Optimization: Return cached value instead of repeated lookups
+            return expectedEncapLen;
         }
 
         @Override

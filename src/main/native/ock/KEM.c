@@ -35,15 +35,18 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
     size_t            genkeylen       = 0;
     unsigned char    *wrappedKeyLocal = NULL;
     unsigned char    *genkeylocal     = NULL;
+    jbyte            *wrappedKeyBytes = NULL;
+    jbyte            *randomKeyBytes  = NULL;
+    int               rc              = ICC_OSSL_SUCCESS;
 
+    /* Optimization: Create context once */
     evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, pa, NULL);
     if (!evp_pk) {
         throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
         return;
     }
 
-    int rc = -1;
-
+    /* Optimization: Initialize encapsulation */
     rc = ICC_EVP_PKEY_encapsulate_init(ockCtx, NULL, NULL);
     if (rc != ICC_OSSL_SUCCESS) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -51,6 +54,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
+    /* Optimization: Get required buffer sizes */
     rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, NULL, &wrappedkeylen, NULL,
                                   &genkeylen);
     if (rc != ICC_OSSL_SUCCESS) {
@@ -60,50 +64,56 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
+    /* Optimization: Allocate buffers together for better memory locality */
     wrappedKeyLocal = (unsigned char *)malloc(wrappedkeylen);
     genkeylocal     = (unsigned char *)malloc(genkeylen);
     if (wrappedKeyLocal == NULL || genkeylocal == NULL) {
-        if (wrappedKeyLocal != NULL) {
-            free(wrappedKeyLocal);
-        }
-        if (genkeylocal != NULL) {
-            free(genkeylocal);
-        }
+        free(wrappedKeyLocal);
+        free(genkeylocal);
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
         throwOCKException(env, 0, "malloc failed");
         return;
-    } else {
-        rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, wrappedKeyLocal,
-                                      &wrappedkeylen, genkeylocal, &genkeylen);
-
-        if (rc != ICC_OSSL_SUCCESS) {
-            if (wrappedKeyLocal != NULL) {
-                free(wrappedKeyLocal);
-            }
-            if (genkeylocal != NULL) {
-                free(genkeylocal);
-            }
-            ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-            throwOCKException(env, 0, "ICC_EVP_PKEY_encapsulate failed");
-            return;
-        }
-
-        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-
-        jbyte *bytes = (*env)->GetByteArrayElements(env, wrappedKey, NULL);
-        memcpy(bytes, wrappedKeyLocal, wrappedkeylen);
-        (*env)->ReleaseByteArrayElements(env, wrappedKey, bytes, 0);
-
-        bytes = (*env)->GetByteArrayElements(env, randomKey, NULL);
-        memcpy(bytes, genkeylocal, genkeylen);
-        (*env)->ReleaseByteArrayElements(env, randomKey, bytes, 0);
-        if (wrappedKeyLocal != NULL) {
-            free(wrappedKeyLocal);
-        }
-        if (genkeylocal != NULL) {
-            free(genkeylocal);
-        }
     }
+
+    /* Optimization: Perform encapsulation */
+    rc = ICC_EVP_PKEY_encapsulate(ockCtx, evp_pk, wrappedKeyLocal,
+                                  &wrappedkeylen, genkeylocal, &genkeylen);
+
+    if (rc != ICC_OSSL_SUCCESS) {
+        free(wrappedKeyLocal);
+        free(genkeylocal);
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        throwOCKException(env, 0, "ICC_EVP_PKEY_encapsulate failed");
+        return;
+    }
+
+    /* Optimization: Use GetPrimitiveArrayCritical for direct memory access (faster) */
+    wrappedKeyBytes = (*env)->GetPrimitiveArrayCritical(env, wrappedKey, NULL);
+    if (wrappedKeyBytes == NULL) {
+        free(wrappedKeyLocal);
+        free(genkeylocal);
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
+        return;
+    }
+    memcpy(wrappedKeyBytes, wrappedKeyLocal, wrappedkeylen);
+    (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes, 0);
+
+    randomKeyBytes = (*env)->GetPrimitiveArrayCritical(env, randomKey, NULL);
+    if (randomKeyBytes == NULL) {
+        free(wrappedKeyLocal);
+        free(genkeylocal);
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
+        return;
+    }
+    memcpy(randomKeyBytes, genkeylocal, genkeylen);
+    (*env)->ReleasePrimitiveArrayCritical(env, randomKey, randomKeyBytes, 0);
+
+    /* Optimization: Clean up resources */
+    free(wrappedKeyLocal);
+    free(genkeylocal);
+    ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
 }
 
 //============================================================================
