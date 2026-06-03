@@ -20,25 +20,10 @@ public final class PQCKey implements AsymmetricKey {
     //
     static final byte[] unobtainedKeyBytes = new byte[0];
 
-    /*
-     * Iteration 2 optimization:
-     * Cache the dash-to-underscore algorithm mapping once per JVM instead of
-     * rebuilding it on every ML-KEM key generation/import call. These paths are
-     * exercised repeatedly by key generation, key translation and KEM setup.
-     */
-    private static final String ML_KEM = "ML-KEM";
-    private static final String ML_DSA = "ML-DSA";
-    private static final String ML_KEM_512_NATIVE = "ML_KEM_512";
-    private static final String ML_KEM_768_NATIVE = "ML_KEM_768";
-    private static final String ML_KEM_1024_NATIVE = "ML_KEM_1024";
-    private static final String ML_DSA_44_NATIVE = "ML_DSA_44";
-    private static final String ML_DSA_65_NATIVE = "ML_DSA_65";
-    private static final String ML_DSA_87_NATIVE = "ML_DSA_87";
-
-    private final OpenJCEPlusProvider provider;
-    private final NativeInterface nativeInterface;
+    private OpenJCEPlusProvider provider;
+    private NativeInterface nativeInterface;
     private final long pkeyId;
-    private final String algName;
+    private String algName;
     private byte[] privateKeyBytes;
     private byte[] publicKeyBytes;
     private final static String badIdMsg = "Key Identifier is not valid";
@@ -51,23 +36,22 @@ public final class PQCKey implements AsymmetricKey {
         if (provider == null) {
             throw new IllegalArgumentException("provider is null");
         }
-        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance()
-                : NativeOCKAdapterNonFIPS.getInstance();
+        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance() : NativeOCKAdapterNonFIPS.getInstance();
         try {
-            keyId = nativeInterface.MLKEY_generate(toNativeAlgorithmName(algName));
+            String NoDashAlg = algName.replace('-', '_');
+            keyId = nativeInterface.MLKEY_generate(NoDashAlg);
 
             if (keyId == 0) {
                 throw new NativeException("PQCKey.generateKeyPair: MLKEY_generate failed");
-            }
+            }    
         } catch (Exception e) {
             throw new NativeException("PQCKey.generateKeyPair: Exception " + e.getMessage(), e);
         }
-        return new PQCKey(nativeInterface, keyId, unobtainedKeyBytes, unobtainedKeyBytes, algName,
-                provider);
+        return new PQCKey(nativeInterface, keyId, unobtainedKeyBytes, unobtainedKeyBytes, algName, provider);
     }
 
-    public static PQCKey createPrivateKey(String algName, byte[] privateKeyBytes,
-            OpenJCEPlusProvider provider) throws NativeException {
+    public static PQCKey createPrivateKey(String algName, byte[] privateKeyBytes, OpenJCEPlusProvider provider)
+            throws NativeException {
         // final String methodName = "createPrivateKey ";
         if (privateKeyBytes == null) {
             throw new IllegalArgumentException("key bytes is null");
@@ -76,16 +60,16 @@ public final class PQCKey implements AsymmetricKey {
         if (provider == null) {
             throw new IllegalArgumentException("provider is null");
         }
-        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance()
-                : NativeOCKAdapterNonFIPS.getInstance();
-        long keyId = nativeInterface.MLKEY_createPrivateKey(toNativeAlgorithmName(algName),
-                privateKeyBytes);
+        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance() : NativeOCKAdapterNonFIPS.getInstance();
+        long keyId = 0;
+        String NoDashAlg = algName.replace('-', '_');
+        keyId = nativeInterface.MLKEY_createPrivateKey(NoDashAlg, privateKeyBytes);
 
         return new PQCKey(nativeInterface, keyId, privateKeyBytes.clone(), null, algName, provider);
     }
 
-    public static PQCKey createPublicKey(String algName, byte[] publicKeyBytes,
-            OpenJCEPlusProvider provider) throws NativeException {
+    public static PQCKey createPublicKey(String algName, byte[] publicKeyBytes, OpenJCEPlusProvider provider)
+            throws NativeException {
         // final String methodName = "createPublicKey ";
         if (publicKeyBytes == null) {
             throw new IllegalArgumentException("key bytes is null");
@@ -94,10 +78,10 @@ public final class PQCKey implements AsymmetricKey {
         if (provider == null) {
             throw new IllegalArgumentException("provider is null");
         }
-        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance()
-                : NativeOCKAdapterNonFIPS.getInstance();
-        long keyId = nativeInterface.MLKEY_createPublicKey(toNativeAlgorithmName(algName),
-                publicKeyBytes);
+        NativeInterface nativeInterface = provider.isFIPS() ? NativeOCKAdapterFIPS.getInstance() : NativeOCKAdapterNonFIPS.getInstance();
+        long keyId = 0;
+        String NoDashAlg = algName.replace('-', '_');
+        keyId = nativeInterface.MLKEY_createPublicKey(NoDashAlg, publicKeyBytes);
 
         // OCKDebug.Msg (debPrefix, methodName, "mlkemKeyId :" + mlkemKeyId);
         return new PQCKey(nativeInterface, keyId, null, publicKeyBytes.clone(), algName, provider);
@@ -202,8 +186,7 @@ public final class PQCKey implements AsymmetricKey {
         return out;
     }
 
-    private Runnable cleanOCKResources(byte[] privateKeyBytes, long pkeyId,
-            NativeInterface nativeInterface) {
+    private Runnable cleanOCKResources(byte[] privateKeyBytes, long pkeyId, NativeInterface nativeInterface) {
         return () -> {
             try {
                 if ((privateKeyBytes != null) && (privateKeyBytes != unobtainedKeyBytes)) {
@@ -214,28 +197,10 @@ public final class PQCKey implements AsymmetricKey {
                 }
             } catch (Exception e) {
                 if (OpenJCEPlusProvider.getDebug() != null) {
-                    OpenJCEPlusProvider.getDebug()
-                            .println("An error occurred while cleaning : " + e.getMessage());
+                    OpenJCEPlusProvider.getDebug().println("An error occurred while cleaning : " + e.getMessage());
                     e.printStackTrace();
                 }
             }
-        };
-    }
-
-    /*
-     * Iteration 2 optimization:
-     * ML-KEM/ML-DSA names dominate PQC traffic. Fast-path them with cached
-     * constants and fall back to replace only for less common algorithms.
-     */
-    private static String toNativeAlgorithmName(String algName) {
-        return switch (algName) {
-            case "ML-KEM-512" -> ML_KEM_512_NATIVE;
-            case "ML-KEM-768", ML_KEM -> ML_KEM_768_NATIVE;
-            case "ML-KEM-1024" -> ML_KEM_1024_NATIVE;
-            case "ML-DSA-44" -> ML_DSA_44_NATIVE;
-            case "ML-DSA-65", ML_DSA -> ML_DSA_65_NATIVE;
-            case "ML-DSA-87" -> ML_DSA_87_NATIVE;
-            default -> algName.replace('-', '_');
         };
     }
 }
