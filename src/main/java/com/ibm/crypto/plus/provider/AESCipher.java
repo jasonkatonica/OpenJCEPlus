@@ -86,89 +86,66 @@ public final class AESCipher extends CipherSpi implements AESConstants {
                         "Output buffer must be " + "(at least) " + outputSize + " bytes long");
             }
 
-            // Common case first: standard path
-            if (!use_z_fast_command) {
+            if (use_z_fast_command) {
+                int encryptedData = engineUpdate(input, inputOffset, inputLen, output,
+                        outputOffset);
+                outputOffset += encryptedData;
+                int totalLen = buffered;
+                int paddedLen = totalLen;
+                if (padding != Padding.NoPadding && encrypting) {
+                    int paddingLen = 16 - (totalLen % 16);
+                    paddedLen += paddingLen;
+                    padWithLen(buffer, totalLen, paddingLen);
+                }
+
+                if ((output == null) || (((output.length - outputOffset) < paddedLen)
+                        && (encrypting || padding == Padding.NoPadding)))
+                    throw new ShortBufferException(
+                            "Output buffer too short: " + (output.length - outputOffset)
+                                    + " bytes given, " + paddedLen + " bytes needed");
+
+                if (paddedLen % 16 != 0) {
+                    if (padding == Padding.PKCS5Padding) {
+                        throw new IllegalBlockSizeException(
+                                "Input length (with padding) not multiple of 16 bytes");
+                    } else {
+                        throw new IllegalBlockSizeException(
+                                "Input length not multiple of 16 bytes");
+                    }
+                }
+
+                if (paddedLen == 0) {
+                    totalLen = 0;
+                } else {
+                    totalLen = symmetricCipher.z_doFinal(buffer, 0, paddedLen, output,
+                            outputOffset);
+                }
+                // totalLen = finalNoPadding(buffer, 0, output, outputOffset, paddedLen);
+                symmetricCipher.resetParams();
+
+                if (padding != Padding.NoPadding && !encrypting) { // get rid of padding bytes
+                    int padStart = unpad(output, outputOffset, totalLen);
+                    if (padStart < 0)
+                        throw new BadPaddingException("Given final block not properly padded");
+                    totalLen = padStart - outputOffset;
+
+                    if ((output.length - outputOffset) < totalLen)
+                        throw new ShortBufferException(
+                                "Output buffer too short: " + (output.length - outputOffset)
+                                        + " bytes given, " + totalLen + " bytes needed");
+                }
+                buffered = 0;
+
+                encryptedData += totalLen;
+                return encryptedData;
+            } else {
                 return symmetricCipher.doFinal(input, inputOffset, inputLen, output, outputOffset);
             }
-            
-            // Z hardware fast path
-            return engineDoFinalZFast(input, inputOffset, inputLen, output, outputOffset);
         } catch (BadPaddingException | IllegalBlockSizeException | ShortBufferException exc) {
             throw exc;
         } catch (Exception e) {
             throw provider.providerException("Failure in engineDoFinal", e);
         }
-    }
-    
-    // JIT-friendly: Extracted z-hardware doFinal for better optimization
-    private final int engineDoFinalZFast(byte[] input, int inputOffset, int inputLen, 
-            byte[] output, int outputOffset)
-            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException {
-        // Process any remaining input
-        int encryptedData = engineUpdate(input, inputOffset, inputLen, output, outputOffset);
-        outputOffset += encryptedData;
-        
-        // Process final block with padding
-        int totalLen = processFinalBlock(output, outputOffset);
-        
-        buffered = 0;
-        return encryptedData + totalLen;
-    }
-    
-    // JIT-friendly: Process final block with padding
-    private final int processFinalBlock(byte[] output, int outputOffset)
-            throws ShortBufferException, IllegalBlockSizeException, BadPaddingException {
-        int totalLen = buffered;
-        int paddedLen = totalLen;
-        
-        // Common case: encrypting with padding
-        if (encrypting && padding != Padding.NoPadding) {
-            int paddingLen = 16 - (totalLen % 16);
-            paddedLen += paddingLen;
-            padWithLen(buffer, totalLen, paddingLen);
-        }
-
-        // Validate output buffer
-        if ((output == null) || (((output.length - outputOffset) < paddedLen)
-                && (encrypting || padding == Padding.NoPadding))) {
-            throw new ShortBufferException(
-                    "Output buffer too short: " + (output.length - outputOffset)
-                            + " bytes given, " + paddedLen + " bytes needed");
-        }
-
-        // Validate block size
-        if (paddedLen % 16 != 0) {
-            String msg = (padding == Padding.PKCS5Padding) 
-                    ? "Input length (with padding) not multiple of 16 bytes"
-                    : "Input length not multiple of 16 bytes";
-            throw new IllegalBlockSizeException(msg);
-        }
-
-        // Process final block
-        if (paddedLen == 0) {
-            totalLen = 0;
-        } else {
-            totalLen = symmetricCipher.z_doFinal(buffer, 0, paddedLen, output, outputOffset);
-        }
-        
-        symmetricCipher.resetParams();
-
-        // Common case: decrypting with padding - remove padding
-        if (!encrypting && padding != Padding.NoPadding) {
-            int padStart = unpad(output, outputOffset, totalLen);
-            if (padStart < 0) {
-                throw new BadPaddingException("Given final block not properly padded");
-            }
-            totalLen = padStart - outputOffset;
-
-            if ((output.length - outputOffset) < totalLen) {
-                throw new ShortBufferException(
-                        "Output buffer too short: " + (output.length - outputOffset)
-                                + " bytes given, " + totalLen + " bytes needed");
-            }
-        }
-        
-        return totalLen;
     }
 
     @Override
@@ -388,13 +365,90 @@ public final class AESCipher extends CipherSpi implements AESConstants {
         checkCipherInitialized();
 
         try {
-            // Common case first: use standard path
-            if (!use_z_fast_command) {
+            if (use_z_fast_command) {
+                //extraChecks_update(input, inputOffset, inputLen, output, outputOffset)
+                if (input == null || inputLen == 0)
+                    return 0;
+
+                // figure out how much can be sent to crypto function
+                int len = buffered + inputLen;
+                if (padding == Padding.PKCS5Padding && !encrypting) {
+                    // do not include the padding bytes when decrypting
+                    len -= engineGetBlockSize();
+                }
+
+                // do not count the trailing bytes which do not make up a unit
+                len = (len > 0 ? (len - (len % 16)) : 0);
+
+                // check output buffer capacity
+                if ((output == null) || ((output.length - outputOffset) < len)) {
+                    throw new ShortBufferException(
+                            "Output buffer must be " + "(at least) " + len + " bytes long");
+                }
+
+                if (len != 0) {
+                    // there is some work to do
+
+                    int inputConsumed = len - buffered;
+                    int bufferedConsumed = buffered;
+
+                    if (inputConsumed < 0) {
+                        // input only contains (potential) (part of) padding block, so make room for it in the buffer
+                        inputConsumed = 0;
+                        bufferedConsumed = len;
+                    }
+
+                    len = 0;
+                    // Encrypt the buffered data first, if needed. Be careful to not process last block (which
+                    // could have the padding data. Only doFinal works on last block
+                    if (bufferedConsumed > 0) {
+                        if (inputConsumed > 0) {
+                            // Make sure the data length in buffer is multiple of unitBytes
+                            // add part of a unit from data from input
+                            int remainToUnit = inputConsumed % 16;
+                            System.arraycopy(input, inputOffset, buffer, bufferedConsumed,
+                                    remainToUnit);
+
+                            bufferedConsumed += remainToUnit;
+                            buffered += remainToUnit;
+                            inputConsumed -= remainToUnit;
+                            inputLen -= remainToUnit;
+                            inputOffset += remainToUnit;
+                        }
+
+                        len += symmetricCipher.z_update(buffer, 0, bufferedConsumed, output,
+                                outputOffset);
+
+                        outputOffset += bufferedConsumed;
+                        buffered -= bufferedConsumed;
+
+                        if (buffered > 0) {
+                            // this part of buffer could still be the padding data
+                            System.arraycopy(buffer, bufferedConsumed, buffer, 0, buffered);
+                        }
+                    }
+
+                    // Now process bulk of data
+                    if (inputConsumed > 0) {
+                        len += symmetricCipher.z_update(input, inputOffset, inputConsumed, output,
+                                outputOffset);
+
+                        inputLen -= inputConsumed;
+                        inputOffset += inputConsumed;
+                        outputOffset += inputConsumed;
+                    }
+                }
+                // left over again
+                if (inputLen > 0)
+                    System.arraycopy(input, inputOffset, buffer, buffered, inputLen);
+
+                buffered += inputLen;
+
+                return len;
+                // return extraChecks_update(input, inputOffset, inputLen, output, outputOffset);
+            } else {
                 return symmetricCipher.update(input, inputOffset, inputLen, output, outputOffset);
             }
-            
-            // Fast path for z hardware
-            return engineUpdateZFast(input, inputOffset, inputLen, output, outputOffset);
         } catch (ShortBufferException ock_sbe) {
             ShortBufferException sbe = new ShortBufferException(ock_sbe.getMessage());
             provider.setExceptionCause(sbe, ock_sbe);
@@ -402,121 +456,6 @@ public final class AESCipher extends CipherSpi implements AESConstants {
         } catch (Exception e) {
             throw provider.providerException("Failure in engineDoFinal", e);
         }
-    }
-    
-    // JIT-friendly: Extracted z-hardware fast path for better optimization
-    private final int engineUpdateZFast(byte[] input, int inputOffset, int inputLen, 
-            byte[] output, int outputOffset) throws ShortBufferException {
-        // Early return for empty input
-        if (input == null || inputLen == 0) {
-            return 0;
-        }
-
-        // Calculate processable length
-        int len = calculateProcessableLength(inputLen);
-
-        // Validate output buffer
-        validateOutputBuffer(output, outputOffset, len);
-
-        if (len == 0) {
-            // Just buffer the input
-            System.arraycopy(input, inputOffset, buffer, buffered, inputLen);
-            buffered += inputLen;
-            return 0;
-        }
-
-        // Process buffered and input data
-        int bytesProcessed = processBufferedAndInput(input, inputOffset, inputLen, 
-                output, outputOffset, len);
-        
-        return bytesProcessed;
-    }
-    
-    // JIT-friendly: Small helper for length calculation
-    private final int calculateProcessableLength(int inputLen) {
-        int len = buffered + inputLen;
-        // Common case: encrypting or no padding
-        if (encrypting || padding != Padding.PKCS5Padding) {
-            return (len > 0) ? (len - (len % 16)) : 0;
-        }
-        // Decrypting with padding: reserve last block
-        len -= 16;
-        return (len > 0) ? (len - (len % 16)) : 0;
-    }
-    
-    // JIT-friendly: Small validation method
-    private final void validateOutputBuffer(byte[] output, int outputOffset, int len) 
-            throws ShortBufferException {
-        if ((output == null) || ((output.length - outputOffset) < len)) {
-            throw new ShortBufferException(
-                    "Output buffer must be " + "(at least) " + len + " bytes long");
-        }
-    }
-    
-    // JIT-friendly: Process buffered and input data
-    private final int processBufferedAndInput(byte[] input, int inputOffset, int inputLen,
-            byte[] output, int outputOffset, int targetLen) throws ShortBufferException {
-        int inputConsumed = targetLen - buffered;
-        int bufferedConsumed = buffered;
-
-        // Adjust for negative consumption
-        if (inputConsumed < 0) {
-            inputConsumed = 0;
-            bufferedConsumed = targetLen;
-        }
-
-        int totalProcessed = 0;
-
-        // Process buffered data
-        if (bufferedConsumed > 0) {
-            totalProcessed = processBufferedData(input, inputOffset, inputConsumed, 
-                    bufferedConsumed, output, outputOffset);
-            outputOffset += bufferedConsumed;
-            
-            // Update input tracking
-            int remainToUnit = (inputConsumed > 0) ? (inputConsumed % 16) : 0;
-            inputOffset += remainToUnit;
-            inputLen -= remainToUnit;
-            inputConsumed -= remainToUnit;
-        }
-
-        // Process bulk input data
-        if (inputConsumed > 0) {
-            totalProcessed += symmetricCipher.z_update(input, inputOffset, inputConsumed, 
-                    output, outputOffset);
-            inputLen -= inputConsumed;
-            inputOffset += inputConsumed;
-        }
-
-        // Buffer remaining input
-        if (inputLen > 0) {
-            System.arraycopy(input, inputOffset, buffer, buffered, inputLen);
-        }
-        buffered += inputLen;
-
-        return totalProcessed;
-    }
-    
-    // JIT-friendly: Process buffered data with alignment
-    private final int processBufferedData(byte[] input, int inputOffset, int inputConsumed,
-            int bufferedConsumed, byte[] output, int outputOffset) throws ShortBufferException {
-        if (inputConsumed > 0) {
-            // Align buffer to block boundary
-            int remainToUnit = inputConsumed % 16;
-            System.arraycopy(input, inputOffset, buffer, bufferedConsumed, remainToUnit);
-            bufferedConsumed += remainToUnit;
-            buffered += remainToUnit;
-        }
-
-        int processed = symmetricCipher.z_update(buffer, 0, bufferedConsumed, output, outputOffset);
-        buffered -= bufferedConsumed;
-
-        // Shift remaining buffer data
-        if (buffered > 0) {
-            System.arraycopy(buffer, bufferedConsumed, buffer, 0, buffered);
-        }
-
-        return processed;
     }
 
     // see JCE spec
@@ -564,14 +503,11 @@ public final class AESCipher extends CipherSpi implements AESConstants {
      * @param inputLen
      * @return
      */
-    // JIT-friendly: Small method for guaranteed inlining
-    private final int getOutputSizeForZ(int inputLen) {
+    private int getOutputSizeForZ(int inputLen) {
         int totalLen = Math.addExact(buffered, inputLen);
-        // Common case first for better branch prediction
-        if (encrypting && padding != Padding.NoPadding) {
-            return Math.addExact(totalLen, 16 - (totalLen % 16));
-        }
-        return totalLen;
+        if (padding == Padding.NoPadding || !encrypting)
+            return totalLen;
+        return Math.addExact(totalLen, 16 - (totalLen % 16));
     }
 
     /**
@@ -581,8 +517,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
      * @param len
      * @throws ShortBufferException
      */
-    // JIT-friendly: Small, final method for inlining
-    private final void padWithLen(byte[] in, int off, int len) throws ShortBufferException {
+    private void padWithLen(byte[] in, int off, int len) throws ShortBufferException {
         if (in == null)
             return;
 
@@ -601,31 +536,27 @@ public final class AESCipher extends CipherSpi implements AESConstants {
      * @param len
      * @return
      */
-    // JIT-friendly: Optimized for better branch prediction and loop optimization
-    private final int unpad(byte[] in, int off, int len) {
-        // Common case checks first
-        if ((in == null) || (len == 0)) {
+    private int unpad(byte[] in, int off, int len) {
+        if ((in == null) || (len == 0)) { // this can happen if input is really a padded buffer
             return 0;
         }
-        
         int idx = Math.addExact(off, len);
         byte lastByte = in[idx - 1];
         int padValue = (int) lastByte & 0x0ff;
-        
-        // Range check with common case first (valid padding)
-        if ((padValue >= 0x01) && (padValue <= 16)) {
-            int start = idx - padValue;
-            if (start >= off) {
-                // Loop with loop-invariant bound for better optimization
-                final int endIdx = idx;
-                for (int i = start; i < endIdx; i++) {
-                    if (in[i] != lastByte) {
-                        return -1;
-                    }
-                }
-                return start;
+        if ((padValue < 0x01) || (padValue > 16)) {
+            return -1;
+        }
+
+        int start = idx - padValue;
+        if (start < off) {
+            return -1;
+        }
+
+        for (int i = start; i < idx; i++) {
+            if (in[i] != lastByte) {
+                return -1;
             }
         }
-        return -1;
+        return start;
     }
 }
