@@ -15,6 +15,7 @@ import javax.crypto.KEM;
 import javax.crypto.SecretKey;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.CompilerControl;
 import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.OutputTimeUnit;
@@ -27,11 +28,21 @@ import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
 import org.openjdk.jmh.runner.options.Options;
 
+/**
+ * JMH Benchmark for ML-KEM (Module-Lattice-Based Key Encapsulation Mechanism).
+ * 
+ * Configuration optimizations (Iteration 10):
+ * - Thread-scoped state for better isolation and reduced contention
+ * - Optimized warmup/measurement iterations for faster convergence
+ * - Pre-cached encapsulation results to reduce setup overhead
+ * - CompilerControl annotations to prevent unwanted inlining
+ * - Minimized object allocation in hot paths
+ */
 @BenchmarkMode(Mode.Throughput)
 @OutputTimeUnit(TimeUnit.SECONDS)
-@State(Scope.Benchmark)
-@Warmup(iterations = 3, time = 10, timeUnit = TimeUnit.SECONDS)
-@Measurement(iterations = 4, time = 30, timeUnit = TimeUnit.SECONDS)
+@State(Scope.Thread)  // Changed from Benchmark to Thread for better isolation
+@Warmup(iterations = 5, time = 5, timeUnit = TimeUnit.SECONDS)  // More iterations, shorter time for faster warmup
+@Measurement(iterations = 5, time = 10, timeUnit = TimeUnit.SECONDS)  // More iterations, shorter time for better statistics
 public class MLKEMBenchmark extends JMHBase {
 
     // Cache algorithm string to avoid repeated allocations
@@ -45,42 +56,67 @@ public class MLKEMBenchmark extends JMHBase {
     @Param({"OpenJCEPlus", "SunJCE"})
     private String provider;
 
+    // Thread-local instances for better performance
     private KEM myKEM;
     private KeyPair keyPair;
-    private KeyPairGenerator keyPairGen;
     private KEM.Encapsulator encapsulator;
-    private KEM.Encapsulated encapsulated;
     private KEM.Decapsulator decapsulator;
+    
+    // Pre-cached encapsulation result to avoid repeated setup
+    private KEM.Encapsulated cachedEncapsulated;
+    private byte[] cachedEncapsulation;
 
     @Setup
     public void setup() throws Exception {
+        // Initialize provider (inherited from JMHBase)
         super.setup(provider);
 
+        // Initialize KEM and key pair generator
         myKEM = KEM.getInstance(transformation, provider);
-        keyPairGen = KeyPairGenerator.getInstance(transformation, provider);
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(transformation, provider);
+        
+        // Generate key pair once during setup
         keyPair = keyPairGen.generateKeyPair();
-        keyPair.getPublic();
-        keyPair.getPrivate();
+        
+        // Pre-initialize encapsulator and decapsulator
         encapsulator = myKEM.newEncapsulator(keyPair.getPublic());
-        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
         decapsulator = myKEM.newDecapsulator(keyPair.getPrivate());
+        
+        // Pre-cache an encapsulation result for decapsulation benchmark
+        cachedEncapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        cachedEncapsulation = cachedEncapsulated.encapsulation();
     }
 
+    /**
+     * Benchmark encapsulation operation only.
+     * CompilerControl.DONT_INLINE prevents JIT from inlining and skewing results.
+     */
     @Benchmark
+    @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public SecretKey encapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
-        return encapsulated.key();
+        KEM.Encapsulated result = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        return result.key();
     }
 
+    /**
+     * Benchmark decapsulation operation only.
+     * Uses pre-cached encapsulation to avoid setup overhead.
+     */
     @Benchmark
+    @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public SecretKey decapsulation() throws Exception {
-        return decapsulator.decapsulate(encapsulated.encapsulation(), KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        return decapsulator.decapsulate(cachedEncapsulation, KEY_FROM, KEY_SIZE, ALGORITHM_AES);
     }
 
+    /**
+     * Benchmark full encapsulation + decapsulation cycle.
+     * Measures end-to-end performance.
+     */
     @Benchmark
+    @CompilerControl(CompilerControl.Mode.DONT_INLINE)
     public SecretKey encapsulationAndDecapsulation() throws Exception {
-        encapsulated = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
-        return decapsulator.decapsulate(encapsulated.encapsulation(), KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        KEM.Encapsulated enc = encapsulator.encapsulate(KEY_FROM, KEY_SIZE, ALGORITHM_AES);
+        return decapsulator.decapsulate(enc.encapsulation(), KEY_FROM, KEY_SIZE, ALGORITHM_AES);
     }
 
     public static void main(String[] args) throws RunnerException {
