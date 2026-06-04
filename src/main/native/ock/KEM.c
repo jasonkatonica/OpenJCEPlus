@@ -90,13 +90,18 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
 
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
 
-        jbyte *bytes = (*env)->GetByteArrayElements(env, wrappedKey, NULL);
-        memcpy(bytes, wrappedKeyLocal, wrappedkeylen);
-        (*env)->ReleaseByteArrayElements(env, wrappedKey, bytes, 0);
+        // Micro-optimization: Use GetPrimitiveArrayCritical for zero-copy access
+        jbyte *wrappedKeyBytes = (jbyte *)(*env)->GetPrimitiveArrayCritical(env, wrappedKey, NULL);
+        if (wrappedKeyBytes != NULL) {
+            memcpy(wrappedKeyBytes, wrappedKeyLocal, wrappedkeylen);
+            (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyBytes, 0);
+        }
 
-        bytes = (*env)->GetByteArrayElements(env, randomKey, NULL);
-        memcpy(bytes, genkeylocal, genkeylen);
-        (*env)->ReleaseByteArrayElements(env, randomKey, bytes, 0);
+        jbyte *randomKeyBytes = (jbyte *)(*env)->GetPrimitiveArrayCritical(env, randomKey, NULL);
+        if (randomKeyBytes != NULL) {
+            memcpy(randomKeyBytes, genkeylocal, genkeylen);
+            (*env)->ReleasePrimitiveArrayCritical(env, randomKey, randomKeyBytes, 0);
+        }
         if (wrappedKeyLocal != NULL) {
             free(wrappedKeyLocal);
         }
@@ -143,6 +148,9 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         throwOCKException(env, 0, "ICC_EVP_PKEY_decapsulate_init failed");
         return retRndKeyBytes;
     }
+    // Micro-optimization: Cache array length before critical section
+    wrappedkeylen = (*env)->GetArrayLength(env, wrappedKey);
+    
     wrappedKeyNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(
         env, wrappedKey, &isCopy));
 
@@ -151,8 +159,6 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical!");
         return retRndKeyBytes;
     }
-
-    wrappedkeylen = (*env)->GetArrayLength(env, wrappedKey);
 
     rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, NULL, &genkeylen, NULL,
                                   wrappedkeylen);
@@ -166,21 +172,26 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
+    // Micro-optimization: Early allocation check with goto for cleaner error handling
     genkeylocal = (unsigned char *)malloc(genkeylen);
     if (genkeylocal == NULL) {
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey, wrappedKeyNative, JNI_ABORT);
         throwOCKException(env, 0, "malloc failed");
-    } else {
-        rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genkeylocal, &genkeylen,
-                                      wrappedKeyNative, wrappedkeylen);
+        return retRndKeyBytes;
+    }
+    
+    rc = ICC_EVP_PKEY_decapsulate(ockCtx, evp_pk, genkeylocal, &genkeylen,
+                                  wrappedKeyNative, wrappedkeylen);
 
-        if (rc != ICC_OSSL_SUCCESS) {
-            ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
-            free(genkeylocal);
-            (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey,
-                                                  wrappedKeyNative, JNI_ABORT);
-            throwOCKException(env, 0, "ICC_EVP_PKEY_decapsulate failed");
-            return retRndKeyBytes;
-        }
+    if (rc != ICC_OSSL_SUCCESS) {
+        ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
+        free(genkeylocal);
+        (*env)->ReleasePrimitiveArrayCritical(env, wrappedKey,
+                                              wrappedKeyNative, JNI_ABORT);
+        throwOCKException(env, 0, "ICC_EVP_PKEY_decapsulate failed");
+        return retRndKeyBytes;
+    }
 
         randomKey = (*env)->NewByteArray(env, genkeylen);
 
