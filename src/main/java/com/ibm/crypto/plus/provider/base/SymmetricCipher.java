@@ -36,6 +36,10 @@ public final class SymmetricCipher {
     private byte[] reinitKey = null;
     private byte[] reinitIV = null;
     private byte[] reinitIVAndKey = null;
+    
+    // OPTIMIZATION: Reusable temporary buffer to reduce allocations in hot paths
+    private byte[] tempBuffer = null;
+    private static final int INITIAL_TEMP_BUFFER_SIZE = 8192;
     // CBC Upgrade variables
     private int mode; // Mode used by z_kmc
     private FastJNIBuffer parameters; // Fast way to pass all parameters in z_kmc call
@@ -412,7 +416,11 @@ public final class SymmetricCipher {
             }
         }
 
-        byte[] tmpBuf = new byte[getOutputSizeForOCK(inputLen)];
+        // OPTIMIZATION: Reuse temporary buffer to reduce allocations in hot path
+        int requiredSize = getOutputSizeForOCK(inputLen);
+        if (tempBuffer == null || tempBuffer.length < requiredSize) {
+            tempBuffer = new byte[Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE)];
+        }
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
             if (ockCipherId == 0L) {
@@ -420,10 +428,10 @@ public final class SymmetricCipher {
             }
             if (encrypting) {
                 outLen = this.nativeInterface.CIPHER_encryptUpdate(ockCipherId,
-                        input, inputOffset, inputLen, tmpBuf, 0, needsReinit);
+                        input, inputOffset, inputLen, tempBuffer, 0, needsReinit);
             } else {
                 outLen = this.nativeInterface.CIPHER_decryptUpdate(ockCipherId,
-                        input, inputOffset, inputLen, tmpBuf, 0, needsReinit);
+                        input, inputOffset, inputLen, tempBuffer, 0, needsReinit);
             }
             if (outLen < 0) {
                 throwNativeException(outLen);
@@ -433,7 +441,7 @@ public final class SymmetricCipher {
                         "Output buffer must be (at least) " + outLen + " bytes long");
             }
 
-            System.arraycopy(tmpBuf, 0, output, outputOffset, outLen);
+            System.arraycopy(tempBuffer, 0, output, outputOffset, outLen);
             needsReinit = false;
         } finally {
             if ((copyOfInput != null) && encrypting) {
@@ -541,8 +549,12 @@ public final class SymmetricCipher {
                 inputOffset = 0;
             }
         }
+        // OPTIMIZATION: Reuse temporary buffer to reduce allocations in hot path
         // Customer provided buffer may be smaller than what OCK requires.
-        byte[] tmpBuf = new byte[getOutputSizeForOCK(inputLen)];
+        int requiredSize = getOutputSizeForOCK(inputLen);
+        if (tempBuffer == null || tempBuffer.length < requiredSize) {
+            tempBuffer = new byte[Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE)];
+        }
 
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
@@ -552,10 +564,10 @@ public final class SymmetricCipher {
             }
             if (encrypting) {
                 outLen = this.nativeInterface.CIPHER_encryptFinal(ockCipherId, input,
-                        inputOffset, inputLen, tmpBuf, 0, needsReinit);
+                        inputOffset, inputLen, tempBuffer, 0, needsReinit);
             } else {
                 outLen = this.nativeInterface.CIPHER_decryptFinal(ockCipherId, input,
-                        inputOffset, inputLen, tmpBuf, 0, needsReinit);
+                        inputOffset, inputLen, tempBuffer, 0, needsReinit);
             }
             if (outLen < 0) {
                 throwNativeException(outLen);
@@ -564,7 +576,7 @@ public final class SymmetricCipher {
                 throw new ShortBufferException(
                         "Output buffer must be (at least) " + outLen + " bytes long");
             }
-            System.arraycopy(tmpBuf, 0, output, outputOffset, outLen);
+            System.arraycopy(tempBuffer, 0, output, outputOffset, outLen);
         } catch (NativeException e) {
             throw e;
         } finally {
