@@ -46,12 +46,9 @@ public final class AESCipher extends CipherSpi implements AESConstants {
     // OPTIMIZATION: Reusable temporary buffer to reduce allocations in hot paths
     private byte[] tempOutputBuffer = null;
     private static final int INITIAL_TEMP_BUFFER_SIZE = 4096;
-    
-    // OPTIMIZATION: Cache block size to avoid repeated method calls
-    private static final int CACHED_BLOCK_SIZE = 16; // AES block size is always 16
 
     public AESCipher(OpenJCEPlusProvider provider) {
-        buffer = new byte[CACHED_BLOCK_SIZE * 3];
+        buffer = new byte[engineGetBlockSize() * 3];
         this.provider = provider;
     }
 
@@ -106,8 +103,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
                 int totalLen = buffered;
                 int paddedLen = totalLen;
                 if (padding != Padding.NoPadding && encrypting) {
-                    // OPTIMIZATION: Use bitwise AND for modulo 16
-                    int paddingLen = CACHED_BLOCK_SIZE - (totalLen & 0xF);
+                    int paddingLen = 16 - (totalLen % 16);
                     paddedLen += paddingLen;
                     padWithLen(buffer, totalLen, paddingLen);
                 }
@@ -118,8 +114,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
                             "Output buffer too short: " + (output.length - outputOffset)
                                     + " bytes given, " + paddedLen + " bytes needed");
 
-                // OPTIMIZATION: Use bitwise AND for modulo 16 check
-                if ((paddedLen & 0xF) != 0) {
+                if (paddedLen % 16 != 0) {
                     if (padding == Padding.PKCS5Padding) {
                         throw new IllegalBlockSizeException(
                                 "Input length (with padding) not multiple of 16 bytes");
@@ -165,7 +160,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
 
     @Override
     protected int engineGetBlockSize() {
-        return CACHED_BLOCK_SIZE;
+        return AES_BLOCK_SIZE;
     }
 
     @Override
@@ -391,12 +386,11 @@ public final class AESCipher extends CipherSpi implements AESConstants {
                 int len = buffered + inputLen;
                 if (padding == Padding.PKCS5Padding && !encrypting) {
                     // do not include the padding bytes when decrypting
-                    len -= CACHED_BLOCK_SIZE;
+                    len -= engineGetBlockSize();
                 }
 
-                // OPTIMIZATION: Use bitwise AND for modulo 16 (faster than %)
                 // do not count the trailing bytes which do not make up a unit
-                len = (len > 0 ? (len - (len & 0xF)) : 0);
+                len = (len > 0 ? (len - (len % 16)) : 0);
 
                 // check output buffer capacity
                 if ((output == null) || ((output.length - outputOffset) < len)) {
@@ -421,10 +415,9 @@ public final class AESCipher extends CipherSpi implements AESConstants {
                     // could have the padding data. Only doFinal works on last block
                     if (bufferedConsumed > 0) {
                         if (inputConsumed > 0) {
-                            // OPTIMIZATION: Use bitwise AND for modulo 16
                             // Make sure the data length in buffer is multiple of unitBytes
                             // add part of a unit from data from input
-                            int remainToUnit = inputConsumed & 0xF;
+                            int remainToUnit = inputConsumed % 16;
                             System.arraycopy(input, inputOffset, buffer, bufferedConsumed,
                                     remainToUnit);
 
@@ -526,8 +519,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
         int totalLen = Math.addExact(buffered, inputLen);
         if (padding == Padding.NoPadding || !encrypting)
             return totalLen;
-        // OPTIMIZATION: Use bitwise AND for modulo 16 (faster than %)
-        return Math.addExact(totalLen, CACHED_BLOCK_SIZE - (totalLen & 0xF));
+        return Math.addExact(totalLen, 16 - (totalLen % 16));
     }
 
     /**
