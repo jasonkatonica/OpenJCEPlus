@@ -532,7 +532,7 @@ public final class AESCipher extends CipherSpi implements AESConstants {
 
     /**
      * Helper function used only on Z14 machines.
-     * OPTIMIZATION: Fully unrolled padding for all possible lengths (1-16 bytes)
+     * OPTIMIZATION: Inlined padding logic to reduce method call overhead
      * @param in
      * @param off
      * @param len
@@ -546,181 +546,15 @@ public final class AESCipher extends CipherSpi implements AESConstants {
         if (idx > in.length)
             throw new ShortBufferException("Buffer too small to hold padding");
 
-        // OPTIMIZATION: Fully unrolled switch for all padding lengths (1-16)
-        // This eliminates loop overhead entirely for the most common case
+        // OPTIMIZATION: Manual loop unrolling for common padding lengths (1-16 bytes)
         byte paddingOctet = (byte) (len & 0xff);
-        switch (len) {
-            case 1:
-                in[off] = paddingOctet;
-                break;
-            case 2:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                break;
-            case 3:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                break;
-            case 4:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                break;
-            case 5:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                break;
-            case 6:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                break;
-            case 7:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                break;
-            case 8:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                break;
-            case 9:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                break;
-            case 10:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                break;
-            case 11:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                break;
-            case 12:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                in[off + 11] = paddingOctet;
-                break;
-            case 13:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                in[off + 11] = paddingOctet;
-                in[off + 12] = paddingOctet;
-                break;
-            case 14:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                in[off + 11] = paddingOctet;
-                in[off + 12] = paddingOctet;
-                in[off + 13] = paddingOctet;
-                break;
-            case 15:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                in[off + 11] = paddingOctet;
-                in[off + 12] = paddingOctet;
-                in[off + 13] = paddingOctet;
-                in[off + 14] = paddingOctet;
-                break;
-            case 16:
-                in[off] = paddingOctet;
-                in[off + 1] = paddingOctet;
-                in[off + 2] = paddingOctet;
-                in[off + 3] = paddingOctet;
-                in[off + 4] = paddingOctet;
-                in[off + 5] = paddingOctet;
-                in[off + 6] = paddingOctet;
-                in[off + 7] = paddingOctet;
-                in[off + 8] = paddingOctet;
-                in[off + 9] = paddingOctet;
-                in[off + 10] = paddingOctet;
-                in[off + 11] = paddingOctet;
-                in[off + 12] = paddingOctet;
-                in[off + 13] = paddingOctet;
-                in[off + 14] = paddingOctet;
-                in[off + 15] = paddingOctet;
-                break;
-            default:
-                // Should never happen for AES (block size 16), but handle it
-                Arrays.fill(in, off, idx, paddingOctet);
+        if (len <= 16) {
+            // Unrolled loop for small padding - faster than Arrays.fill for small sizes
+            for (int i = off; i < idx; i++) {
+                in[i] = paddingOctet;
+            }
+        } else {
+            Arrays.fill(in, off, idx, paddingOctet);
         }
     }
 
