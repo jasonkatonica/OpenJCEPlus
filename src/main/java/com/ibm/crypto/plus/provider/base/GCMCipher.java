@@ -11,6 +11,7 @@ package com.ibm.crypto.plus.provider.base;
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
 import com.ibm.crypto.plus.provider.ock.NativeOCKAdapterFIPS;
 import com.ibm.crypto.plus.provider.ock.NativeOCKAdapterNonFIPS;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -111,14 +112,6 @@ public final class GCMCipher {
     private static final int AES_GCM_MIN_KEY_SIZE = 16;
     private static final int AES_GCM_MIN_IV_SIZE = 1;
     private static final byte[] emptyAAD = new byte[0];
-    private static final ThreadLocal<byte[]> modeBuffer =
-            ThreadLocal.withInitial(() -> new byte[Long.BYTES]);
-    private static final ThreadLocal<byte[]> hardwareParamBuffer128 =
-            ThreadLocal.withInitial(() -> new byte[parameterBlockSize + AES_GCM_MIN_KEY_SIZE]);
-    private static final ThreadLocal<byte[]> hardwareParamBuffer192 =
-            ThreadLocal.withInitial(() -> new byte[parameterBlockSize + 24]);
-    private static final ThreadLocal<byte[]> hardwareParamBuffer256 =
-            ThreadLocal.withInitial(() -> new byte[parameterBlockSize + 32]);
 
     private OpenJCEPlusProvider provider;
     private NativeInterface nativeInterface;
@@ -200,7 +193,7 @@ public final class GCMCipher {
             inputOffset = 0;
         }
 
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -334,7 +327,7 @@ public final class GCMCipher {
             inputOffset = 0;
         }
 
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -450,7 +443,7 @@ public final class GCMCipher {
                     "Output buffer must be (at least) " + len + " bytes long");
         }
 
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -517,7 +510,7 @@ public final class GCMCipher {
         // if Decrypting, the output buffer size should be cipherSize - TAG
         int len = 0;
 
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -688,7 +681,7 @@ public final class GCMCipher {
             inputOffset = 0;
         }
 
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -850,7 +843,7 @@ public final class GCMCipher {
         //OCKDebug.Msg(debPrefix, methodName, "aad :", aad);
         //OCKDebug.Msg(debPrefix, methodName,  "tagLen :" + tagLen + " inputOffset :" + inputOffset + "outputOffset :" + outputOffset);
         //OCKDebug.Msg(debPrefix, methodName, "checking of overlapping input/output array completed");
-        authenticationData = getAADBytes(aad);
+        authenticationData = (aad != null) ? aad.clone() : emptyAAD.clone();
 
         int aadLen = authenticationData.length;
 
@@ -1000,13 +993,10 @@ public final class GCMCipher {
             inputLen -= tagLen;
 
         long mode = getMode(isEncrypt, keyLen);
-        byte[] modeBytes = modeBuffer.get();
-        putLongtoByteArray(mode, modeBytes, 0);
-        parameters.put(modeOffset, modeBytes, 0, Long.BYTES);
+        parameters.put(modeOffset, longToBytes(mode), 0, 8); // Allocating 8 bytes for mode
 
         // Adding paramBlock for asm routine
-        byte[] addedParams = getHardwareParamBuffer(keyLen);
-        Arrays.fill(addedParams, (byte) 0);
+        byte[] addedParams = new byte[parameterBlockSize + keyLen];
         System.arraycopy(key, 0, addedParams, keyOffset, keyLen); // Add key
         putLongtoByteArray(aadLen * 8, addedParams, TAADLOffset); // Add TAADL (total aad length)
         putLongtoByteArray(inputLen * 8, addedParams, TPCLOffset); // Add TPCL
@@ -1038,21 +1028,16 @@ public final class GCMCipher {
         bArray[startIndex + 7] = (byte) number;
     }
 
-    private static byte[] getAADBytes(byte[] aad) {
-        return (aad == null || aad.length == 0) ? emptyAAD : aad;
+    public static byte[] longToBytes(long x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Long.BYTES);
+        buffer.putLong(x);
+        return buffer.array();
     }
 
-    private static byte[] getHardwareParamBuffer(int keyLen) {
-        switch (keyLen) {
-            case 16:
-                return hardwareParamBuffer128.get();
-            case 24:
-                return hardwareParamBuffer192.get();
-            case 32:
-                return hardwareParamBuffer256.get();
-            default:
-                return new byte[parameterBlockSize + keyLen];
-        }
+    public static byte[] intToBytes(int x) {
+        ByteBuffer buffer = ByteBuffer.allocate(Integer.BYTES);
+        buffer.putInt(x);
+        return buffer.array();
     }
 
     static class GCMContextPointer {
