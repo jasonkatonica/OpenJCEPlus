@@ -36,10 +36,14 @@ public final class SymmetricCipher {
     private byte[] reinitKey = null;
     private byte[] reinitIV = null;
     private byte[] reinitIVAndKey = null;
-    
+
+    private static final int AES_BLOCK_SIZE = 16;
+    private static final int AES_BLOCK_MASK = AES_BLOCK_SIZE - 1;
+    private static final int CACHE_LINE_SIZE = 64;
+    private static final int INITIAL_TEMP_BUFFER_SIZE = 8192;
+
     // OPTIMIZATION: Reusable temporary buffer to reduce allocations in hot paths
     private byte[] tempBuffer = null;
-    private static final int INITIAL_TEMP_BUFFER_SIZE = 8192;
     // CBC Upgrade variables
     private int mode; // Mode used by z_kmc
     private FastJNIBuffer parameters; // Fast way to pass all parameters in z_kmc call
@@ -316,12 +320,52 @@ public final class SymmetricCipher {
         int blockSize = getBlockSize();
         //OCKDebug.Msg (debPrefix, methodName, "totalLen=" + totalLen + " blockSize=" + blockSize);
 
-        int remainderBytes = totalLen % blockSize;
-
-        int retLen = totalLen + (blockSize - remainderBytes) + OCK_ENCRYPTION_RESIDUE;
+        int alignedLen = alignUp(totalLen, blockSize);
+        int retLen = alignedLen + OCK_ENCRYPTION_RESIDUE;
 
         // OCKDebug.Msg (debPrefix, methodName, "retLen = " + retLen);
         return retLen;
+    }
+
+    private static int alignUp(int value, int alignment) {
+        if (alignment <= 0) {
+            return value;
+        }
+        if (alignment == AES_BLOCK_SIZE) {
+            return (value + AES_BLOCK_MASK) & ~AES_BLOCK_MASK;
+        }
+        int remainder = value % alignment;
+        return (remainder == 0) ? value : (value + alignment - remainder);
+    }
+
+    private static boolean rangesOverlap(int inputOffset, int inputLen, int outputOffset, int outputLen) {
+        return inputOffset < (outputOffset + outputLen) && outputOffset < (inputOffset + inputLen);
+    }
+
+    private static int getAlignedOutputOffset(int outputOffset) {
+        return alignUp(outputOffset, AES_BLOCK_SIZE);
+    }
+
+    private static boolean canUseDirectOutput(byte[] input, int inputOffset, int inputLen, byte[] output,
+            int outputOffset, int outputLen) {
+        if (output == null) {
+            return false;
+        }
+        if (outputOffset < 0 || outputLen < 0 || (output.length - outputOffset) < outputLen) {
+            return false;
+        }
+        if (input != output) {
+            return true;
+        }
+        return !rangesOverlap(inputOffset, inputLen, outputOffset, outputLen);
+    }
+
+    private byte[] getTempBuffer(int requiredSize) {
+        int alignedSize = alignUp(Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE), CACHE_LINE_SIZE);
+        if (tempBuffer == null || tempBuffer.length < alignedSize) {
+            tempBuffer = new byte[alignedSize];
+        }
+        return tempBuffer;
     }
 
     public synchronized int getBlockSize() throws NativeException {
@@ -416,11 +460,13 @@ public final class SymmetricCipher {
             }
         }
 
-        // OPTIMIZATION: Reuse temporary buffer to reduce allocations in hot path
         int requiredSize = getOutputSizeForOCK(inputLen);
-        if (tempBuffer == null || tempBuffer.length < requiredSize) {
-            tempBuffer = new byte[Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE)];
-        }
+        int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
+        boolean useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
+                alignedOutputOffset, requiredSize);
+        byte[] nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
+        int nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
+
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
             if (ockCipherId == 0L) {
@@ -428,10 +474,10 @@ public final class SymmetricCipher {
             }
             if (encrypting) {
                 outLen = this.nativeInterface.CIPHER_encryptUpdate(ockCipherId,
-                        input, inputOffset, inputLen, tempBuffer, 0, needsReinit);
+                        input, inputOffset, inputLen, nativeOutput, nativeOutputOffset, needsReinit);
             } else {
                 outLen = this.nativeInterface.CIPHER_decryptUpdate(ockCipherId,
-                        input, inputOffset, inputLen, tempBuffer, 0, needsReinit);
+                        input, inputOffset, inputLen, nativeOutput, nativeOutputOffset, needsReinit);
             }
             if (outLen < 0) {
                 throwNativeException(outLen);
@@ -441,7 +487,13 @@ public final class SymmetricCipher {
                         "Output buffer must be (at least) " + outLen + " bytes long");
             }
 
-            System.arraycopy(tempBuffer, 0, output, outputOffset, outLen);
+            if (useDirectOutput) {
+                if (nativeOutputOffset != outputOffset) {
+                    System.arraycopy(output, nativeOutputOffset, output, outputOffset, outLen);
+                }
+            } else {
+                System.arraycopy(nativeOutput, nativeOutputOffset, output, outputOffset, outLen);
+            }
             needsReinit = false;
         } finally {
             if ((copyOfInput != null) && encrypting) {
@@ -549,12 +601,13 @@ public final class SymmetricCipher {
                 inputOffset = 0;
             }
         }
-        // OPTIMIZATION: Reuse temporary buffer to reduce allocations in hot path
         // Customer provided buffer may be smaller than what OCK requires.
         int requiredSize = getOutputSizeForOCK(inputLen);
-        if (tempBuffer == null || tempBuffer.length < requiredSize) {
-            tempBuffer = new byte[Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE)];
-        }
+        int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
+        boolean useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
+                alignedOutputOffset, requiredSize);
+        byte[] nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
+        int nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
 
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
@@ -564,10 +617,10 @@ public final class SymmetricCipher {
             }
             if (encrypting) {
                 outLen = this.nativeInterface.CIPHER_encryptFinal(ockCipherId, input,
-                        inputOffset, inputLen, tempBuffer, 0, needsReinit);
+                        inputOffset, inputLen, nativeOutput, nativeOutputOffset, needsReinit);
             } else {
                 outLen = this.nativeInterface.CIPHER_decryptFinal(ockCipherId, input,
-                        inputOffset, inputLen, tempBuffer, 0, needsReinit);
+                        inputOffset, inputLen, nativeOutput, nativeOutputOffset, needsReinit);
             }
             if (outLen < 0) {
                 throwNativeException(outLen);
@@ -576,7 +629,13 @@ public final class SymmetricCipher {
                 throw new ShortBufferException(
                         "Output buffer must be (at least) " + outLen + " bytes long");
             }
-            System.arraycopy(tempBuffer, 0, output, outputOffset, outLen);
+            if (useDirectOutput) {
+                if (nativeOutputOffset != outputOffset) {
+                    System.arraycopy(output, nativeOutputOffset, output, outputOffset, outLen);
+                }
+            } else {
+                System.arraycopy(nativeOutput, nativeOutputOffset, output, outputOffset, outLen);
+            }
         } catch (NativeException e) {
             throw e;
         } finally {

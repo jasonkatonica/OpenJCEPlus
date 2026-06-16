@@ -11,8 +11,10 @@
 - URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/main/163/
 
 **Code Changes**:
-- Commit: TBD
-- Files: TBD
+- Commit: 06f21b287beb0d565924c101d29eae62955ac58f and e0e557e2
+- Files:
+  - src/main/java/com/ibm/crypto/plus/provider/AESCipher.java
+  - src/main/java/com/ibm/crypto/plus/provider/base/SymmetricCipher.java
 - Focus: CFB/OFB mode optimizations, buffer operations, key expansion improvements
 
 ### Iteration 3 Performance Results
@@ -87,36 +89,33 @@
 
 ### Analysis
 
-**Positive Outcomes**:
+**Overall Outcome**: Iteration 3 did not produce a meaningful improvement over the Iteration 1 baseline and should be treated as unsuccessful for optimization purposes.
 
-1. **CBC Mode Sustained Improvements**: The significant CBC decrypt improvements from Iteration 2 (+34-40%) have been maintained in Iteration 3 (+33-38% vs baseline), confirming the stability of those optimizations.
+**Why Iteration 3 Was Rejected**:
 
-2. **GCM Mode Recovery**: GCM 1KB performance has recovered from Iteration 2 regressions:
-   - Encrypt: 954,000 (baseline) → 949,857 (Iter 2) → 991,599 (Iter 3) = +3.9% vs baseline
-   - Decrypt: 1,020,000 (baseline) → 1,028,141 (Iter 2) → 1,052,561 (Iter 3) = +3.2% vs baseline
-   - This suggests the CFB/OFB/CTR optimizations had positive spillover effects on GCM
+1. **Primary Goal Not Achieved**:
+   - The iteration targeted CFB/OFB buffer-path improvements, but there is no evidence of a durable throughput gain in the targeted modes.
+   - CFB/OFB still remain far behind CTR and ECB, especially at 32KB sizes where throughput collapses sharply.
 
-3. **CTR Mode Excellence**: CTR mode shows exceptional performance, nearly matching ECB speeds:
-   - 1KB: ~1.88M ops/s (comparable to ECB's 1.81M)
-   - 32KB: ~71K ops/s (matching ECB's 70.8K)
-   - This indicates highly efficient counter mode implementation
+2. **ECB Regression Introduced**:
+   - 1KB ECB encrypt dropped from 1,925,000 to 1,814,891 ops/s (-5.7%).
+   - Build review summary for Iteration 3 reported an even worse observed ECB regression of roughly -8.2%, reinforcing that the changes added overhead rather than removing it.
 
-4. **ECB 32KB Improvement**: Maintained the +9% improvement from previous iterations
+3. **Benefits Were Either Incidental or Not Actionable**:
+   - CBC decrypt remained strong, but those gains were already present from earlier work and were not the intended Iteration 3 target.
+   - GCM 1KB recovered modestly, but 32KB GCM still regressed by ~6%, so the iteration did not solve the larger-payload problem.
 
-**Areas of Concern**:
+4. **Feedback-Mode Strategy Did Not Scale**:
+   - CFB 1KB encrypt: 565,742 ops/s
+   - OFB 1KB encrypt: 709,857 ops/s
+   - CFB 32KB encrypt: 18,271 ops/s
+   - OFB 32KB encrypt: 22,387 ops/s
+   - The severe 1KB→32KB drop indicates the attempted buffer-path tuning did not improve memory locality or reduce enough per-block overhead.
 
-1. **GCM 32KB Persistent Regression**: The 32KB GCM regression from Iteration 2 (-6%) persists in Iteration 3, suggesting a fundamental issue with larger payload handling in GCM mode that wasn't addressed by the CFB/OFB/CTR optimizations.
-
-2. **CFB/OFB Performance Gap**: 
-   - CFB and OFB modes show significantly lower throughput compared to CTR and ECB
-   - CFB 1KB: 565-570K ops/s (69% slower than CTR)
-   - OFB 1KB: 706-709K ops/s (62% slower than CTR)
-   - This suggests potential optimization opportunities in feedback mode implementations
-
-3. **32KB Performance Scaling**: All modes show dramatic performance drops for 32KB payloads:
-   - CFB: 565K → 18K ops/s (97% drop)
-   - OFB: 709K → 22-23K ops/s (97% drop)
-   - This indicates buffer management or memory copy overhead at larger sizes
+**Conclusion**:
+- Iteration 3 changes were reverted.
+- The codebase was restored to the Iteration 1 baseline for the relevant AES files before starting Iteration 4.
+- Future work should avoid more feedback-loop micro-tuning and instead focus on memory layout, cache locality, and copy-path efficiency.
 
 **Relative Mode Performance Rankings** (1KB):
 
@@ -162,61 +161,57 @@ Decryption:
 
 ### Cumulative Results from Baseline (Build #161)
 
-**Sustained Improvements**:
-- CBC decrypt: +33-38% (excellent)
-- GCM 1KB: +3-4% (recovered from Iter 2 regression)
-- ECB 32KB encrypt: +9% (maintained)
-- CBC 1KB encrypt: +3.6% (maintained)
+**Net Assessment**:
+- Iteration 3 did not establish a better baseline than Iteration 1.
+- The targeted CFB/OFB work failed to deliver measurable gains.
+- ECB small-buffer performance regressed, making the iteration too risky to keep.
 
-**Persistent Issues**:
-- GCM 32KB: -6% (unchanged from Iter 2)
-- ECB 1KB encrypt: -5.7% (slight regression)
-
-**New Baseline Established**:
-- CFB, OFB, CTR modes now have baseline metrics for future optimization tracking
+**Decision**:
+- Revert Iteration 3 and restart from the Iteration 1 baseline for AES hot-path work.
+- Preserve Build #163 measurements only as a negative result to avoid repeating the same optimization direction.
 
 ### Recommendations for Iteration 4
 
-**High Priority**:
+**New Direction: Cache and Memory Alignment Optimization**
 
-1. **Investigate GCM 32KB Regression Root Cause**:
-   - Profile memory allocation patterns for large payloads
-   - Check if authentication tag processing overhead scales poorly
-   - Consider separate optimization path for large GCM operations
+1. **Improve Memory Alignment**:
+   - Favor 16-byte alignment for AES block-oriented temporary buffers where possible.
+   - Reduce misaligned copy patterns that can force extra loads/stores around block boundaries.
 
-2. **Optimize CFB/OFB Feedback Loops**:
-   - Analyze per-block overhead in feedback modes
-   - Consider batch processing for multiple blocks
-   - Investigate if feedback buffer management can be streamlined
-   - Look at XOR operation efficiency
+2. **Improve Cache Locality**:
+   - Reuse hot-path buffers instead of allocating size-varying temporary arrays repeatedly.
+   - Keep frequently accessed metadata and block-processing state compact and stable across calls.
 
-3. **Address 32KB Performance Scaling**:
-   - Profile JNI crossing frequency for large payloads
-   - Implement chunked processing with reduced overhead
-   - Consider direct buffer strategies for large operations
+3. **Reduce Cache Misses and Copy Overhead**:
+   - Avoid unnecessary intermediate copies when the caller-provided output buffer can be used directly.
+   - Minimize touching large temporary buffers when only a small aligned working region is needed.
 
-**Medium Priority**:
-
-4. **Leverage CTR Success Patterns**:
-   - Analyze what makes CTR so efficient
-   - Apply similar patterns to other stream modes where applicable
-   - Consider if parallelization strategies can benefit other modes
-
-5. **ECB 1KB Regression Investigation**:
-   - Determine why ECB 1KB encrypt dropped 5.7%
-   - Check if optimizations for other modes introduced overhead
-   - May need mode-specific code paths
-
-**Low Priority**:
-
-6. **Establish Complete Baseline**:
-   - Ensure all modes have baseline metrics tracked
-   - Add missing decrypt metrics for ECB/CBC 32KB from original baseline
-   - Document any test methodology changes
+4. **Improve CPU Pipelining Opportunities**:
+   - Simplify hot-path branching around block-size calculations.
+   - Favor block-aligned chunk calculations and predictable loops over mixed-size handling in the fast path.
 
 ### Files Modified (Iteration 3)
 
-TBD - Awaiting commit information
+- src/main/java/com/ibm/crypto/plus/provider/AESCipher.java
+- src/main/java/com/ibm/crypto/plus/provider/base/SymmetricCipher.java
+
+### Iteration 4 - Cache and Memory Alignment Optimization
+
+**Status**: Planned
+
+**Objective**:
+- Start from the reverted Iteration 1 baseline and pursue a different optimization strategy centered on cache locality and aligned block processing.
+
+**Hypothesis**:
+- Iteration 3 focused too much on feedback-mode micro-optimizations and not enough on the dominant costs in the Java/native boundary and temporary-buffer handling.
+- Better aligned working buffers, fewer intermediate copies, and more predictable block-sized processing should reduce cache pressure and improve throughput consistency, especially for ECB/CBC/CTR hot paths and larger payloads.
+
+**Planned Focus Areas**:
+- 16-byte aligned AES block staging
+- cache-friendly reusable temporary buffers
+- reduced cache-line boundary crossings in copy-heavy paths
+- fewer unnecessary full-buffer touches
+- more predictable block-aligned loop structure for update/doFinal paths
 
 ### Security/Correctness Validation
 
