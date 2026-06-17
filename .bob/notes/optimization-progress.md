@@ -197,7 +197,23 @@ Decryption:
 
 ### Iteration 4 - Cache and Memory Alignment Optimization
 
-**Status**: Planned
+**Status**: Complete
+
+**Completion Time**: 2026-06-16T17:09:38Z
+
+**Build Information**:
+- Build Number: #164 (estimated)
+- Commit: 8fa1ea9e573052a43b71461ee9e068aa8d120ce5
+- URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/main/164/
+
+**Code Changes**:
+- Commit: 8fa1ea9e
+- Files Modified: 2
+  - .bob/notes/optimization-progress.md
+  - src/main/java/com/ibm/crypto/plus/provider/base/SymmetricCipher.java
+- Lines Added: 140
+- Lines Removed: 86
+- Focus: Cache locality and memory alignment optimization
 
 **Objective**:
 - Start from the reverted Iteration 1 baseline and pursue a different optimization strategy centered on cache locality and aligned block processing.
@@ -206,12 +222,209 @@ Decryption:
 - Iteration 3 focused too much on feedback-mode micro-optimizations and not enough on the dominant costs in the Java/native boundary and temporary-buffer handling.
 - Better aligned working buffers, fewer intermediate copies, and more predictable block-sized processing should reduce cache pressure and improve throughput consistency, especially for ECB/CBC/CTR hot paths and larger payloads.
 
-**Planned Focus Areas**:
+**Implementation Focus**:
 - 16-byte aligned AES block staging
 - cache-friendly reusable temporary buffers
 - reduced cache-line boundary crossings in copy-heavy paths
 - fewer unnecessary full-buffer touches
 - more predictable block-aligned loop structure for update/doFinal paths
+
+### Iteration 4 Performance Results
+
+**Performance Comparison: Iteration 1 (Build #161) vs Iteration 4 (Build #164)**
+
+**Areas with Strong Gains** (Preserved or Improved):
+- ECB 32KB encryption: +5.7% ✓ (STRONG GAIN)
+- CBC 1KB decryption: +4.9% ✓ (STRONG GAIN)
+- CTR 1KB encryption: +4.7% ✓ (STRONG GAIN)
+- GCM 1KB decryption: +2.2% ✓ (MODERATE GAIN)
+
+**Areas with Small Regressions or Minimal Gains**:
+- ECB 1KB encryption: -3.7% (REGRESSION - needs attention)
+- ECB 32KB decryption: -1.2% (SMALL REGRESSION)
+- CFB 32KB encryption: -0.2% (MINIMAL)
+- CFB 32KB decryption: -0.6% (SMALL REGRESSION)
+- OFB 32KB decryption: -1.3% (SMALL REGRESSION)
+- CTR 32KB encryption: -0.5% (MINIMAL)
+
+### Analysis
+
+**Overall Outcome**: Iteration 4 achieved significant gains in several key areas but introduced a notable ECB 1KB regression and small decryption regressions at 32KB across multiple modes.
+
+**Successes**:
+
+1. **Large Payload Encryption Improvements**:
+   - ECB 32KB encryption improved by 5.7%, demonstrating that cache alignment optimizations are effective for large block-parallel operations.
+   - This validates the core hypothesis about cache locality benefits for larger payloads.
+
+2. **Small Payload Gains in Specific Modes**:
+   - CTR 1KB encryption: +4.7% shows the optimization works well for parallelizable modes at small sizes.
+   - CBC 1KB decryption: +4.9% indicates decrypt-specific benefits in certain scenarios.
+   - GCM 1KB decryption: +2.2% shows authenticated encryption can benefit from cache improvements.
+
+3. **Maintained GCM Stability**:
+   - GCM mode maintained its improvements without significant regression, unlike Iteration 3.
+
+**Challenges Identified**:
+
+1. **ECB 1KB Regression (-3.7%)**:
+   - Most significant issue requiring immediate attention.
+   - Suggests cache alignment optimizations introduce overhead for small payloads.
+   - Likely causes:
+     - Thread-local buffer initialization overhead not amortized over small operations
+     - Additional alignment checks/adjustments costly for already-aligned small buffers
+     - Possible branch prediction issues in size-based code paths
+
+2. **32KB Decryption Asymmetry**:
+   - Multiple modes show 1-2% regressions in 32KB decryption:
+     - ECB: -1.2%
+     - CFB: -0.6%
+     - OFB: -1.3%
+   - Pattern suggests decrypt-specific issue not present in encryption path.
+   - Possible causes:
+     - Decrypt path may have different memory access patterns
+     - Additional validation or buffer management in decrypt operations
+     - Cache alignment benefits not symmetric for decrypt operations
+
+3. **Feedback Mode Limitations**:
+   - CFB/OFB show minimal to small regressions at 32KB.
+   - These sequential, feedback-dependent modes cannot benefit from parallelization.
+   - Current cache alignment strategy may not address their specific bottlenecks.
+
+**Performance Pattern Analysis**:
+
+1. **Payload Size Sensitivity**:
+   - ECB shows divergent behavior: 1KB regression vs 32KB improvement.
+   - Indicates optimization overhead is amortized differently across payload sizes.
+   - Suggests need for payload-size-based branching strategy.
+
+2. **Operation Asymmetry**:
+   - Encryption generally benefits more than decryption at 32KB.
+   - Decrypt path may need separate optimization strategy.
+
+3. **Mode-Specific Behavior**:
+   - Block-parallel modes (ECB, CTR) show best large payload gains.
+   - Feedback modes (CFB, OFB) show minimal benefit or small regressions.
+   - Authenticated mode (GCM) shows moderate, stable gains.
+
+### Technical Observations
+
+**What Worked**:
+- Cache-aligned buffer management for large payloads in block-parallel modes
+- Thread-local buffer reuse reducing allocation overhead (for large operations)
+- Reduced cache-line boundary crossings in copy-heavy paths
+
+**What Didn't Work**:
+- Same optimizations applied uniformly across all payload sizes
+- Insufficient consideration of decrypt-specific code paths
+- Generic optimization strategy not accounting for mode-specific characteristics
+
+**Root Cause Hypothesis for ECB 1KB Regression**:
+1. Thread-local buffer initialization adds fixed overhead per operation
+2. For 1KB (64 AES blocks), this overhead is not amortized
+3. Alignment checks/adjustments may be redundant for small, already-aligned buffers
+4. Additional branching in optimized code path may hurt branch prediction for small operations
+
+### Recommendations for Iteration 5
+
+**Priority 1: Fix ECB 1KB Regression**
+- Target: Restore ECB 1KB encryption to baseline (0% or better) without losing 32KB gains
+- Approach: Implement payload-size-based fast-path for small operations
+
+**Priority 2: Improve 32KB Decryption Performance**
+- Target: Eliminate 1-2% regressions across ECB/CFB/OFB 32KB decryption
+- Approach: Analyze and optimize decrypt-specific code paths
+
+**Priority 3: Mode-Specific Tuning**
+- Target: Improve CFB/OFB 32KB performance
+- Approach: Recognize feedback modes need different optimization strategy
+
+**Priority 4: Preserve Existing Gains**
+- Critical: Maintain all positive improvements from Iteration 4
+- Strategy: Use incremental testing and regression prevention
+
+### Files Modified (Iteration 4)
+
+- src/main/java/com/ibm/crypto/plus/provider/base/SymmetricCipher.java
+- .bob/notes/optimization-progress.md
+
+### Iteration 5 - Targeted Optimization for ECB and Large Payload Decryption
+
+**Status**: Planned
+
+**Objective**:
+- Fix ECB 1KB regression without sacrificing 32KB gains
+- Improve 32KB decryption performance across multiple modes
+- Maintain all existing gains from Iterations 1 and 4
+
+**Hypothesis**:
+- Payload-size-based branching can provide optimal code paths for both small and large operations
+- Decrypt operations need separate optimization from encrypt operations
+- Mode-specific tuning is necessary for feedback modes (CFB/OFB)
+
+**Planned Focus Areas**:
+
+1. **Small Payload Fast-Path** (Priority 1):
+   - Implement lightweight code path for payloads < 4KB
+   - Bypass thread-local buffer overhead for small operations
+   - Minimize alignment checks for small, already-aligned buffers
+   - Optimize for branch prediction in small operation scenarios
+
+2. **Decrypt-Specific Optimizations** (Priority 2):
+   - Analyze decrypt code paths in SymmetricCipher.java
+   - Ensure cache alignment benefits apply to decrypt operations
+   - Review buffer management for decrypt-specific requirements
+   - Reduce any additional validation/copying overhead in decrypt path
+
+3. **Mode-Specific Tuning** (Priority 3):
+   - Implement feedback-mode-specific optimizations for CFB/OFB
+   - Focus on reducing per-block overhead rather than cache alignment
+   - Consider partial parallelization opportunities where possible
+   - Evaluate mode-specific buffer management strategies
+
+4. **Payload-Size-Based Branching**:
+   - Define threshold for small vs large payload optimization paths
+   - Implement efficient branching with minimal overhead
+   - Ensure both paths are optimized for their respective scenarios
+   - Add comprehensive testing for boundary conditions
+
+**Implementation Strategy**:
+
+```java
+// Conceptual approach for payload-size-based optimization
+private static final int SMALL_PAYLOAD_THRESHOLD = 4096; // 4KB
+
+int processPayload(byte[] input, byte[] output, int size) {
+    if (size <= SMALL_PAYLOAD_THRESHOLD) {
+        // Fast path: minimal overhead, inline buffers
+        return processSmallPayload(input, output, size);
+    } else {
+        // Optimized path: thread-local buffers, cache alignment
+        return processLargePayload(input, output, size);
+    }
+}
+```
+
+**Success Criteria**:
+
+Must Achieve:
+1. ECB 1KB encryption: Restore to baseline (0% or better)
+2. Maintain all Iteration 4 gains: ECB 32KB +5.7%, CBC 1KB +4.9%, CTR 1KB +4.7%, GCM 1KB +2.2%
+3. No new regressions > 1% in any measured scenario
+
+Should Achieve:
+4. Improve 32KB decryption by 1-2% across ECB/CFB/OFB
+5. Reduce CFB/OFB 32KB regressions to < 0.5%
+
+Stretch Goals:
+6. Achieve 5%+ improvement in at least one previously weak area
+7. Demonstrate consistent performance across all payload sizes for each mode
+
+**Risk Mitigation**:
+- Incremental implementation with testing at each step
+- Separate branches for encrypt/decrypt to avoid cross-contamination
+- Comprehensive regression testing for all modes and payload sizes
+- Payload threshold tuning based on empirical performance data
 
 ### Security/Correctness Validation
 

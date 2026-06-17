@@ -41,6 +41,7 @@ public final class SymmetricCipher {
     private static final int AES_BLOCK_MASK = AES_BLOCK_SIZE - 1;
     private static final int CACHE_LINE_SIZE = 64;
     private static final int INITIAL_TEMP_BUFFER_SIZE = 8192;
+    private static final int SMALL_PAYLOAD_THRESHOLD = 4096; // 4KB - threshold for fast path
 
     // OPTIMIZATION: Reusable temporary buffer to reduce allocations in hot paths
     private byte[] tempBuffer = null;
@@ -368,6 +369,32 @@ public final class SymmetricCipher {
         return tempBuffer;
     }
 
+    /**
+     * Fast path for small payloads - minimal overhead, no alignment calculations.
+     * Used for payloads <= SMALL_PAYLOAD_THRESHOLD to avoid overhead that's not amortized.
+     */
+    private byte[] getSimpleTempBuffer(int requiredSize) {
+        if (tempBuffer == null || tempBuffer.length < requiredSize) {
+            tempBuffer = new byte[Math.max(requiredSize, INITIAL_TEMP_BUFFER_SIZE)];
+        }
+        return tempBuffer;
+    }
+
+    /**
+     * Simple overlap check for small payloads - just check if buffers are different.
+     * Avoids the overhead of detailed range overlap calculation.
+     */
+    private static boolean canUseDirectOutputSimple(byte[] input, byte[] output, int outputOffset, int outputLen) {
+        if (output == null) {
+            return false;
+        }
+        if (outputOffset < 0 || outputLen < 0 || (output.length - outputOffset) < outputLen) {
+            return false;
+        }
+        // For small payloads, simple check: different buffers = safe
+        return input != output;
+    }
+
     public synchronized int getBlockSize() throws NativeException {
         if (blockSize == 0) {
             if (!use_z_fast_command) {
@@ -461,11 +488,29 @@ public final class SymmetricCipher {
         }
 
         int requiredSize = getOutputSizeForOCK(inputLen);
-        int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
-        boolean useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
-                alignedOutputOffset, requiredSize);
-        byte[] nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
-        int nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
+        
+        // OPTIMIZATION: Use fast path for small payloads to avoid alignment overhead
+        // OPTIMIZATION: Skip alignment for decrypt - doesn't benefit as much and adds overhead
+        boolean useSmallPayloadPath = (inputLen <= SMALL_PAYLOAD_THRESHOLD);
+        boolean skipAlignment = !encrypting; // Decrypt doesn't benefit from alignment
+        
+        byte[] nativeOutput;
+        int nativeOutputOffset;
+        boolean useDirectOutput;
+        
+        if (useSmallPayloadPath || skipAlignment) {
+            // Fast path: minimal overhead for small payloads or decrypt operations
+            useDirectOutput = canUseDirectOutputSimple(input, output, outputOffset, requiredSize);
+            nativeOutput = useDirectOutput ? output : getSimpleTempBuffer(requiredSize);
+            nativeOutputOffset = useDirectOutput ? outputOffset : 0;
+        } else {
+            // Optimized path: cache alignment for large payload encryption
+            int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
+            useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
+                    alignedOutputOffset, requiredSize);
+            nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
+            nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
+        }
 
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
@@ -603,11 +648,29 @@ public final class SymmetricCipher {
         }
         // Customer provided buffer may be smaller than what OCK requires.
         int requiredSize = getOutputSizeForOCK(inputLen);
-        int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
-        boolean useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
-                alignedOutputOffset, requiredSize);
-        byte[] nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
-        int nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
+        
+        // OPTIMIZATION: Use fast path for small payloads to avoid alignment overhead
+        // OPTIMIZATION: Skip alignment for decrypt - doesn't benefit as much and adds overhead
+        boolean useSmallPayloadPath = (inputLen <= SMALL_PAYLOAD_THRESHOLD);
+        boolean skipAlignment = !encrypting; // Decrypt doesn't benefit from alignment
+        
+        byte[] nativeOutput;
+        int nativeOutputOffset;
+        boolean useDirectOutput;
+        
+        if (useSmallPayloadPath || skipAlignment) {
+            // Fast path: minimal overhead for small payloads or decrypt operations
+            useDirectOutput = canUseDirectOutputSimple(input, output, outputOffset, requiredSize);
+            nativeOutput = useDirectOutput ? output : getSimpleTempBuffer(requiredSize);
+            nativeOutputOffset = useDirectOutput ? outputOffset : 0;
+        } else {
+            // Optimized path: cache alignment for large payload encryption
+            int alignedOutputOffset = getAlignedOutputOffset(outputOffset);
+            useDirectOutput = canUseDirectOutput(input, inputOffset, inputLen, output,
+                    alignedOutputOffset, requiredSize);
+            nativeOutput = useDirectOutput ? output : getTempBuffer(requiredSize);
+            nativeOutputOffset = useDirectOutput ? alignedOutputOffset : 0;
+        }
 
         try {
             //OCKDebug.Msg (debPrefix, methodName, "ockCipherId :" + ockCipherId + " inputOffset :" + inputOffset + " inputLen :" + inputLen + "encrypting :" + encrypting);
