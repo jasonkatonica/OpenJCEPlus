@@ -31,11 +31,12 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     private static final int MAX_KEY_BYTES = 32;
 
     /**
-     * Number of keys worth of random bytes to buffer per thread per call to
-     * SecureRandom. Refill happens when the thread's buffer runs dry.
-     * 256 keys * 32 bytes = 8 KB per thread — fits in L1 cache.
+     * Number of keys worth of random bytes to buffer per thread.
+     * 1024 keys * 32 bytes = 32 KB per thread.
+     * Larger buffer means less frequent SecureRandom calls; amortizes cost
+     * across more generateKey() calls before the next refill.
      */
-    private static final int BUFFER_KEYS = 256;
+    private static final int BUFFER_KEYS = 1024;
 
     private static final int BUFFER_BYTES = BUFFER_KEYS * MAX_KEY_BYTES;
 
@@ -58,7 +59,7 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     /**
      * Constructor.
      *
-     * @param provider the OpenJCEPlus provider
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java provider the OpenJCEPlus provider
      */
     public AESKeyGenerator(OpenJCEPlusProvider provider) {
         this.provider = provider;
@@ -84,9 +85,9 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
             pos[0] = 0;
         }
 
-        // Copy key bytes from the thread-local buffer — no lock needed.
+        // Copy key bytes from the thread-local buffer - no lock needed.
         byte[] keyBytes = Arrays.copyOfRange(buf, pos[0], pos[0] + this.keysize);
-        // Zero the consumed region in the buffer so key material is not retained.
+        // Zero the consumed region so key material is not retained in the buffer.
         Arrays.fill(buf, pos[0], pos[0] + this.keysize, (byte) 0x00);
         pos[0] += this.keysize;
 
@@ -104,7 +105,7 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     /**
      * Initializes this key generator.
      *
-     * @param random the source of randomness for this generator
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random the source of randomness for this generator
      */
     @Override
     protected void engineInit(SecureRandom random) {
@@ -117,9 +118,9 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      * Initializes this key generator with the specified parameter set and a
      * user-provided source of randomness.
      *
-     * @param params the key generation parameters
-     * @param random the source of randomness for this key generator
-     * @throws InvalidAlgorithmParameterException if params is inappropriate
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java params the key generation parameters
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random the source of randomness for this key generator
+     * @src/test/java/ibm/jceplus/junit/tests/TestAESCipherInputStreamExceptions.java InvalidAlgorithmParameterException if params is inappropriate
      */
     @Override
     protected void engineInit(AlgorithmParameterSpec params, SecureRandom random)
@@ -132,8 +133,8 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      * Initializes this key generator for a certain keysize, using the given
      * source of randomness.
      *
-     * @param keysize the keysize in number of bits (128, 192, or 256)
-     * @param random  the source of randomness for this key generator
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java keysize the keysize in number of bits (128, 192, or 256)
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random  the source of randomness for this key generator
      */
     @Override
     protected void engineInit(int keysize, SecureRandom random) {
