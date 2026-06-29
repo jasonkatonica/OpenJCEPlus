@@ -1,5 +1,5 @@
 /*
- * Copyright IBM Corp. 2023, 2024
+ * Copyright IBM Corp. 2023, 2026
  *
  * This code is free software; you can redistribute it and/or modify it
  * under the terms provided by IBM in the LICENSE file that accompanied
@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.TestInstance.Lifecycle;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @TestInstance(Lifecycle.PER_CLASS)
 public class TestAliases extends BaseTestJunit5 {
@@ -186,6 +187,34 @@ public class TestAliases extends BaseTestJunit5 {
     @Test
     public void testSecureRandom_SHA5DRBG() throws Exception {
         SecureRandom.getInstance("SHA5DRBG", getProviderName());
+    }
+
+    /**
+     * Test that verifies the default SecureRandom algorithm is SHA256DRBG.
+     *
+     * <p>The test ensures that:
+     * <ul>
+     *   <li>The OpenJCEPlus provider is used as the default provider</li>
+     *   <li>Calling {@code new SecureRandom()} returns an instance using SHA256DRBG preserving registration order</li>
+     * </ul>
+     * </p>
+     *
+     * @throws Exception if the test fails
+     */
+    @Test
+    public void testSecureRandom_DefaultAlgorithm() throws Exception {
+        // Insert the provider first in the provider list to ensure it's used as default
+        java.security.Provider provider = java.security.Security.getProvider(Utils.TEST_SUITE_PROVIDER_NAME);
+        if (provider != null) {
+            java.security.Security.removeProvider(Utils.TEST_SUITE_PROVIDER_NAME);
+            java.security.Security.insertProviderAt(provider, 1);
+        }
+
+        SecureRandom secureRandom = new SecureRandom();
+        assertEquals(getProviderName(), secureRandom.getProvider().getName(),
+                "Provider should be " + getProviderName());
+        assertEquals("SHA256DRBG", secureRandom.getAlgorithm(),
+                "Default SecureRandom algorithm should be SHA256DRBG");
     }
 
     @Test
