@@ -9,7 +9,6 @@
 - Baseline aes256KeyGeneration: 479,368 ops/s (±22,476)
 - Target (+75%): aes128 → 954,174 | aes192 → 854,673 | aes256 → 838,894 ops/s
 - Build UUID: aae6e095-124d-4402-8d90-1c6ddfe17290
-- Build URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/main/170/
 
 ## Optimization Parameters
 - Repository: OPENJCEPLUS
@@ -24,7 +23,6 @@
 - aes128: 545,528 ops/s | aes192: 488,385 ops/s | aes256: 479,368 ops/s
 - Improvement: 0%
 - Build UUID: aae6e095-124d-4402-8d90-1c6ddfe17290
-- Notes: Initial baseline measurement
 
 ## Best Performing State
 - Iteration: 0
@@ -32,4 +30,4 @@
 - Build UUID: aae6e095-124d-4402-8d90-1c6ddfe17290
 
 ## Next Steps
-- Iteration 1: Reduce object allocation overhead in AESKeyGenerator.engineGenerateKey() and AESKey constructor
+- Iteration 1: Reduce object allocation overhead in AESKeyGenerator and AESKey hot path

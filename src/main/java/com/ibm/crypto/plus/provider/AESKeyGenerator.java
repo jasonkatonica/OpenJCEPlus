@@ -14,6 +14,7 @@ import java.security.InvalidParameterException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
+import java.util.Arrays;
 import javax.crypto.KeyGeneratorSpi;
 import javax.crypto.SecretKey;
 
@@ -40,16 +41,26 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      */
     @Override
     protected SecretKey engineGenerateKey() {
+        if (cryptoRandom == null) {
+            cryptoRandom = provider.getSecureRandom(null);
+        }
+
         byte[] keyBytes = new byte[this.keysize];
         cryptoRandom.nextBytes(keyBytes);
 
         try {
-            // Use trusted constructor to avoid defensive copy since we own keyBytes
+            // Use trusted constructor: AESKey takes ownership of keyBytes directly,
+            // skipping the internal defensive copy. We must NOT zero keyBytes here
+            // because AESKey's Cleaner is responsible for zeroing it on cleanup.
             return new AESKey(provider, keyBytes, true);
         } catch (InvalidKeyException e) {
             // Should never happen
+            Arrays.fill(keyBytes, (byte) 0x00);
             throw new ProviderException(e.getMessage());
         }
+        // NOTE: keyBytes is intentionally NOT zeroed in finally — ownership
+        // transferred to AESKey. The CleanupAction registered with the Cleaner
+        // will zero it when the key is GC'd or destroyed.
     }
 
     /**
