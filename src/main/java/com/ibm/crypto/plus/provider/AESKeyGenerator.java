@@ -9,6 +9,7 @@
 package com.ibm.crypto.plus.provider;
 
 import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.InvalidParameterException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
@@ -21,15 +22,15 @@ import javax.crypto.SecretKey;
 /**
  * This class generates a secret key for use with the AES algorithm.
  *
- * <p>Key material is pre-generated asynchronously in a pool to reduce
- * SecureRandom latency on the hot path.
+ * Key material is pre-generated asynchronously in a pool to reduce
+ * SecureRandom latency on the generateKey() hot path.
  */
 public final class AESKeyGenerator extends KeyGeneratorSpi {
 
     /** Pool capacity: number of pre-generated key slots. */
     private static final int POOL_CAPACITY = 64;
 
-    /** Maximum AES key size in bytes. */
+    /** Maximum AES key size in bytes (AES-256). */
     private static final int MAX_KEY_BYTES = 32;
 
     private OpenJCEPlusProvider provider = null;
@@ -38,9 +39,9 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
 
     /**
      * Pool of pre-generated random key material. Each element is a freshly
-     * generated MAX_KEY_BYTES-length byte array filled with SecureRandom data.
-     * generateKey() takes from this pool and slices the required keysize bytes.
-     * A background daemon thread continuously refills the pool.
+     * generated MAX_KEY_BYTES-length byte array. generateKey() takes from this
+     * pool and copies the required keysize bytes. A background daemon thread
+     * continuously refills the pool.
      */
     private ArrayBlockingQueue<byte[]> keyPool = null;
 
@@ -48,7 +49,9 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
     private Thread refillThread = null;
 
     /**
-     * Empty constructor
+     * Constructor.
+     *
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java provider the OpenJCEPlus provider
      */
     public AESKeyGenerator(OpenJCEPlusProvider provider) {
         this.provider = provider;
@@ -56,33 +59,31 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
 
     /**
      * Initialise the key material pool and start the background refill thread.
-     * Called once the SecureRandom is known.
+     * Called lazily once the SecureRandom is known. Synchronized to prevent
+     * double-initialisation under concurrent first calls.
      */
     private synchronized void initPool() {
         if (keyPool != null) {
-            return; // already initialised
+            return;
         }
         keyPool = new ArrayBlockingQueue<>(POOL_CAPACITY);
 
-        // Pre-fill the pool synchronously for the first POOL_CAPACITY/2 slots
-        // so the first generateKey() calls hit the pool immediately.
+        // Pre-fill half the pool synchronously so initial calls hit the pool.
         for (int i = 0; i < POOL_CAPACITY / 2; i++) {
             byte[] slot = new byte[MAX_KEY_BYTES];
             cryptoRandom.nextBytes(slot);
             if (!keyPool.offer(slot)) {
-                break; // pool full
+                break;
             }
         }
 
-        // Start background daemon thread to keep the pool full.
+        // Background daemon thread keeps pool full.
         refillThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    // Only generate when pool has room; blocking put keeps
-                    // the thread sleeping when pool is already full.
                     byte[] slot = new byte[MAX_KEY_BYTES];
                     cryptoRandom.nextBytes(slot);
-                    keyPool.put(slot); // blocks until space available
+                    keyPool.put(slot); // blocks when pool is full
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     break;
@@ -104,49 +105,40 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
             cryptoRandom = provider.getSecureRandom(null);
         }
 
-        // Ensure pool is initialised (lazy, thread-safe via synchronized initPool)
         if (keyPool == null) {
             initPool();
         }
 
-        // Try to get pre-generated key material from the pool (non-blocking).
+        // Fast path: take pre-generated material from pool (non-blocking).
         byte[] poolSlot = keyPool.poll();
-
         byte[] keyBytes;
         if (poolSlot != null) {
-            // Fast path: copy the needed bytes from the pooled slot.
-            // The slot always has MAX_KEY_BYTES; we only need keysize bytes.
             keyBytes = Arrays.copyOf(poolSlot, this.keysize);
-            // Zero out the pool slot so it is not reachable with key material.
             Arrays.fill(poolSlot, (byte) 0x00);
         } else {
-            // Fallback: pool is temporarily empty, generate directly.
+            // Fallback: pool temporarily empty, generate directly.
             keyBytes = new byte[this.keysize];
             cryptoRandom.nextBytes(keyBytes);
         }
 
         try {
-            // Trusted constructor: AESKey takes ownership of keyBytes,
-            // no internal defensive copy needed.
+            // Trusted constructor: AESKey takes ownership of keyBytes directly.
             return new AESKey(provider, keyBytes, true);
-        } catch (java.security.InvalidKeyException e) {
+        } catch (InvalidKeyException e) {
             // Should never happen
             Arrays.fill(keyBytes, (byte) 0x00);
             throw new ProviderException(e.getMessage());
         }
-        // keyBytes ownership transferred to AESKey — do not zero here.
+        // keyBytes ownership transferred to AESKey - do not zero here.
     }
 
     /**
      * Initializes this key generator.
      *
-     * @param random
-     *            the source of randomness for this generator
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random the source of randomness for this generator
      */
     @Override
     protected void engineInit(SecureRandom random) {
-        // If in FIPS mode, SecureRandom must be internal and FIPS approved.
-        // For FIPS mode, user provided random generator will be ignored.
         if (cryptoRandom == null) {
             cryptoRandom = provider.getSecureRandom(random);
         }
@@ -156,14 +148,9 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      * Initializes this key generator with the specified parameter set and a
      * user-provided source of randomness.
      *
-     * @param params
-     *            the key generation parameters
-     * @param random
-     *            the source of randomness for this key generator
-     *
-     * @exception InvalidAlgorithmParameterException
-     *                if <code>params</code> is inappropriate for this key
-     *                generator
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java params the key generation parameters
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random the source of randomness for this key generator
+     * @src/test/java/ibm/jceplus/junit/tests/TestAESCipherInputStreamExceptions.java InvalidAlgorithmParameterException if params is inappropriate
      */
     @Override
     protected void engineInit(AlgorithmParameterSpec params, SecureRandom random)
@@ -176,18 +163,14 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      * Initializes this key generator for a certain keysize, using the given
      * source of randomness.
      *
-     * @param keysize
-     *            the keysize. This is an algorithm-specific metric specified in
-     *            number of bits.
-     * @param random
-     *            the source of randomness for this key generator
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java keysize the keysize in number of bits (128, 192, or 256)
+     * @src/test/java/ibm/jceplus/junit/openjceplusfips/TestECDHKeyAgreementParamValidation.java random  the source of randomness for this key generator
      */
     @Override
     protected void engineInit(int keysize, SecureRandom random) {
         if (((keysize % 8) != 0) || (!AESUtils.isKeySizeValid(keysize / 8))) {
             throw new InvalidParameterException("Wrong keysize: must be equal to 128, 192 or 256");
         }
-
         this.keysize = keysize / 8;
         this.engineInit(random);
     }
