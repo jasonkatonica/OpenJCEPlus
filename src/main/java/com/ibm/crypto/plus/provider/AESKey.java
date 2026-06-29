@@ -48,7 +48,30 @@ final class AESKey implements SecretKey {
         this.provider = provider;
         System.arraycopy(key, 0, this.key, 0, key.length);
 
-        this.provider.registerCleanable(this, cleanOCKResources(this.key));
+        this.provider.registerCleanable(this, new CleanupAction(this.key));
+    }
+
+    /**
+     * Package-private trusted constructor that takes ownership of the key array
+     * without defensive copying. Used by AESKeyGenerator to avoid double allocation.
+     *
+     * @param provider the provider
+     * @param key the key bytes (caller must not retain reference)
+     * @param trusted marker parameter (not used, just for signature distinction)
+     * @throws InvalidKeyException if key is invalid
+     */
+    AESKey(OpenJCEPlusProvider provider, byte[] key, boolean trusted) throws InvalidKeyException {
+        if ((key == null) || !AESUtils.isKeySizeValid(key.length)) {
+            throw new InvalidKeyException("Wrong key size");
+        }
+        if (provider == null) {
+            throw new IllegalArgumentException("provider is null");
+        }
+
+        this.key = key;
+        this.provider = provider;
+
+        this.provider.registerCleanable(this, new CleanupAction(this.key));
     }
 
     @Override
@@ -169,5 +192,30 @@ final class AESKey implements SecretKey {
                 }
             }
         };
+    }
+
+    /**
+     * Static cleanup action to avoid lambda allocation per key instance.
+     */
+    private static final class CleanupAction implements Runnable {
+        private final byte[] key;
+
+        CleanupAction(byte[] key) {
+            this.key = key;
+        }
+
+        @Override
+        public void run() {
+            try {
+                if (key != null) {
+                    Arrays.fill(key, (byte) 0x00);
+                }
+            } catch (Exception e) {
+                if (OpenJCEPlusProvider.getDebug() != null) {
+                    OpenJCEPlusProvider.getDebug().println("An error occurred while cleaning : " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 }

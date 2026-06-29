@@ -14,7 +14,6 @@ import java.security.InvalidParameterException;
 import java.security.ProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
-import java.util.Arrays;
 import javax.crypto.KeyGeneratorSpi;
 import javax.crypto.SecretKey;
 
@@ -41,22 +40,15 @@ public final class AESKeyGenerator extends KeyGeneratorSpi {
      */
     @Override
     protected SecretKey engineGenerateKey() {
-        if (cryptoRandom == null) {
-            cryptoRandom = provider.getSecureRandom(null);
-        }
-
         byte[] keyBytes = new byte[this.keysize];
         cryptoRandom.nextBytes(keyBytes);
 
         try {
-            return new AESKey(provider, keyBytes);
+            // Use trusted constructor to avoid defensive copy since we own keyBytes
+            return new AESKey(provider, keyBytes, true);
         } catch (InvalidKeyException e) {
             // Should never happen
             throw new ProviderException(e.getMessage());
-        } finally {
-            // fill keybytes with 0x00 - FIPS requirement to reset arrays that
-            // got filled with random bytes from random
-            Arrays.fill(keyBytes, (byte) 0x00);
         }
     }
 
