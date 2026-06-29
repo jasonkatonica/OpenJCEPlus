@@ -17,6 +17,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -128,11 +130,11 @@ public class ProviderServiceReader {
      */
     public List<ServiceDefinition> readServices() throws IOException {
         List<ServiceDefinition> services = new ArrayList<>();
-        Set<String> setAliases = new HashSet<>();
-        Set<String> setAttributes = new HashSet<>();
-        Set<String> setServices = new HashSet<>();
+        Set<String> setAliases = new LinkedHashSet<>();
+        Set<String> setAttributes = new LinkedHashSet<>();
+        Set<String> setServices = new LinkedHashSet<>();
         BufferedReader rd = null;
-        Properties pr = new Properties();
+        LinkedProperties pr = new LinkedProperties();
 
         try {
             if (filePath == null && this.reader == null) {
@@ -177,7 +179,7 @@ public class ProviderServiceReader {
                 (defaults.equalsIgnoreCase("true" ) ||
                 defaults.equals("1"))) {
                 BufferedReader defRd = new BufferedReader(new StringReader(DefaultProviderAttrs.defaultProvAttrs));
-                defPr = new Properties();
+                defPr = new LinkedProperties();
                 defPr.load(defRd);
 
                 //Add default Services
@@ -436,4 +438,38 @@ public class ProviderServiceReader {
     public String getDesc() {
         return description;
     }     
+    /**
+     * A Properties subclass that uses LinkedHashMap to preserve insertion order.
+     * This ensures that services are registered in the order they appear in the configuration.
+     */
+    private static class LinkedProperties extends Properties {
+        private final LinkedHashMap<Object, Object> linkMap = new LinkedHashMap<>();
+
+        @Override
+        public synchronized Object put(Object key, Object value) {
+            linkMap.put(key, value);
+            return super.put(key, value);
+        }
+
+        @Override
+        public synchronized Object get(Object key) {
+            return linkMap.get(key);
+        }
+
+        @Override
+        public Set<String> stringPropertyNames() {
+            Set<String> set = new LinkedHashSet<>();
+            for (Object key : linkMap.keySet()) {
+                set.add((String) key);
+            }
+            return set;
+        }
+
+        @Override
+        public String getProperty(String key) {
+            Object oval = linkMap.get(key);
+            String sval = (oval instanceof String) ? (String) oval : null;
+            return ((sval == null) && (defaults != null)) ? defaults.getProperty(key) : sval;
+        }
+    }
 }
