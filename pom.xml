@@ -270,6 +270,8 @@
                       --add-opens=openjceplus/ibm.jceplus.junit.base=ALL-UNNAMED
                       --add-opens=openjceplus/ibm.jceplus.junit.tests=ALL-UNNAMED
                       --patch-module openjceplus="target${file.separator}classes${path.separator}target${file.separator}test-classes"
+                      -Djdk.mldsa.pkcs8.encoding=expanded
+                      -Djdk.mlkem.pkcs8.encoding=expanded
                     </argLine>
                     <trimStackTrace>false</trimStackTrace>
                     <groups>${groups}</groups>
@@ -410,6 +412,8 @@
                       --add-exports=java.base/sun.security.util=ALL-UNNAMED
                       --add-exports=java.base/sun.security.x509=ALL-UNNAMED
                       --add-exports openjceplus/com.ibm.crypto.plus.provider.base=ALL-UNNAMED
+                      -Djdk.mldsa.pkcs8.encoding=expanded
+                      -Djdk.mlkem.pkcs8.encoding=expanded
                     </argLine>
                     <includes>
                       <include>

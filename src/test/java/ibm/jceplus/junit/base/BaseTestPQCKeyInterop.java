@@ -81,22 +81,19 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
     public void testPQCKeyGenKEMAutoKeyConvertion() throws Exception {
         String pqcAlgorithm = "ML-KEM-512";
 
-        //This is not in the FIPS provider yet and BouncyCastle does not support this test.
+        //This is not in the FIPS provider yet and BouncyCastle  does not support this test.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        KEM kemPlus = KEM.getInstance(pqcAlgorithm, getProviderName());
+        KEM kemInterop = KEM.getInstance(pqcAlgorithm, getProviderName());
 
-        // Generate keys with Plus provider — Oracle now emits seed-form keys which
-        // OpenJCEPlus cannot import, so we always generate with Plus and let the
-        // interop provider consume the expanded key material.
-        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
+        KeyPairGenerator keyPairGen = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
         KeyPair keyPair = generateKeyPair(keyPairGen);
 
         PublicKey publicKey = keyPair.getPublic();
         PrivateKey privateKey = keyPair.getPrivate();
             
-        KEM.Encapsulator encr = kemPlus.newEncapsulator(publicKey);
+        KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKey);
         KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
         if (enc == null) {
             System.out.println("enc = null");
@@ -104,11 +101,11 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         }
         SecretKey keyE = enc.key();
 
-        KEM.Decapsulator decr = kemPlus.newDecapsulator(privateKey);
+        KEM.Decapsulator decr = kemInterop.newDecapsulator(privateKey);
         SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
 
         assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(), "Secrets do NOT match");
-    }
+    } 
 
     @Test
     public void testPQCKeyGenKEM_Interop() throws Exception {
@@ -117,35 +114,32 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
 
         //This is not in the FIPS provider yet.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
-        // BC provider generates seed format private key
+        // BC provider generates seed format privatekey
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
         keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
         keyFactoryPlus = KeyFactory.getInstance(pqcAlgorithm, getProviderName());
         keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
         keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SunJCE in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus and import into the interop provider.
-        KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
-        PublicKey publicKeyPlus = keyPairPlus.getPublic();
-        PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
-        byte[] publicKeyBytesPlus = publicKeyPlus.getEncoded();
-        byte[] privateKeyBytesPlus = privateKeyPlus.getEncoded();
+        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        PublicKey publicKeyInterop = keyPairInterop.getPublic();
+        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        PKCS8EncodedKeySpec privateKeySpecPlus = new PKCS8EncodedKeySpec(privateKeyBytesPlus);
-        EncodedKeySpec publicKeySpecPlus = new X509EncodedKeySpec(publicKeyBytesPlus);
-        PublicKey publicKeyInterop = keyFactoryInterop.generatePublic(publicKeySpecPlus);
-        PrivateKey privateKeyInterop = keyFactoryInterop.generatePrivate(privateKeySpecPlus);
+        PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
+        EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
+        PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+        PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
 
         // BC private keys do not currently conform to the Draft standard for these keys
-        // so we know the keys will not compare
+        // So we know the keys will not compare
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesPlus, privateKeyInterop.getEncoded());
+            same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
             assertTrue(same);
         }
 
-        same = Arrays.equals(publicKeyBytesPlus, publicKeyInterop.getEncoded());
+        same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
         assertTrue(same);
 
     }
@@ -164,24 +158,21 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName());
         keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName());
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SunJCE in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus and round-trip the encoded spec through the interop factory.
-        KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
-        PublicKey publicKeyPlus = keyPairPlus.getPublic();
-        PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
-        byte[] publicKeyBytesPlus = publicKeyPlus.getEncoded();
-        byte[] privateKeyBytesPlus = privateKeyPlus.getEncoded();
+        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        PublicKey publicKeyInterop = keyPairInterop.getPublic();
+        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        X509EncodedKeySpec eksPlus = keyFactoryPlus.getKeySpec(publicKeyPlus, X509EncodedKeySpec.class);
-        PublicKey pub = keyFactoryInterop.generatePublic(eksPlus);
-        PKCS8EncodedKeySpec eksPrivPlus = keyFactoryPlus.getKeySpec(privateKeyPlus, PKCS8EncodedKeySpec.class);
-        PrivateKey priv = keyFactoryInterop.generatePrivate(eksPrivPlus);
-        same = Arrays.equals(privateKeyBytesPlus, priv.getEncoded());
+        EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
+        PublicKey pub = keyFactoryPlus.generatePublic(eksInterop); 
+        EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
+        PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
+        same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
         assertTrue(same);
-
+        
         // The original and new keys are the same
-        same = Arrays.equals(publicKeyBytesPlus, pub.getEncoded());
+        same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
         assertTrue(same);
     }
 
@@ -221,13 +212,13 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
     } 
 
     @Test
-    public void testPQCKeyGenMLDSA_Interop() throws Exception {
+    public void testPQCKeyGenMLDSA_Interop() throws Exception {        
         String pqcAlgorithm = "ML-DSA-65";
         boolean same = false;
 
         //This is not in the FIPS provider yet.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
-        // BC provider generates seed format private key
+        // BC provider generates seed format privatekey
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
         keyPairGenPlus = KeyPairGenerator.getInstance(pqcAlgorithm, getProviderName());
@@ -235,28 +226,25 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
         keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SUN in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus and import into the interop provider.
-        KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
-        PublicKey publicKeyPlus = keyPairPlus.getPublic();
-        PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
-        byte[] publicKeyBytesPlus = publicKeyPlus.getEncoded();
-        byte[] privateKeyBytesPlus = privateKeyPlus.getEncoded();
+        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        PublicKey publicKeyInterop = keyPairInterop.getPublic();
+        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        PKCS8EncodedKeySpec privateKeySpecPlus = new PKCS8EncodedKeySpec(privateKeyBytesPlus);
-        EncodedKeySpec publicKeySpecPlus = new X509EncodedKeySpec(publicKeyBytesPlus);
-        PublicKey publicKeyInterop = keyFactoryInterop.generatePublic(publicKeySpecPlus);
-        PrivateKey privateKeyInterop = keyFactoryInterop.generatePrivate(privateKeySpecPlus);
+        PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyBytesInterop);
+        EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyBytesInterop);
+        PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
+        PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
 
-        //BC is using a different encoding today for their ML-DSA private keys.
+        //BC is using a different encoding today for thier ML-DSA private keys.
         // So we can not compare these today.
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesPlus, privateKeyInterop.getEncoded());
+            same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
             assertTrue(same);
-        }
+        }  
 
-        same = Arrays.equals(publicKeyBytesPlus, publicKeyInterop.getEncoded());
+        same = Arrays.equals(publicKeyBytesInterop, publicKeyPlus.getEncoded());
         assertTrue(same);
     }
 
@@ -274,29 +262,26 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         keyPairGenInterop = KeyPairGenerator.getInstance(pqcAlgorithm, getInteropProviderName2());
         keyFactoryInterop = KeyFactory.getInstance(pqcAlgorithm, getInteropProviderName2());
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SUN in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus and round-trip the encoded spec through the interop factory.
-        KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
-        PublicKey publicKeyPlus = keyPairPlus.getPublic();
-        PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
-        byte[] publicKeyBytesPlus = publicKeyPlus.getEncoded();
-        byte[] privateKeyBytesPlus = privateKeyPlus.getEncoded();
+        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        PublicKey publicKeyInterop = keyPairInterop.getPublic();
+        PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+        byte[] publicKeyBytesInterop = publicKeyInterop.getEncoded();
+        byte[] privateKeyBytesInterop = privateKeyInterop.getEncoded();
 
-        X509EncodedKeySpec eksPlus = keyFactoryPlus.getKeySpec(publicKeyPlus, X509EncodedKeySpec.class);
-        PublicKey pub = keyFactoryInterop.generatePublic(eksPlus);
-        PKCS8EncodedKeySpec eksPrivPlus = keyFactoryPlus.getKeySpec(privateKeyPlus, PKCS8EncodedKeySpec.class);
-        PrivateKey priv = keyFactoryInterop.generatePrivate(eksPrivPlus);
-
-        //BC is using a different encoding today for their ML-DSA private keys.
+        EncodedKeySpec eksInterop = keyFactoryInterop.getKeySpec(publicKeyInterop, EncodedKeySpec.class);
+        PublicKey pub = keyFactoryPlus.generatePublic(eksInterop); 
+        EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
+        PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
+        
+        //BC is using a different encoding today for thier ML-DSA private keys.
         // So we can not compare these today.
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
-            same = Arrays.equals(privateKeyBytesPlus, priv.getEncoded());
+            same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
             assertTrue(same);
         }
-
+        
         // The original and new keys are the same
-        same = Arrays.equals(publicKeyBytesPlus, pub.getEncoded());
+        same = Arrays.equals(publicKeyBytesInterop, pub.getEncoded());
         assertTrue(same);
     }
 
@@ -357,27 +342,24 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName2()));
 
         try {
-            // Generate with Plus provider — interop providers (e.g. Oracle/SUN in Java 27+)
-            // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-            // with Plus and import into the interop provider for the cross-provider key usage test.
-            keyPairGenPlus = KeyPairGenerator.getInstance(algorithm, getProviderName());
-            KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
+            keyPairGenInterop = KeyPairGenerator.getInstance(algorithm, getInteropProviderName2());
+            KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
 
-            PublicKey publicKeyPlus = keyPairPlus.getPublic();
-            PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
-            PKCS8EncodedKeySpec privateKeySpecPlus = new PKCS8EncodedKeySpec(privateKeyPlus.getEncoded());
-            EncodedKeySpec publicKeySpecPlus = new X509EncodedKeySpec(publicKeyPlus.getEncoded());
-            KeyFactory keyFactoryInterop = KeyFactory.getInstance(algorithm, getInteropProviderName2());
-            PrivateKey privInterop = keyFactoryInterop.generatePrivate(privateKeySpecPlus);
-            PublicKey pubInterop = keyFactoryInterop.generatePublic(publicKeySpecPlus);
+            PublicKey publicKeyInterop = keyPairInterop.getPublic();
+            PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+            PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
+            EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
+            KeyFactory keyFactoryPlus = KeyFactory.getInstance(algorithm, getProviderName());
+            PrivateKey privPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+            PublicKey pubPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
 
-            Signature signingInterop = Signature.getInstance(algorithm, getInteropProviderName2());
-            signingInterop.initSign(privInterop);
+            Signature signingInterop = Signature.getInstance(algorithm, getProviderName());
+            signingInterop.initSign(privPlus);
             signingInterop.update(origMsg);
             byte[] signedBytesInterop = signingInterop.sign();
 
             Signature verifyingPlus = Signature.getInstance(algorithm, getProviderName());
-            verifyingPlus.initVerify(publicKeyPlus);
+            verifyingPlus.initVerify(pubPlus);
             verifyingPlus.update(origMsg);
             assertTrue(verifyingPlus.verify(signedBytesInterop), "Signature verification failed");
         } catch (Exception ex) {
@@ -497,29 +479,26 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
     @ParameterizedTest
     @CsvSource({"ML-KEM", "ML-KEM-512", "ML-KEM-768", "ML-KEM-1024"})
     public void testKEMInteropKeyPlusAll(String Algorithm) {
-        //This is not in the FIPS provider yet. BC generates seed-form keys.
+        //This is not in the FIPS provider yet and Oracle Private keys have an extra Octet in them.
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
         try {
-            KEM kemInterop = KEM.getInstance("ML-KEM", getInteropProviderName());
+            KEM kemPlus = KEM.getInstance(Algorithm, getProviderName());
 
-            // Generate with Plus provider — interop providers (e.g. Oracle/SunJCE in Java 27+)
-            // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-            // with Plus and import into the interop provider.
-            keyPairGenPlus = KeyPairGenerator.getInstance(Algorithm, getProviderName());
-            KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
+            keyPairGenInterop = KeyPairGenerator.getInstance(Algorithm, getInteropProviderName());
+            KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
 
-            PublicKey publicKeyPlus = keyPairPlus.getPublic();
-            PrivateKey privateKeyPlus = keyPairPlus.getPrivate();
+            PublicKey publicKeyInterop = keyPairInterop.getPublic();
+            PrivateKey privateKeyInterop = keyPairInterop.getPrivate();
+            
+            PKCS8EncodedKeySpec privateKeySpecInterop = new PKCS8EncodedKeySpec(privateKeyInterop.getEncoded());
+            EncodedKeySpec publicKeySpecInterop = new X509EncodedKeySpec(publicKeyInterop.getEncoded());
+            KeyFactory keyFactoryPlus = KeyFactory.getInstance(Algorithm, getProviderName());
+            PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
+            PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
 
-            PKCS8EncodedKeySpec privateKeySpecPlus = new PKCS8EncodedKeySpec(privateKeyPlus.getEncoded());
-            EncodedKeySpec publicKeySpecPlus = new X509EncodedKeySpec(publicKeyPlus.getEncoded());
-            KeyFactory keyFactoryInterop = KeyFactory.getInstance(Algorithm, getInteropProviderName());
-            PrivateKey privateKeyInterop = keyFactoryInterop.generatePrivate(privateKeySpecPlus);
-            PublicKey publicKeyInterop = keyFactoryInterop.generatePublic(publicKeySpecPlus);
-
-            KEM.Encapsulator encr = kemInterop.newEncapsulator(publicKeyInterop);
+            KEM.Encapsulator encr = kemPlus.newEncapsulator(publicKeyPlus);
             KEM.Encapsulated enc = encr.encapsulate(0, 32, "AES");
             if (enc == null) {
                 System.out.println("enc = null");
@@ -527,7 +506,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
             }
             SecretKey keyE = enc.key();
 
-            KEM.Decapsulator decr = kemInterop.newDecapsulator(privateKeyInterop);
+            KEM.Decapsulator decr = kemPlus.newDecapsulator(privateKeyPlus);
             SecretKey keyD = decr.decapsulate(enc.encapsulation(), 0, 32, "AES");
 
             assertArrayEquals(keyE.getEncoded(), keyD.getEncoded(), "Secrets do NOT match");
@@ -661,26 +640,24 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        // Generate key pair using NamedParameterSpec with Plus provider — interop providers
-        // (e.g. Oracle/SunJCE in Java 27+) now emit seed-form private keys that OpenJCEPlus
-        // cannot import, so we generate with Plus and let the interop provider encapsulate.
-        KeyPairGenerator keyPairGenPlus = KeyPairGenerator.getInstance("ML-KEM", getProviderName());
-        keyPairGenPlus.initialize(new NamedParameterSpec(parameterSet));
-        KeyPair keyPairPlus = generateKeyPair(keyPairGenPlus);
-
+        // Generate key pair using NamedParameterSpec with interop provider
+        KeyPairGenerator keyPairGenInterop = KeyPairGenerator.getInstance("ML-KEM", getInteropProviderName());
+        keyPairGenInterop.initialize(new NamedParameterSpec(parameterSet));
+        KeyPair keyPairInterop = generateKeyPair(keyPairGenInterop);
+        
         // Encapsulate using interop provider (no from/to parameters)
         KEM kemInterop = KEM.getInstance("ML-KEM", getInteropProviderName());
-        KEM.Encapsulator encapsulator = kemInterop.newEncapsulator(keyPairPlus.getPublic());
+        KEM.Encapsulator encapsulator = kemInterop.newEncapsulator(keyPairInterop.getPublic());
         KEM.Encapsulated encapsulated = encapsulator.encapsulate();
-
+        
         SecretKey encapKey = encapsulated.key();
         byte[] encapsulation = encapsulated.encapsulation();
-
-        // Decapsulate using Plus provider (no from/to parameters)
+        
+        // Decapsulate using provider (no from/to parameters)
         KEM kemPlus = KEM.getInstance("ML-KEM", getProviderName());
-        KEM.Decapsulator decapsulator = kemPlus.newDecapsulator(keyPairPlus.getPrivate());
+        KEM.Decapsulator decapsulator = kemPlus.newDecapsulator(keyPairInterop.getPrivate());
         SecretKey decapKey = decapsulator.decapsulate(encapsulation);
-
+        
         // Verify that both keys match
         assertArrayEquals(encapKey.getEncoded(), decapKey.getEncoded(),
                 "Encapsulated and decapsulated keys do not match for " + parameterSet);
@@ -776,20 +753,16 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SunJCE in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus, round-trip the PKCS8 spec through OpenJCEPlus, then use interop to encapsulate.
         KeyFactory openjceplusKeyFactory = KeyFactory.getInstance(algorithm, getProviderName());
-        KeyPairGenerator plusKpg = KeyPairGenerator.getInstance(algorithm, getProviderName());
-        KeyPair plusKeyPair = plusKpg.generateKeyPair();
-        PrivateKey plusPrivateKey = plusKeyPair.getPrivate();
-        KeySpec plusPrivKeySpec = new PKCS8EncodedKeySpec(plusPrivateKey.getEncoded());
-        // Round-trip: import the Plus key back through the Plus KeyFactory
-        PrivateKey openjceplusPrivateKey = openjceplusKeyFactory.generatePrivate(plusPrivKeySpec);
+        KeyPairGenerator interopKpg = KeyPairGenerator.getInstance(algorithm, getInteropProviderName());
+        KeyPair interopKeyPair = interopKpg.generateKeyPair();
+        PrivateKey interopPrivateKey = interopKeyPair.getPrivate();
+        KeySpec interopPrivKeySpec = new PKCS8EncodedKeySpec(interopPrivateKey.getEncoded());
+        PrivateKey openjceplusPrivateKey = openjceplusKeyFactory.generatePrivate(interopPrivKeySpec);
 
         KEM interopKem = KEM.getInstance(algorithm, getInteropProviderName());
         KEM.Encapsulator encapsulator =
-                interopKem.newEncapsulator(plusKeyPair.getPublic());
+                interopKem.newEncapsulator(interopKeyPair.getPublic());
 
         KEM.Encapsulated encapsulated = encapsulator.encapsulate();
 
@@ -803,9 +776,9 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assertArrayEquals(encapsulated.key().getEncoded(),
             openjceplusSecret.getEncoded());
 
-        KeySpec keySpec = openjceplusKeyFactory.getKeySpec(openjceplusPrivateKey, plusPrivKeySpec.getClass());
-        assertEquals(plusPrivKeySpec.getClass(), keySpec.getClass());
-        assertPrivateKeyPKCS8SpecEquals(plusPrivKeySpec, keySpec);
+        KeySpec keySpec = openjceplusKeyFactory.getKeySpec(openjceplusPrivateKey, interopPrivKeySpec.getClass());
+        assertEquals(interopPrivKeySpec.getClass(), keySpec.getClass());
+        assertPrivateKeyPKCS8SpecEquals(interopPrivKeySpec, keySpec);
     }
 
     @ParameterizedTest
@@ -816,16 +789,12 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         assumeFalse(Utils.PROVIDER_BC.equals(getInteropProviderName()));
 
-        // Generate with Plus provider — interop providers (e.g. Oracle/SUN in Java 27+)
-        // now emit seed-form private keys that OpenJCEPlus cannot import, so we generate
-        // with Plus, round-trip the PKCS8 spec through OpenJCEPlus, then verify with interop.
         KeyFactory openjceplusKeyFactory = KeyFactory.getInstance(algorithm, getProviderName());
-        KeyPairGenerator plusKpg = KeyPairGenerator.getInstance(algorithm, getProviderName());
-        KeyPair plusKeyPair = plusKpg.generateKeyPair();
-        PrivateKey plusPrivateKey = plusKeyPair.getPrivate();
-        KeySpec plusPrivKeySpec = new PKCS8EncodedKeySpec(plusPrivateKey.getEncoded());
-        // Round-trip: import the Plus key back through the Plus KeyFactory
-        PrivateKey openjceplusPrivateKey = openjceplusKeyFactory.generatePrivate(plusPrivKeySpec);
+        KeyPairGenerator interopKpg = KeyPairGenerator.getInstance(algorithm, getInteropProviderName2());
+        KeyPair interopKeyPair = interopKpg.generateKeyPair();
+        PrivateKey interopPrivateKey = interopKeyPair.getPrivate();
+        KeySpec interopPrivKeySpec = new PKCS8EncodedKeySpec(interopPrivateKey.getEncoded());
+        PrivateKey openjceplusPrivateKey = openjceplusKeyFactory.generatePrivate(interopPrivKeySpec);
 
         Signature signerPlus = Signature.getInstance(algorithm, getProviderName());
         signerPlus.initSign(openjceplusPrivateKey);
@@ -833,7 +802,7 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         byte[] signaturePlus = signerPlus.sign();
 
         Signature verifierInterop = Signature.getInstance(algorithm, getInteropProviderName2());
-        verifierInterop.initVerify(plusKeyPair.getPublic());
+        verifierInterop.initVerify(interopKeyPair.getPublic());
         verifierInterop.update(origMsg);
         assertTrue(verifierInterop.verify(signaturePlus), "Signature verification failed");
     }
