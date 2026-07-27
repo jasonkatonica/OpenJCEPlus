@@ -105,22 +105,18 @@ public class MLKEMImpl implements KEMSpi {
                 throw new InvalidKeyException("unsupported key");
             }
             
-            // Validate algorithm match (unless this is the generic ML-KEM instance)
-            validateKeyAlgorithm(keyAlgorithm);
-            
             // Use the key's actual algorithm, not the generic "ML-KEM"
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyAlgorithm, this.provider.getName());
                 EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKey.getEncoded());
                 pubKey = kf.generatePublic(publicKeySpec);
-       
             } catch (Exception e) {
                 throw new InvalidKeyException("unsupported key", e);
             }
-        } else {
-            // Key is already a PQCPublicKey, validate paraeter set matches.
-            validateKeyAlgorithm(((PQCPublicKey) pubKey).getParamSetName());
         }
+
+        // Validate against the concrete parameter set name.
+        validateKeyAlgorithm(((PQCPublicKey) pubKey).getParamSetName());
 
         if (spec != null) {
             throw new InvalidAlgorithmParameterException("no spec needed");
@@ -206,9 +202,6 @@ public class MLKEMImpl implements KEMSpi {
                 throw new InvalidKeyException("unsupported key");
             }
             
-            // Validate algorithm match (unless this is the generic ML-KEM instance)
-            validateKeyAlgorithm(keyAlgorithm);
-            
             // Use the key's actual algorithm, not the generic "ML-KEM"
             byte[] encoding = null;
             try {
@@ -221,11 +214,10 @@ public class MLKEMImpl implements KEMSpi {
             } finally {
                 Arrays.fill(encoding, (byte) 0);
             }
-
-        } else {
-            // Key is already a PQCPrivateKey, validate paraeter set matches.
-            validateKeyAlgorithm(((PQCPrivateKey) privKey).getParamSetName());
         }
+
+        // Validate against the concrete parameter set name.
+        validateKeyAlgorithm(((PQCPrivateKey) privKey).getParamSetName());
 
         if (spec != null) {
             throw new InvalidAlgorithmParameterException("no spec needed");
