@@ -129,9 +129,9 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
     unsigned char    *genkeylocal      = NULL;
     unsigned char    *genKeyNative     = NULL;
 
-    evp_pk = ICC_EVP_PKEY_CTX_new(ockCtx, ockPKey, NULL);
+    evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, ockPKey, NULL);
     if (!evp_pk) {
-        throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new failed");
+        throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
         return retRndKeyBytes;
     }
 
