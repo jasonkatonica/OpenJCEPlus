@@ -16,7 +16,9 @@ public class NativeOCKAdapterNonFIPS extends NativeOCKAdapter {
     }
 
     public static NativeOCKAdapterNonFIPS getInstance() {
+        System.out.println("Im here ready to get instance non fips.");
         if (instance == null) {
+            System.out.println("Im here 2, getting new instance non fips!!!!!");
             instance = new NativeOCKAdapterNonFIPS();
         }
 

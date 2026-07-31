@@ -58,7 +58,9 @@ public class NativeOCKAdapterFIPS extends NativeOCKAdapter {
     }
 
     public static NativeOCKAdapterFIPS getInstance() {
+        System.out.println("Im here ready to get instance fips.");
         if (instance == null) {
+            System.out.println("Im here 2, getting new instance fips!!!!!");
             boolean useFIPSMode = checkFIPSMode();
             instance = new NativeOCKAdapterFIPS(useFIPSMode);
         }
