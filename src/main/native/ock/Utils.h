@@ -51,6 +51,8 @@ int gslogFunctionExit(const char* functionName);
 void ockCheckStatus(ICC_CTX* ctx);
 
 void throwOCKException(JNIEnv* env, int code, const char* msg);
+void throwOCKExceptionWithOCKError(JNIEnv* env, int code, const char* msg,
+                                   ICC_CTX* ctx);
 
 #ifdef __MVS__
 void forceToAscii(char* s);

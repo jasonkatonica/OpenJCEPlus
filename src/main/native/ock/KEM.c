@@ -38,7 +38,8 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
 
     evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, pa, NULL);
     if (!evp_pk) {
-        throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
+        throwOCKExceptionWithOCKError(env, 0,
+            "ICC_EVP_PKEY_CTX_new_from_pkey failed", ockCtx);
         return;
     }
 
@@ -131,7 +132,8 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
 
     evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, ockPKey, NULL);
     if (!evp_pk) {
-        throwOCKException(env, 0, "ICC_EVP_PKEY_CTX_new_from_pkey failed");
+        throwOCKExceptionWithOCKError(env, 0,
+            "ICC_EVP_PKEY_CTX_new_from_pkey failed", ockCtx);
         return retRndKeyBytes;
     }
 
