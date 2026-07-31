@@ -10,6 +10,7 @@ package com.ibm.crypto.plus.provider;
 
 import com.ibm.crypto.plus.provider.base.NativeException;
 import com.ibm.crypto.plus.provider.base.OJPKEM;
+import java.lang.ref.Reference;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -161,10 +162,12 @@ public class MLKEMImpl implements KEMSpi {
             }
 
             try {
-                OJPKEM.KEM_encapsulate(((PQCPublicKey) publicKey).getPQCKey().getPKeyId(),
+                OJPKEM.KEM_encapsulate(((PQCPublicKey) this.publicKey).getPQCKey().getPKeyId(),
                         encapsulation, secret, provider, algName);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
+            } finally {
+                Reference.reachabilityFence(this.publicKey);
             }
 
             return new KEM.Encapsulated(
@@ -274,6 +277,8 @@ public class MLKEMImpl implements KEMSpi {
 
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
+            } finally {
+                Reference.reachabilityFence(this.privateKey);
             }
 
             return new SecretKeySpec(secret, from, to - from, algorithm);
