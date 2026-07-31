@@ -10,6 +10,9 @@ package com.ibm.crypto.plus.provider;
 
 import com.ibm.crypto.plus.provider.base.NativeException;
 import com.ibm.crypto.plus.provider.base.OJPKEM;
+import com.ibm.crypto.plus.provider.base.PQCKey;
+
+import java.lang.ref.Reference;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -160,11 +163,14 @@ public class MLKEMImpl implements KEMSpi {
                 throw new NullPointerException();
             }
 
+            PQCKey pqcPubKey = ((PQCPublicKey) publicKey).getPQCKey();
             try {
-                OJPKEM.KEM_encapsulate(((PQCPublicKey) publicKey).getPQCKey().getPKeyId(),
+                OJPKEM.KEM_encapsulate(pqcPubKey.getPKeyId(),
                         encapsulation, secret, provider, algName);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
+            } finally {
+                Reference.reachabilityFence(pqcPubKey);
             }
 
             return new KEM.Encapsulated(
@@ -268,12 +274,15 @@ public class MLKEMImpl implements KEMSpi {
                     ", but got " + cipherText.length + " bytes");
             }
 
+            PQCKey pqcPrivKey = ((PQCPrivateKey) this.privateKey).getPQCKey();
             try {
-                secret = OJPKEM.KEM_decapsulate(((PQCPrivateKey) this.privateKey).getPQCKey().getPKeyId(),
+                secret = OJPKEM.KEM_decapsulate(pqcPrivKey.getPKeyId(),
                         cipherText, provider, algName);
 
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
+            } finally {
+                Reference.reachabilityFence(pqcPrivKey);
             }
 
             return new SecretKeySpec(secret, from, to - from, algorithm);
