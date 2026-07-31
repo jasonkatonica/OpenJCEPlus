@@ -9,17 +9,19 @@
 package com.ibm.crypto.plus.provider.ock;
 
 public class NativeOCKAdapterNonFIPS extends NativeOCKAdapter {
-    private static NativeOCKAdapterNonFIPS instance = null;
+    private static volatile NativeOCKAdapterNonFIPS instance = null;
 
     private NativeOCKAdapterNonFIPS() {
         super(false);
     }
 
     public static NativeOCKAdapterNonFIPS getInstance() {
-        System.out.println("Im here ready to get instance non fips.");
         if (instance == null) {
-            System.out.println("Im here 2, getting new instance non fips!!!!!");
-            instance = new NativeOCKAdapterNonFIPS();
+            synchronized (NativeOCKAdapterNonFIPS.class) {
+                if (instance == null) {
+                    instance = new NativeOCKAdapterNonFIPS();
+                }
+            }
         }
 
         return instance;
