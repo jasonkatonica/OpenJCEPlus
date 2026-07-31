@@ -146,6 +146,41 @@ void ockCheckStatus(ICC_CTX *ctx) {
 }
 
 //============================================================================
+// Variant of throwOCKException that appends the ICC/OpenSSL error queue to
+// the exception message.  Mirrors the ockCheckStatus() drain pattern.
+//
+// If the queue is empty after the failure (errCode == 0) that itself is
+// diagnostic: it means OpenSSL posted its error on a *different* ICC_CTX
+// (i.e. the key was created with a different context than the one used here).
+//
+void throwOCKExceptionWithOCKError(JNIEnv *env, int code, const char *msg,
+                                   ICC_CTX *ctx) {
+    char      combined[8192];
+    char      errBuffer[512];
+    unsigned long errCode = ICC_ERR_get_error(ctx);
+
+    if (errCode == 0) {
+        snprintf(combined, sizeof(combined),
+                 "%s: ICC error queue empty after failure — "
+                 "possible ICC_CTX / key context mismatch "
+                 "(key may have been created with a different ICC_CTX)",
+                 msg ? msg : "");
+    } else {
+        ICC_ERR_error_string_n(ctx, errCode, errBuffer, sizeof(errBuffer));
+        snprintf(combined, sizeof(combined), "%s: %s", msg ? msg : "", errBuffer);
+        /* drain any remaining entries */
+        while ((errCode = ICC_ERR_get_error(ctx)) != 0) {
+            char extra[512];
+            ICC_ERR_error_string_n(ctx, errCode, extra, sizeof(extra));
+            strncat(combined, "; ", sizeof(combined) - strlen(combined) - 1);
+            strncat(combined, extra, sizeof(combined) - strlen(combined) - 1);
+        }
+    }
+
+    throwOCKException(env, code, combined);
+}
+
+//============================================================================
 //
 //
 void throwOCKException(JNIEnv *env, int code, const char *msg) {
