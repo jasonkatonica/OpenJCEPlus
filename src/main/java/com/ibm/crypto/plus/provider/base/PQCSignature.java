@@ -9,6 +9,7 @@
 package com.ibm.crypto.plus.provider.base;
 
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
+import java.lang.ref.Reference;
 import java.security.InvalidKeyException;
 
 /**
@@ -60,8 +61,11 @@ public final class PQCSignature {
             throw new NativeException("No data to sign.");
         }
 
-        signature = this.nativeInterface.PQC_SIGNATURE_sign(this.key.getPKeyId(), data);
-
+        try {
+            signature = this.nativeInterface.PQC_SIGNATURE_sign(this.key.getPKeyId(), data);
+        } finally {
+            Reference.reachabilityFence(this.key);
+        }
         return signature;
     }
 
@@ -76,8 +80,11 @@ public final class PQCSignature {
         }
         boolean verified = false;
 
-        verified = this.nativeInterface.PQC_SIGNATURE_verify(this.key.getPKeyId(), sigBytes, data);
-
+        try {
+            verified = this.nativeInterface.PQC_SIGNATURE_verify(this.key.getPKeyId(), sigBytes, data);
+        } finally {
+            Reference.reachabilityFence(this.key);
+        }
         return verified;
     }
 

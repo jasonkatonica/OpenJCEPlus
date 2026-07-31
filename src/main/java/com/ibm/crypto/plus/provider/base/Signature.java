@@ -9,6 +9,7 @@
 package com.ibm.crypto.plus.provider.base;
 
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
+import java.lang.ref.Reference;
 import java.security.InvalidKeyException;
 
 public final class Signature {
@@ -77,6 +78,7 @@ public final class Signature {
         } finally {
             // Try to reset even if NativeException is thrown
             this.digest.reset();
+            Reference.reachabilityFence(this.key);
         }
 
         //OCKDebug.Msg (debPrefix, "sign",  "signature :" + signature);
@@ -106,10 +108,11 @@ public final class Signature {
         } finally {
             // Try to reset even if NativeException is thrown
             this.digest.reset();
+            Reference.reachabilityFence(this.key);
         }
 
         //        if (!verified) {
-        //            OCKDebug.Msg (debPrefix, methodName,  "Failed to verify Signature."); 
+        //            OCKDebug.Msg (debPrefix, methodName,  "Failed to verify Signature.");
         //        }
 
         return verified;
