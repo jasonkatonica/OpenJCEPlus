@@ -24,6 +24,7 @@ public class NativeOCKAdapterFIPS extends NativeOCKAdapter {
     private static final Map<String, List<String>> supportedPlatforms = new HashMap<>();
     private static final String osName;
     private static final String osArch;
+    private static volatile NativeOCKAdapterFIPS instance = null;
 
     static {
         supportedPlatforms.put("Arch", List.of("amd64", "ppc64", "s390x"));
@@ -51,8 +52,6 @@ public class NativeOCKAdapterFIPS extends NativeOCKAdapter {
         isFIPSCertifiedPlatform = isOsSupported && isArchSupported;
     }
 
-    private static volatile NativeOCKAdapterFIPS instance = null;
-
     private NativeOCKAdapterFIPS(boolean useFIPSMode) {
         super(useFIPSMode);
     }
@@ -60,9 +59,13 @@ public class NativeOCKAdapterFIPS extends NativeOCKAdapter {
     public static NativeOCKAdapterFIPS getInstance() {
         System.out.println("Im here ready to get instance fips.");
         if (instance == null) {
-            System.out.println("Im here 2, getting new instance fips!!!!!");
-            boolean useFIPSMode = checkFIPSMode();
-            instance = new NativeOCKAdapterFIPS(useFIPSMode);
+            synchronized (NativeOCKAdapterFIPS.class) {
+                if (instance == null) {
+                    System.out.println("Im here 2, getting new instance fips!!!!!");
+                    boolean useFIPSMode = checkFIPSMode();
+                    instance = new NativeOCKAdapterFIPS(useFIPSMode);
+                }
+            }
         }
 
         return instance;
