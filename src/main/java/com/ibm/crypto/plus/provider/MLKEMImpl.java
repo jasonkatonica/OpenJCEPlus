@@ -161,13 +161,14 @@ public class MLKEMImpl implements KEMSpi {
                 throw new NullPointerException();
             }
 
+            PQCPublicKey pqcPubKey = (PQCPublicKey) this.publicKey;
             try {
-                OJPKEM.KEM_encapsulate(((PQCPublicKey) this.publicKey).getPQCKey().getPKeyId(),
+                OJPKEM.KEM_encapsulate(pqcPubKey.getPQCKey().getPKeyId(),
                         encapsulation, secret, provider, algName);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             } finally {
-                Reference.reachabilityFence(this.publicKey);
+                Reference.reachabilityFence(pqcPubKey.getPQCKey());
             }
 
             return new KEM.Encapsulated(
@@ -271,14 +272,15 @@ public class MLKEMImpl implements KEMSpi {
                     ", but got " + cipherText.length + " bytes");
             }
 
+            PQCPrivateKey pqcPrivKey = (PQCPrivateKey) this.privateKey;
             try {
-                secret = OJPKEM.KEM_decapsulate(((PQCPrivateKey) this.privateKey).getPQCKey().getPKeyId(),
+                secret = OJPKEM.KEM_decapsulate(pqcPrivKey.getPQCKey().getPKeyId(),
                         cipherText, provider, algName);
 
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
             } finally {
-                Reference.reachabilityFence(this.privateKey);
+                Reference.reachabilityFence(pqcPrivKey.getPQCKey());
             }
 
             return new SecretKeySpec(secret, from, to - from, algorithm);
