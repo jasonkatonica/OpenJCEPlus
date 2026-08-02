@@ -42,6 +42,10 @@ final class PQCPrivateKey extends PKCS8Key {
      */
     PQCPrivateKey(OpenJCEPlusProvider provider, byte[] keyBytes, String algName)
             throws InvalidKeyException {
+        System.out.println("[DBG PQCPrivateKey ctor-1] alg=" + algName
+                + " keyBytes.length=" + keyBytes.length
+                + " keyBytes[0..3]=" + hex(Arrays.copyOf(keyBytes, Math.min(4, keyBytes.length)))
+                + " OctetEncoded=" + OctectStringEncoded(keyBytes));
         this.algid = new AlgorithmId(PQCAlgorithmId.getOID(algName));
         this.name = PQCKnownOIDs.findMatch(this.algid.getName()).stdName();
         this.provider = provider;
@@ -52,17 +56,23 @@ final class PQCPrivateKey extends PKCS8Key {
         if (OctectStringEncoded(keyBytes)) {
             //Remove encoding OctetString encoding.
             key = Arrays.copyOfRange(keyBytes, 4, keyBytes.length);
+            System.out.println("[DBG PQCPrivateKey ctor-1] stripped OctetString header, key.length=" + key.length);
         } else {
             key = keyBytes;
+            System.out.println("[DBG PQCPrivateKey ctor-1] no OctetString header, key.length=" + key.length);
         }
 
         // Currently the ICC expects the raw keys in an OctetString
         try {
             try {
                 pkOct = new DerValue(DerValue.tag_OctetString, key);
+                byte[] bytesToOCK = pkOct.toByteArray();
+                System.out.println("[DBG PQCPrivateKey ctor-1] bytes-to-OCK.length=" + bytesToOCK.length
+                        + " bytes-to-OCK[0..3]=" + hex(Arrays.copyOf(bytesToOCK, Math.min(4, bytesToOCK.length))));
                 this.pqcKey = PQCKey.createPrivateKey(
-                                this.name, pkOct.toByteArray(), provider, "KeyFactory");
-                this.privKeyMaterial = pkOct.toByteArray();
+                                this.name, bytesToOCK, provider, "KeyFactory");
+                this.privKeyMaterial = bytesToOCK;
+                System.out.println("[DBG PQCPrivateKey ctor-1] privKeyMaterial.length=" + bytesToOCK.length);
             } finally {
                 pkOct.clear();
             }
@@ -83,19 +93,30 @@ final class PQCPrivateKey extends PKCS8Key {
             this.name = PQCKnownOIDs.findMatch(pqcKey.getAlgorithm()).stdName();
             this.algid = new AlgorithmId(PQCAlgorithmId.getOID(name));
 
-            validateKeyLength(pqcKey.getPrivateKeyBytes());
-            if (!isExpandedChoice(this.name, pqcKey.getPrivateKeyBytes())) {
+            byte[] rawPrivBytes = pqcKey.getPrivateKeyBytes();
+            System.out.println("[DBG PQCPrivateKey ctor-2] alg=" + this.name
+                    + " rawPrivBytes.length=" + rawPrivBytes.length
+                    + " rawPrivBytes[0..3]=" + hex(Arrays.copyOf(rawPrivBytes, Math.min(4, rawPrivBytes.length)))
+                    + " OctetEncoded=" + OctectStringEncoded(rawPrivBytes));
+
+            validateKeyLength(rawPrivBytes);
+            if (!isExpandedChoice(this.name, rawPrivBytes)) {
                 throw new InvalidKeyException("Only expanded keys are supported by OpenJCEPlus");
             }
             //Check to determine if the key bytes have the Octet tag.
-            if (OctectStringEncoded(pqcKey.getPrivateKeyBytes())) {
-                this.privKeyMaterial = pqcKey.getPrivateKeyBytes();
+            if (OctectStringEncoded(rawPrivBytes)) {
+                this.privKeyMaterial = rawPrivBytes;
+                System.out.println("[DBG PQCPrivateKey ctor-2] OctetString already present, privKeyMaterial.length="
+                        + rawPrivBytes.length);
             } else {
                 DerValue pkOct = null;
                 try {
-                    pkOct = new DerValue(DerValue.tag_OctetString, pqcKey.getPrivateKeyBytes());
-
-                    this.privKeyMaterial = pkOct.toByteArray();
+                    pkOct = new DerValue(DerValue.tag_OctetString, rawPrivBytes);
+                    byte[] wrapped = pkOct.toByteArray();
+                    System.out.println("[DBG PQCPrivateKey ctor-2] wrapped in OctetString, wrapped.length="
+                            + wrapped.length
+                            + " wrapped[0..3]=" + hex(Arrays.copyOf(wrapped, Math.min(4, wrapped.length))));
+                    this.privKeyMaterial = wrapped;
                 } finally {
                     pkOct.clear();
                 }
@@ -115,24 +136,32 @@ final class PQCPrivateKey extends PKCS8Key {
         this.provider = provider;
 
         this.name = PQCKnownOIDs.findMatch(this.algid.getName()).stdName();
+        System.out.println("[DBG PQCPrivateKey ctor-3] alg=" + this.name
+                + " encoded.length=" + encoded.length);
+
         validateKeyLength(this.privKeyMaterial);
         if (!isExpandedChoice(this.name, this.privKeyMaterial)) {
             throw new InvalidKeyException("Only expanded keys are supported by OpenJCEPlus");
         }
         //Check to determine if the key bytes have the Octet tag.
-        if (!(OctectStringEncoded(this.privKeyMaterial))) {
+        boolean needsWrap = !(OctectStringEncoded(this.privKeyMaterial));
+        System.out.println("[DBG PQCPrivateKey ctor-3] needsOctetWrap=" + needsWrap);
+        if (needsWrap) {
             DerValue pkOct = null;
             try {
                 pkOct = new DerValue(DerValue.tag_OctetString, this.privKeyMaterial);
-
                 this.privKeyMaterial = pkOct.toByteArray();
+                System.out.println("[DBG PQCPrivateKey ctor-3] wrapped in OctetString");
             } finally {
                 pkOct.clear();
             }
+        } else {
+            System.out.println("[DBG PQCPrivateKey ctor-3] OctetString already present");
         }
         try {
             this.pqcKey = PQCKey.createPrivateKey(
                                 this.name, this.privKeyMaterial, provider, "KeyFactory");
+            System.out.println("[DBG PQCPrivateKey ctor-3] createPrivateKey done");
         } catch (Exception e) {
             throw new InvalidKeyException("Invalid key " + e.getMessage(), e);
         }
@@ -158,6 +187,7 @@ final class PQCPrivateKey extends PKCS8Key {
         *        ...
         *      }
         */
+        System.out.println("[DBG PQCPrivateKey getEncoded] alg=" + this.name);
         byte[] encodedKey = null;
         try {
             int V1 = 0;
@@ -171,12 +201,21 @@ final class PQCPrivateKey extends PKCS8Key {
             encodedKey = out.toByteArray();
             tmp.close();
             bytes.close();
+            System.out.println("[DBG PQCPrivateKey getEncoded] encodedKey.length=" + encodedKey.length
+                    + " encodedKey[0..4]=" + hex(Arrays.copyOf(encodedKey, Math.min(5, encodedKey.length))));
         } catch (IOException ex) {
-            //System.out.println("Exception creating encoding - "+ex.getMessage());
             return encodedKey;
         }
         
         return encodedKey;
+    }
+
+    // Debug helper — hex-encodes a byte array.
+    private static String hex(byte[] b) {
+        if (b == null) return "<null>";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte v : b) sb.append(String.format("%02x", v & 0xff));
+        return sb.toString();
     }
 
     PQCKey getPQCKey() {
