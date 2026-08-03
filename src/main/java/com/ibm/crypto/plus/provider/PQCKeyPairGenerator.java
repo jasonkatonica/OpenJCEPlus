@@ -94,11 +94,13 @@ abstract class PQCKeyPairGenerator extends KeyPairGeneratorSpi {
                     break;
             }
 
-            PQCKey mlkemKey = PQCKey.generateKeyPair(pqcAlg, provider);
-            byte[] privKeyBytes = mlkemKey.getPrivateKeyBytes();
-            PQCPrivateKey privKey = new PQCPrivateKey(provider, PQCKey.createPrivateKey(
-                                                        pqcAlg, privKeyBytes, provider, "KeyPairGenerator"));
-            byte[] pubKeyBytes = mlkemKey.getPublicKeyBytes();
+            // PQCKey.generateKeyPair() now returns a PQCKey that already owns
+            // a private-key-only EVP_PKEY* and has the public bytes populated.
+            // The raw keypair handle from MLKEY_generate is freed inside that
+            // method, so its address is never aliased to any derived key.
+            PQCKey pqcKey = PQCKey.generateKeyPair(pqcAlg, provider);
+            PQCPrivateKey privKey = new PQCPrivateKey(provider, pqcKey);
+            byte[] pubKeyBytes = pqcKey.getPublicKeyBytes();
             PQCPublicKey pubKey = new PQCPublicKey(provider, PQCKey.createPublicKey(
                                                         pqcAlg, pubKeyBytes, provider, "KeyPairGenerator"));
             return new KeyPair(pubKey, privKey);
