@@ -164,8 +164,16 @@ public class MLKEMImpl implements KEMSpi {
             }
 
             PQCKey pqcPubKey = ((PQCPublicKey) publicKey).getPQCKey();
+            long pubPKeyId = 0;
             try {
-                OJPKEM.KEM_encapsulate(pqcPubKey.getPKeyId(),
+                pubPKeyId = pqcPubKey.getPKeyId();
+                System.err.printf("[MLKEMImpl] DEBUG: encapsulate alg=%s pubKey.identityHash=0x%x"
+                        + " pqcPubKey.identityHash=0x%x pubPKeyId=0x%x thread=%d%n",
+                        algName, System.identityHashCode(publicKey),
+                        System.identityHashCode(pqcPubKey),
+                        pubPKeyId, Thread.currentThread().getId());
+                System.err.flush();
+                OJPKEM.KEM_encapsulate(pubPKeyId,
                         encapsulation, secret, provider, algName);
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
@@ -275,10 +283,24 @@ public class MLKEMImpl implements KEMSpi {
             }
 
             PQCKey pqcPrivKey = ((PQCPrivateKey) this.privateKey).getPQCKey();
+            long privPKeyId = 0;
             try {
-                secret = OJPKEM.KEM_decapsulate(pqcPrivKey.getPKeyId(),
+                privPKeyId = pqcPrivKey.getPKeyId();
+                System.err.printf("[MLKEMImpl] DEBUG: decapsulate alg=%s privKey.identityHash=0x%x"
+                        + " pqcPrivKey.identityHash=0x%x privPKeyId=0x%x thread=%d"
+                        + " cipherText.length=%d%n",
+                        algName, System.identityHashCode(this.privateKey),
+                        System.identityHashCode(pqcPrivKey),
+                        privPKeyId, Thread.currentThread().getId(),
+                        cipherText.length);
+                System.err.flush();
+                secret = OJPKEM.KEM_decapsulate(privPKeyId,
                         cipherText, provider, algName);
-
+                System.err.printf("[MLKEMImpl] DEBUG: decapsulate completed alg=%s privPKeyId=0x%x"
+                        + " thread=%d secret.length=%d%n",
+                        algName, privPKeyId, Thread.currentThread().getId(),
+                        (secret != null ? secret.length : -1));
+                System.err.flush();
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
             } finally {
