@@ -94,15 +94,19 @@ abstract class PQCKeyPairGenerator extends KeyPairGeneratorSpi {
                     break;
             }
 
-            // PQCKey.generateKeyPair() now returns a PQCKey that already owns
-            // a private-key-only EVP_PKEY* and has the public bytes populated.
+            // PQCKey.generateKeyPair() returns a PQCKey that already owns a
+            // private-key-only EVP_PKEY* and has the public bytes populated.
             // The raw keypair handle from MLKEY_generate is freed inside that
             // method, so its address is never aliased to any derived key.
+            //
+            // PQCPublicKey(provider, PQCKey) stores this.pqcKey = pqcKey, so
+            // the public-key PQCKey[C] is strongly held by the PQCPublicKey
+            // object for its entire lifetime — no premature GC of PQCKey[C].
             PQCKey pqcKey = PQCKey.generateKeyPair(pqcAlg, provider);
             PQCPrivateKey privKey = new PQCPrivateKey(provider, pqcKey);
             byte[] pubKeyBytes = pqcKey.getPublicKeyBytes();
-            PQCPublicKey pubKey = new PQCPublicKey(provider, PQCKey.createPublicKey(
-                                                        pqcAlg, pubKeyBytes, provider, "KeyPairGenerator"));
+            PQCKey pubPQCKey = PQCKey.createPublicKey(pqcAlg, pubKeyBytes, provider, "KeyPairGenerator");
+            PQCPublicKey pubKey = new PQCPublicKey(provider, pubPQCKey);
             return new KeyPair(pubKey, privKey);
         } catch (Exception e) {
             throw provider.providerException("Failure in generateKeyPair - " + e.getCause(), e);
