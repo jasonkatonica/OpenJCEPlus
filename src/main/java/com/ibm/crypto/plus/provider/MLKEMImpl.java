@@ -127,21 +127,25 @@ public class MLKEMImpl implements KEMSpi {
                     + " encoded.length=" + foreignEncoded.length
                     + " encoded[0..4]=" + hex4(foreignEncoded));
             // Scan for the BIT STRING tag (0x03) inside the SPKI to find unusedBits
-            for (int idx = 1; idx < foreignEncoded.length - 5; idx++) {
+            // and the first 8 payload bytes so we can compare them byte-for-byte with
+            // what ctor-3 eventually sends to OCK (PROBE-B payload[0..7]).
+            for (int idx = 1; idx < foreignEncoded.length - 9; idx++) {
                 if ((foreignEncoded[idx] & 0xff) == 0x03) {
                     // Candidate BIT STRING — check length form
-                    int ub = -1;
+                    int ub = -1; int hdr = -1;
                     if ((foreignEncoded[idx + 1] & 0xff) == 0x82 && idx + 4 < foreignEncoded.length) {
-                        ub = foreignEncoded[idx + 4] & 0xff;
+                        ub = foreignEncoded[idx + 4] & 0xff; hdr = idx + 5;
                     } else if ((foreignEncoded[idx + 1] & 0xff) == 0x81 && idx + 3 < foreignEncoded.length) {
-                        ub = foreignEncoded[idx + 3] & 0xff;
+                        ub = foreignEncoded[idx + 3] & 0xff; hdr = idx + 4;
                     } else if ((foreignEncoded[idx + 1] & 0x80) == 0 && idx + 2 < foreignEncoded.length) {
-                        ub = foreignEncoded[idx + 2] & 0xff;
+                        ub = foreignEncoded[idx + 2] & 0xff; hdr = idx + 3;
                     }
-                    if (ub >= 0) {
+                    if (ub >= 0 && hdr + 8 <= foreignEncoded.length) {
+                        byte[] payload8 = Arrays.copyOfRange(foreignEncoded, hdr, hdr + 8);
                         System.out.println("[DBG MLKEMImpl encap] PROBE-D BIT STRING at offset " + idx
                                 + ": unusedBits=" + ub
-                                + (ub != 0 ? " *** NON-ZERO — will corrupt BitArray bit-count in ctor-3 ***" : " (ok)"));
+                                + " payload[0..7]=" + hex4ext(payload8)
+                                + (ub != 0 ? " *** NON-ZERO unusedBits ***" : " (ok)"));
                         break;
                     }
                 }
@@ -202,8 +206,16 @@ public class MLKEMImpl implements KEMSpi {
             PQCPublicKey pqcPubKey = (PQCPublicKey) this.publicKey;
             PQCKey pqcKeyPub = pqcPubKey.getPQCKey();
             try {
+                // PROBE-C: log pkeyId so we can correlate which OCK key handle was used,
+                // and the first 8 bytes of ciphertext and secret after encapsulation.
+                System.out.println("[DBG MLKEMImpl encap] PROBE-C before encap:"
+                        + " alg=" + algName
+                        + " pkeyId=" + pqcKeyPub.getPKeyId());
                 OJPKEM.KEM_encapsulate(pqcKeyPub.getPKeyId(),
                         encapsulation, secret, provider, algName);
+                System.out.println("[DBG MLKEMImpl encap] PROBE-C after encap:"
+                        + " ciphertext[0..7]=" + hex4ext(Arrays.copyOf(encapsulation, Math.min(8, encapsulation.length)))
+                        + " secret[0..7]=" + hex4ext(Arrays.copyOf(secret, Math.min(8, secret.length))));
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             } finally {
@@ -368,10 +380,19 @@ public class MLKEMImpl implements KEMSpi {
         }
     }
 
-    /** Debug helper: hex-encodes the first 5 bytes of a byte array. */
+    /** Debug helper: hex-encodes the first 5 bytes of a byte array (for PROBE-D header). */
     private static String hex4(byte[] b) {
         if (b == null) return "<null>";
         int len = Math.min(5, b.length);
+        StringBuilder sb = new StringBuilder(len * 2);
+        for (int i = 0; i < len; i++) sb.append(String.format("%02x", b[i] & 0xff));
+        return sb.toString();
+    }
+
+    /** Debug helper: hex-encodes up to 8 bytes of a byte array (for PROBE-C and PROBE-D payload). */
+    private static String hex4ext(byte[] b) {
+        if (b == null) return "<null>";
+        int len = Math.min(8, b.length);
         StringBuilder sb = new StringBuilder(len * 2);
         for (int i = 0; i < len; i++) sb.append(String.format("%02x", b[i] & 0xff));
         return sb.toString();
