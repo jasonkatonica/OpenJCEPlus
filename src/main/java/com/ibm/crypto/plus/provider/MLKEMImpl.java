@@ -110,6 +110,43 @@ public class MLKEMImpl implements KEMSpi {
             // Validate algorithm match (unless this is the generic ML-KEM instance)
             validateKeyAlgorithm(keyAlgorithm);
             
+            // === PROBE D: inspect the foreign key's encoded form before conversion ===
+            // The SubjectPublicKeyInfo BIT STRING for ML-KEM has this layout:
+            //   30 xx xx  (SEQUENCE - outer SPKI)
+            //     30 xx   (SEQUENCE - AlgorithmIdentifier)  ...variable...
+            //     03 82 xx xx <unusedBits> <payload>   (BIT STRING - public key)
+            // We locate the BIT STRING tag (0x03) by scanning for it.
+            // The critical byte is <unusedBits>: if non-zero AND the provider that
+            // produced this key (e.g. BC) preserved it, ctor-3's X509Key.decode()
+            // will store a BitArray with a non-multiple-of-8 bit-count, and the
+            // subsequent toByteArray() will return a truncated/shifted payload.
+            byte[] foreignEncoded = publicKey.getEncoded();
+            System.out.println("[DBG MLKEMImpl encap] PROBE-D foreign key:"
+                    + " provider=" + publicKey.getClass().getName()
+                    + " alg=" + keyAlgorithm
+                    + " encoded.length=" + foreignEncoded.length
+                    + " encoded[0..4]=" + hex4(foreignEncoded));
+            // Scan for the BIT STRING tag (0x03) inside the SPKI to find unusedBits
+            for (int idx = 1; idx < foreignEncoded.length - 5; idx++) {
+                if ((foreignEncoded[idx] & 0xff) == 0x03) {
+                    // Candidate BIT STRING — check length form
+                    int ub = -1;
+                    if ((foreignEncoded[idx + 1] & 0xff) == 0x82 && idx + 4 < foreignEncoded.length) {
+                        ub = foreignEncoded[idx + 4] & 0xff;
+                    } else if ((foreignEncoded[idx + 1] & 0xff) == 0x81 && idx + 3 < foreignEncoded.length) {
+                        ub = foreignEncoded[idx + 3] & 0xff;
+                    } else if ((foreignEncoded[idx + 1] & 0x80) == 0 && idx + 2 < foreignEncoded.length) {
+                        ub = foreignEncoded[idx + 2] & 0xff;
+                    }
+                    if (ub >= 0) {
+                        System.out.println("[DBG MLKEMImpl encap] PROBE-D BIT STRING at offset " + idx
+                                + ": unusedBits=" + ub
+                                + (ub != 0 ? " *** NON-ZERO — will corrupt BitArray bit-count in ctor-3 ***" : " (ok)"));
+                        break;
+                    }
+                }
+            }
+
             // Use the key's actual algorithm, not the generic "ML-KEM"
             try {
                 KeyFactory kf = KeyFactory.getInstance(keyAlgorithm, this.provider.getName());
@@ -329,5 +366,14 @@ public class MLKEMImpl implements KEMSpi {
         public MLKEM1024(OpenJCEPlusProvider provider) {
             super(provider, "ML-KEM-1024");
         }
-    }    
+    }
+
+    /** Debug helper: hex-encodes the first 5 bytes of a byte array. */
+    private static String hex4(byte[] b) {
+        if (b == null) return "<null>";
+        int len = Math.min(5, b.length);
+        StringBuilder sb = new StringBuilder(len * 2);
+        for (int i = 0; i < len; i++) sb.append(String.format("%02x", b[i] & 0xff));
+        return sb.toString();
+    }
 }
