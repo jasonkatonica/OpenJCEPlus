@@ -26,26 +26,69 @@ public final class PQCKey implements AsymmetricKey {
     private byte[] publicKeyBytes;
     private final static String badIdMsg = "Key Identifier is not valid";
 
+    /**
+     * Generates a keypair natively and returns a PQCKey that holds only the
+     * already-extracted private and public key bytes.  The raw keypair EVP_PKEY*
+     * returned by MLKEY_generate is freed <em>before</em> this method returns,
+     * so its native address can never be reused while the caller still holds
+     * derived keys that were created from those bytes.
+     *
+     * <p>Previously a PQCKey wrapper was returned for the raw keypair pointer.
+     * That wrapper had no Java owner after generateKeyPair() returned, so the
+     * GC could collect it immediately and the cleaner would free the native
+     * address.  The allocator could then hand the same address to the very next
+     * MLKEY_generate call.  If a decapsulation was in progress on a derived key
+     * whose pkeyId happened to equal the recycled address, it would read from
+     * the wrong (or partially overwritten) EVP_PKEY* and produce the wrong
+     * shared secret — the intermittent "Secrets do NOT match" failure.</p>
+     */
     public static PQCKey generateKeyPair(String algName, OpenJCEPlusProvider provider)
             throws NativeException {
-        long keyId = 0;
-        // final String methodName = "generateKeyPair ";
-
         if (provider == null) {
             throw new IllegalArgumentException("provider is null");
         }
         NativeInterface nativeInterface = NativeCryptoSelector.selectBackend(provider, "KeyPairGenerator", algName);
+        long keyId = 0;
         try {
             String NoDashAlg = algName.replace('-', '_');
             keyId = nativeInterface.MLKEY_generate(NoDashAlg);
-
             if (keyId == 0) {
                 throw new NativeException("PQCKey.generateKeyPair: MLKEY_generate failed");
-            }    
+            }
+
+            // Extract both byte arrays while the keypair is still alive.
+            byte[] privateKeyBytes = nativeInterface.MLKEY_getPrivateKeyBytes(keyId);
+            byte[] publicKeyBytes  = nativeInterface.MLKEY_getPublicKeyBytes(keyId);
+
+            // Free the keypair handle immediately.  This is the critical step:
+            // the native address is released here, before any derived PQCKey is
+            // constructed, so it cannot alias any derived key's pkeyId.
+            nativeInterface.MLKEY_delete(keyId);
+            keyId = 0;
+
+            // Return a PQCKey whose pkeyId points to the private-key-only
+            // EVP_PKEY* (created from the extracted bytes), and whose public
+            // bytes are already populated.  The cleaner for this object will
+            // free only that private-key-only pointer.
+            String NoDashAlg2 = algName.replace('-', '_');
+            long privKeyId = nativeInterface.MLKEY_createPrivateKey(NoDashAlg2, privateKeyBytes);
+            if (privKeyId == 0) {
+                Arrays.fill(privateKeyBytes, (byte) 0);
+                throw new NativeException("PQCKey.generateKeyPair: MLKEY_createPrivateKey failed");
+            }
+            return new PQCKey(nativeInterface, privKeyId, privateKeyBytes, publicKeyBytes, algName, provider);
+
+        } catch (NativeException e) {
+            if (keyId != 0) {
+                try { nativeInterface.MLKEY_delete(keyId); } catch (Exception ignored) {}
+            }
+            throw e;
         } catch (Exception e) {
+            if (keyId != 0) {
+                try { nativeInterface.MLKEY_delete(keyId); } catch (Exception ignored) {}
+            }
             throw new NativeException("PQCKey.generateKeyPair: Exception " + e.getMessage(), e);
         }
-        return new PQCKey(nativeInterface, keyId, unobtainedKeyBytes, unobtainedKeyBytes, algName, provider);
     }
 
     public static PQCKey createPrivateKey(String algName, byte[] privateKeyBytes, OpenJCEPlusProvider provider, String configType)
