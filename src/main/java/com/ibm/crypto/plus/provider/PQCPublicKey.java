@@ -74,45 +74,34 @@ final class PQCPublicKey extends X509Key
                     + " rawKey.length=" + rawKey.length
                     + " rawKey[0..7]=" + hex(Arrays.copyOf(rawKey, Math.min(8, rawKey.length))));
 
-            //OCKC puts the BITSTRING on the key. Need to remove it.
-            // rawKey is: 03 82 xx xx 00 <actual-key-bytes>
-            // That is: tag(1) + 2-byte-long-form-len(3) + unused-bits-byte(1) = 5 header bytes
-            byte tag         = rawKey[0];
-            byte lenForm     = rawKey[1];
-            int  declaredLen = ((rawKey[2] & 0xFF) << 8) | (rawKey[3] & 0xFF);
-            byte unusedBits  = rawKey[4];
-            int  payloadLen  = rawKey.length - 5;
-
-            System.out.println("[DBG PQCPublicKey ctor-2] BIT STRING header:"
-                    + " tag=0x" + String.format("%02x", tag)
-                    + " lenForm=0x" + String.format("%02x", lenForm)
-                    + " declaredLen=" + declaredLen
-                    + " unusedBits=" + unusedBits
-                    + " payloadLen=" + payloadLen
-                    + " (rawKey.length-5)=" + (rawKey.length - 5));
-
-            if (unusedBits != 0) {
-                System.out.println("[DBG PQCPublicKey ctor-2] WARNING: unusedBits=" + unusedBits
-                        + " is non-zero; key bytes may be misaligned!");
-            }
-            if (declaredLen != rawKey.length - 4) {
-                System.out.println("[DBG PQCPublicKey ctor-2] WARNING: declaredLen=" + declaredLen
-                        + " does not match rawKey.length-4=" + (rawKey.length - 4)
-                        + "; header parse may be wrong!");
-            }
-
-            // OCK wraps the key in a DER BIT STRING but the unusedBits byte (rawKey[4])
-            // is sometimes non-zero even though ML-KEM keys are always byte-aligned.
-            // Ignoring unusedBits and copying the payload bytes directly produces the
-            // correct, canonical key value that round-trips cleanly through getEncoded().
+            // OCK wraps the public key in a DER BIT STRING:
+            //   03 82 <hi> <lo> <unusedBits> <payload>
+            // All ML-KEM key sizes (800, 1184, 1568 bytes) use the 2-byte long form (0x82),
+            // so the BIT STRING header is always 5 bytes: tag(1)+0x82(1)+hi(1)+lo(1)+ub(1).
+            //
+            // OCK's ICC_i2d_PublicKey sometimes returns a non-zero unusedBits byte even
+            // though ML-KEM keys are always byte-aligned.  When unusedBits != 0, the low
+            // unusedBits bits of the last payload byte are garbage and must be masked to
+            // zero before storing, so that getEncoded() exports a correct SPKI.
+            int unusedBits = rawKey[4] & 0xFF;
             byte[] keyPayload = Arrays.copyOfRange(rawKey, 5, rawKey.length);
+            if (unusedBits != 0 && keyPayload.length > 0) {
+                // Zero the low unusedBits bits of the last byte (DER masking).
+                keyPayload[keyPayload.length - 1] &= (byte)(0xFF << unusedBits);
+                System.out.println("[DBG PQCPublicKey ctor-2] FIX: unusedBits=" + unusedBits
+                        + " — masked last payload byte: "
+                        + String.format("%02x", keyPayload[keyPayload.length - 1] & 0xff));
+            }
             setKey(new BitArray(keyPayload.length * 8, keyPayload));
 
             byte[] storedKeyBytes = getKey().toByteArray();
             System.out.println("[DBG PQCPublicKey ctor-2] storedKey.length=" + storedKeyBytes.length
                     + " storedKey[0..3]=" + hex(Arrays.copyOf(storedKeyBytes, Math.min(4, storedKeyBytes.length))));
 
+            // The pqcKey handle IS the OCK keypair handle from generateKeyPair().
+            // We store it directly — no re-import via createPublicKey() needed.
             this.pqcKey = pqcKey;
+            System.out.println("[DBG PQCPublicKey ctor-2] pqcKey.pkeyId=" + this.pqcKey.getPKeyId());
         } catch (Exception exception) {
             throw provider.providerException("Failure in PublicKey + " + exception.getMessage(), exception);
         }
@@ -129,8 +118,9 @@ final class PQCPublicKey extends X509Key
             this.name = PQCKnownOIDs.findMatch(this.algid.getName()).stdName();
 
             // PROBE-A: bit-length of BitArray as stored by X509Key.decode().
-            // X509Key subtracts unusedBits from the bit-count, so a non-zero
-            // unusedBits in the incoming DER produces bitLen % 8 != 0.
+            // X509Key.decode() calls getUnalignedBitString() which subtracts unusedBits
+            // from the bit-count, so a non-zero unusedBits in the incoming SPKI produces
+            // bitLen % 8 != 0.
             int rawBitLen = getKey().length();
             byte[] rawBytes = getKey().toByteArray();
             System.out.println("[DBG PQCPublicKey ctor-3] PROBE-A after decode:"
@@ -138,31 +128,37 @@ final class PQCPublicKey extends X509Key
                     + " bitLen=" + rawBitLen + " (bitLen%8=" + (rawBitLen % 8) + ")"
                     + " toByteArray().length=" + rawBytes.length
                     + " payload[0..7]=" + hex(Arrays.copyOf(rawBytes, Math.min(8, rawBytes.length))));
+
+            // FIX: if the incoming BIT STRING had a non-zero unusedBits field the
+            // BitArray is not byte-aligned.  Re-wrap the already-masked bytes into a
+            // fresh byte-aligned BitArray so putUnalignedBitString always emits
+            // unusedBits=0 to OCK.
             if (rawBitLen % 8 != 0) {
-                System.out.println("[DBG PQCPublicKey ctor-3] *** PROBE-A: incoming unusedBits="
-                        + (8 - rawBitLen % 8)
-                        + " — BitArray is NOT byte-aligned; toByteArray() will SHIFT bits!");
+                int incomingUnusedBits = 8 - (rawBitLen % 8);
+                System.out.println("[DBG PQCPublicKey ctor-3] FIX: incoming unusedBits="
+                        + incomingUnusedBits
+                        + " — normalising BitArray to byte-aligned (last byte already masked by BitArray ctor)");
+                // rawBytes from toByteArray() already has the low unusedBits bits zeroed.
+                setKey(new BitArray(rawBytes.length * 8, rawBytes));
             }
 
-            // Build the BIT STRING to send to OCK.
+            // Build the BIT STRING to send to OCK (unusedBits=0 after normalisation above).
             DerOutputStream tmp = new DerOutputStream();
             tmp.putUnalignedBitString(getKey());
             byte[] b = tmp.toByteArray();
             tmp.close();
 
             // PROBE-B: unusedBits byte that will actually be sent to OCK.
-            // After putUnalignedBitString the header is tag(1) + len(1-3) + unusedBits(1).
-            // For ML-KEM the len is always 0x82-form → unusedBits is at b[4].
             int hdrLen = ((b[1] & 0xff) == 0x82) ? 4 : ((b[1] & 0xff) == 0x81) ? 3 : 2;
             byte ockUB = (b.length > hdrLen) ? b[hdrLen] : (byte) 0xff;
             System.out.println("[DBG PQCPublicKey ctor-3] PROBE-B bytes-to-OCK:"
                     + " totalLen=" + b.length
-                    + " hdr[0.." + (hdrLen + 1) + "]=" + hex(Arrays.copyOf(b, hdrLen + 1))
+                    + " alg=" + this.name
                     + " unusedBits-to-OCK=" + (ockUB & 0xff)
                     + " payload[0..7]=" + hex(Arrays.copyOfRange(b, hdrLen + 1, Math.min(b.length, hdrLen + 9))));
             if (ockUB != 0) {
-                System.out.println("[DBG PQCPublicKey ctor-3] *** PROBE-B: non-zero unusedBits="
-                        + (ockUB & 0xff) + " will be sent to OCK — KEY PAYLOAD IS CORRUPTED");
+                System.out.println("[DBG PQCPublicKey ctor-3] *** PROBE-B WARNING: non-zero unusedBits="
+                        + (ockUB & 0xff) + " will be sent to OCK (fix did not apply?)");
             }
 
             this.pqcKey = PQCKey.createPublicKey(name, b, provider, "KeyFactory");
