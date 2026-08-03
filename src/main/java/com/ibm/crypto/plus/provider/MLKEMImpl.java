@@ -326,9 +326,18 @@ public class MLKEMImpl implements KEMSpi {
             PQCPrivateKey pqcPrivKey = (PQCPrivateKey) this.privateKey;
             PQCKey pqcKeyPriv = pqcPrivKey.getPQCKey();
             try {
+                // PROBE-E: log the private key's pkeyId and the first 8 bytes of the
+                // resulting secret so we can cross-check with PROBE-C on the encap side.
+                // pkeyId here is a DIFFERENT handle from the encap-side pkeyId — that is
+                // expected. What must match is secret[0..7] == PROBE-C secret[0..7].
+                System.out.println("[DBG MLKEMImpl decap] PROBE-E before decap:"
+                        + " alg=" + algName
+                        + " privKeyPkeyId=" + pqcKeyPriv.getPKeyId()
+                        + " ciphertext[0..7]=" + hex4ext(Arrays.copyOf(cipherText, Math.min(8, cipherText.length))));
                 secret = OJPKEM.KEM_decapsulate(pqcKeyPriv.getPKeyId(),
                         cipherText, provider, algName);
-
+                System.out.println("[DBG MLKEMImpl decap] PROBE-E after decap:"
+                        + " secret[0..7]=" + hex4ext(Arrays.copyOf(secret, Math.min(8, secret.length))));
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
             } finally {
