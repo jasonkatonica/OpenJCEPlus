@@ -101,7 +101,12 @@ final class PQCPublicKey extends X509Key
                         + "; header parse may be wrong!");
             }
 
-            setKey(new BitArray((rawKey.length - 5) * 8, rawKey, 5));
+            // OCK wraps the key in a DER BIT STRING but the unusedBits byte (rawKey[4])
+            // is sometimes non-zero even though ML-KEM keys are always byte-aligned.
+            // Ignoring unusedBits and copying the payload bytes directly produces the
+            // correct, canonical key value that round-trips cleanly through getEncoded().
+            byte[] keyPayload = Arrays.copyOfRange(rawKey, 5, rawKey.length);
+            setKey(new BitArray(keyPayload.length * 8, keyPayload));
 
             byte[] storedKeyBytes = getKey().toByteArray();
             System.out.println("[DBG PQCPublicKey ctor-2] storedKey.length=" + storedKeyBytes.length
