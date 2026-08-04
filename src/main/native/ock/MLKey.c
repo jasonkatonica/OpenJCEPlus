@@ -395,6 +395,19 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPriva
             pBytes = keyBytesNative;
             size   = (*env)->GetArrayLength(env, privateKeyBytes);
 
+            /* DEBUG: print key bytes being fed to ICC_d2i_PrivateKey */
+            {
+                int i;
+                fprintf(stderr,
+                        "[MLKEY_createPrivateKey] DEBUG: alg=%s size=%zu first16=",
+                        algoChars, size);
+                for (i = 0; i < (int)size && i < 16; i++) {
+                    fprintf(stderr, "%02x", keyBytesNative[i]);
+                }
+                fprintf(stderr, "\n");
+                fflush(stderr);
+            }
+
             if (cipherName != NULL) {
                 ockPKey =
                     ICC_d2i_PrivateKey(ockCtx, nid, &ockPKey, &pBytes, (long)size);
@@ -404,6 +417,12 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPriva
                     throwOCKException(env, 0, "ICC_d2i_PrivateKey failed");
                 } else {
                     mlkeyId = (jlong)((intptr_t)ockPKey);
+                    /* DEBUG: print the returned pkey pointer */
+                    fprintf(stderr,
+                            "[MLKEY_createPrivateKey] DEBUG: ICC_d2i_PrivateKey"
+                            " returned ockPKey=%p mlkeyId=%lx\n",
+                            (void *)ockPKey, (unsigned long)mlkeyId);
+                    fflush(stderr);
                 }
             } else {
 #ifdef DEBUG_PQC_KEY_DETAIL
@@ -572,6 +591,19 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1getPrivateK
                     throwOCKException(env, 0, "ICC_i2d_PrivateKey failed");
                 } else {
                     retKeyBytes = keyBytes;
+                    /* DEBUG: print raw privkey bytes returned to Java */
+                    {
+                        int i;
+                        fprintf(stderr,
+                                "[MLKEY_getPrivateKeyBytes] DEBUG: ockKey=%p"
+                                " privkey size=%d first16=",
+                                (void *)ockKey, size);
+                        for (i = 0; i < size && i < 16; i++) {
+                            fprintf(stderr, "%02x", keyBytesNative[i]);
+                        }
+                        fprintf(stderr, "\n");
+                        fflush(stderr);
+                    }
                 }
             }
         }
