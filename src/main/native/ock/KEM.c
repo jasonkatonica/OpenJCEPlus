@@ -189,6 +189,34 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
+    /* ---- DEBUG: dump the public key bytes accessible from ockPKey ---- */
+    {
+        unsigned char *pub_bytes  = NULL;
+        unsigned char *pub_ptr    = NULL;
+        int            pub_len    = ICC_i2d_PublicKey(ockCtx, ockPKey, NULL);
+        if (pub_len > 0) {
+            pub_bytes = (unsigned char *)malloc(pub_len);
+            pub_ptr   = pub_bytes;
+            ICC_i2d_PublicKey(ockCtx, ockPKey, &pub_ptr);
+            /* Print first 16 bytes and total length */
+            fprintf(stderr,
+                    "[KEM_decapsulate] DEBUG: ockPKey pub key len=%d first16=",
+                    pub_len);
+            int i;
+            for (i = 0; i < pub_len && i < 16; i++) {
+                fprintf(stderr, "%02x", pub_bytes[i]);
+            }
+            fprintf(stderr, "\n");
+            free(pub_bytes);
+        } else {
+            fprintf(stderr,
+                    "[KEM_decapsulate] DEBUG: ICC_i2d_PublicKey returned %d"
+                    " (no pub key in ockPKey?)\n", pub_len);
+        }
+        fflush(stderr);
+    }
+    /* ------------------------------------------------------------------ */
+
     evp_pk = ICC_EVP_PKEY_CTX_new(ockCtx, ockPKey, NULL);
     fprintf(stderr,
             "[KEM_decapsulate] DEBUG: ICC_EVP_PKEY_CTX_new returned evp_pk=%p\n",

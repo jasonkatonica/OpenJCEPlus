@@ -40,6 +40,17 @@ public class MLKEMImpl implements KEMSpi {
         this.provider = provider;
         this.alg = alg;
     }
+
+    /** Debug helper: hex-encode the first 16 bytes of a byte array. */
+    private static String toHex16(byte[] b) {
+        if (b == null || b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder();
+        int len = Math.min(b.length, 16);
+        for (int i = 0; i < len; i++) {
+            sb.append(String.format("%02x", b[i] & 0xFF));
+        }
+        return sb.toString();
+    }
     
     /**
      * Validates that the key's algorithm matches this KEM instance's algorithm.
@@ -286,13 +297,31 @@ public class MLKEMImpl implements KEMSpi {
             long privPKeyId = 0;
             try {
                 privPKeyId = pqcPrivKey.getPKeyId();
+                // Print public key bytes stored in the private key object for correlation.
+                // pqcPrivKey.getPublicKeyBytes() returns ICC's raw format which starts with
+                // a BIT STRING header (03 82 xx xx 00), so offset 5 onward is the raw key.
+                // Compare first16 at offset 5 with "pubPlus raw key first16" in the test log
+                // and with "[KEM_decapsulate] DEBUG: ockPKey pub key first16" in C.
+                byte[] privPubBytes = pqcPrivKey.getPublicKeyBytes();
+                String privPubFirst16 = "(null)";
+                String privPubRawFirst16 = "(null)";
+                if (privPubBytes != null) {
+                    privPubFirst16 = privPubBytes.length >= 16 ? toHex16(privPubBytes) : "(short)";
+                    // Skip 5-byte BIT STRING header: 03 82 xx xx 00
+                    privPubRawFirst16 = privPubBytes.length >= 21
+                        ? toHex16(java.util.Arrays.copyOfRange(privPubBytes, 5, 21)) : "(short)";
+                }
                 System.err.printf("[MLKEMImpl] DEBUG: decapsulate alg=%s privKey.identityHash=0x%x"
                         + " pqcPrivKey.identityHash=0x%x privPKeyId=0x%x thread=%d"
-                        + " cipherText.length=%d%n",
+                        + " cipherText.length=%d privPubKeyBytes.len=%d"
+                        + " privPubKeyBytes.first16=%s rawKeyFirst16=%s%n",
                         algName, System.identityHashCode(this.privateKey),
                         System.identityHashCode(pqcPrivKey),
                         privPKeyId, Thread.currentThread().getId(),
-                        cipherText.length);
+                        cipherText.length,
+                        privPubBytes != null ? privPubBytes.length : -1,
+                        privPubFirst16,
+                        privPubRawFirst16);
                 System.err.flush();
                 secret = OJPKEM.KEM_decapsulate(privPKeyId,
                         cipherText, provider, algName);
