@@ -495,12 +495,39 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPubli
             throwOCKException(
                 env, 0, "Algorithm not found."); /* Unsupported algorithm */
         } else {
+            /* DEBUG: print the public key bytes being fed to ICC_d2i_PublicKey */
+            {
+                int di;
+                fprintf(stderr,
+                        "[MLKEY_createPublicKey] DEBUG: alg=%s size=%ld first16=",
+                        algoChars, size);
+                for (di = 0; di < (int)size && di < 16; di++) {
+                    fprintf(stderr, "%02x", keyBytesNative[di]);
+                }
+                fprintf(stderr, "\n");
+                /* Also print raw key at offset 5 (skip BIT STRING header) */
+                if (size >= 5 + 16) {
+                    fprintf(stderr,
+                            "[MLKEY_createPublicKey] DEBUG: alg=%s raw_ek (offset 5) first16=",
+                            algoChars);
+                    for (di = 5; di < (int)size && di < 5 + 16; di++) {
+                        fprintf(stderr, "%02x", keyBytesNative[di]);
+                    }
+                    fprintf(stderr, "\n");
+                }
+                fflush(stderr);
+            }
             ockPKey = ICC_d2i_PublicKey(ockCtx, nid, &ockPKey, &pBytes, size);
             if (ockPKey == NULL) {
                 ockCheckStatus(ockCtx);
                 throwOCKException(env, 0, "ICC_d2i_PublicKey failed");
             } else {
                 mlkeyId = (jlong)((intptr_t)ockPKey);
+                fprintf(stderr,
+                        "[MLKEY_createPublicKey] DEBUG: ICC_d2i_PublicKey"
+                        " returned ockPKey=%p mlkeyId=%lx\n",
+                        (void *)ockPKey, (unsigned long)mlkeyId);
+                fflush(stderr);
             }
         }
     }

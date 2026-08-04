@@ -53,7 +53,9 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
     }
 
     /* GAP #1 fix: dump pub key bytes from pa so we can confirm the right key
-     * is being encapsulated against (pointer alone is not enough) */
+     * is being encapsulated against (pointer alone is not enough).
+     * Also print the raw key bytes starting at offset 5 (skip BIT STRING
+     * header 03 82 xx xx 00) so it can be compared against the ek in dk. */
     {
         int i;
         unsigned char *epk_bytes = NULL;
@@ -70,6 +72,16 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
                 fprintf(stderr, "%02x", epk_bytes[i]);
             }
             fprintf(stderr, "\n");
+            /* Print raw key starting at offset 5 (03 82 xx xx 00 <raw>): */
+            if (epk_len >= 5 + 16) {
+                fprintf(stderr,
+                        "[KEM_encapsulate] DEBUG: pa=%p raw_ek (offset 5) first16=",
+                        (void *)pa);
+                for (i = 5; i < epk_len && i < 5 + 16; i++) {
+                    fprintf(stderr, "%02x", epk_bytes[i]);
+                }
+                fprintf(stderr, "\n");
+            }
             free(epk_bytes);
         } else {
             fprintf(stderr,
@@ -258,8 +270,19 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
                     " (no pub key in ockPKey?)\n", pub_len);
         }
 
-        /* Private key — print first 16 bytes to confirm identity matches
-         * what was created in MLKEY_createPrivateKey and stored in PQCKey */
+        /* Private key — print first 16 bytes to confirm identity, plus
+         * print the ek portion (encapsulation key embedded in dk) so we
+         * can confirm it matches the public key bytes BC used for encap.
+         *
+         * ML-KEM expanded dk layout (per FIPS 203):
+         *   dk = z (32) || sk (768/1152/1536) || ek (800/1184/1568) || H(ek) (32)
+         * ICC stores dk inside a DER OctetString: 04 82 xx xx <dk bytes>
+         * So raw dk starts at offset 4 in the DER blob returned by i2d_PrivateKey.
+         *
+         * ML-KEM-512 : z=32 sk=768  => ek starts at raw offset 800  => DER offset 804
+         * ML-KEM-768 : z=32 sk=1152 => ek starts at raw offset 1184 => DER offset 1188
+         * ML-KEM-1024: z=32 sk=1536 => ek starts at raw offset 1568 => DER offset 1572
+         */
         unsigned char *priv_bytes = NULL;
         unsigned char *priv_ptr   = NULL;
         int            priv_len   = ICC_i2d_PrivateKey(ockCtx, ockPKey, NULL);
@@ -274,6 +297,37 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
                 fprintf(stderr, "%02x", priv_bytes[i]);
             }
             fprintf(stderr, "\n");
+
+            /* Print ek portion from inside dk for each variant.
+             * raw dk starts at DER offset 4 (skip 04 82 xx xx header). */
+            int dk_raw_len = priv_len - 4; /* approximate; exact header may vary */
+            if (priv_len >= 4) {
+                int ek_offset_in_der = -1;
+                int ek_len           = -1;
+                /* Detect variant by total priv_len:
+                 *   512 : priv_len = 4 + 1632 = 1636
+                 *   768 : priv_len = 4 + 2400 = 2404
+                 *  1024 : priv_len = 4 + 3168 = 3172 */
+                if (dk_raw_len == 1632) {
+                    ek_offset_in_der = 4 + 800;  /* z(32)+sk(768)=800, +4 header */
+                    ek_len = 800;
+                } else if (dk_raw_len == 2400) {
+                    ek_offset_in_der = 4 + 1184; /* z(32)+sk(1152)=1184, +4 header */
+                    ek_len = 1184;
+                } else if (dk_raw_len == 3168) {
+                    ek_offset_in_der = 4 + 1568; /* z(32)+sk(1536)=1568, +4 header */
+                    ek_len = 1568;
+                }
+                if (ek_offset_in_der >= 0 && priv_len >= ek_offset_in_der + 16) {
+                    fprintf(stderr,
+                            "[KEM_decapsulate] DEBUG: ockPKey=%p ek (in dk) offset=%d len=%d first16=",
+                            (void *)ockPKey, ek_offset_in_der, ek_len);
+                    for (i = 0; i < 16; i++) {
+                        fprintf(stderr, "%02x", priv_bytes[ek_offset_in_der + i]);
+                    }
+                    fprintf(stderr, "\n");
+                }
+            }
             free(priv_bytes);
         } else {
             fprintf(stderr,
