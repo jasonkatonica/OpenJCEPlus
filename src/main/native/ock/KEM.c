@@ -52,6 +52,33 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
         return;
     }
 
+    /* GAP #1 fix: dump pub key bytes from pa so we can confirm the right key
+     * is being encapsulated against (pointer alone is not enough) */
+    {
+        int i;
+        unsigned char *epk_bytes = NULL;
+        unsigned char *epk_ptr   = NULL;
+        int            epk_len   = ICC_i2d_PublicKey(ockCtx, pa, NULL);
+        if (epk_len > 0) {
+            epk_bytes = (unsigned char *)malloc(epk_len);
+            epk_ptr   = epk_bytes;
+            ICC_i2d_PublicKey(ockCtx, pa, &epk_ptr);
+            fprintf(stderr,
+                    "[KEM_encapsulate] DEBUG: pa=%p pub key len=%d first16=",
+                    (void *)pa, epk_len);
+            for (i = 0; i < epk_len && i < 16; i++) {
+                fprintf(stderr, "%02x", epk_bytes[i]);
+            }
+            fprintf(stderr, "\n");
+            free(epk_bytes);
+        } else {
+            fprintf(stderr,
+                    "[KEM_encapsulate] DEBUG: ICC_i2d_PublicKey returned %d"
+                    " (no pub key in pa?)\n", epk_len);
+        }
+        fflush(stderr);
+    }
+
     evp_pk = ICC_EVP_PKEY_CTX_new_from_pkey(ockCtx, NULL, pa, NULL);
     fprintf(stderr,
             "[KEM_encapsulate] DEBUG: ICC_EVP_PKEY_CTX_new_from_pkey returned evp_pk=%p\n",
@@ -122,14 +149,30 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
             return;
         }
 
-        /* Debug: print first 8 bytes of the generated shared secret */
-        if (genkeylen >= 8) {
+        /* GAP #3 fix: dump ciphertext first16 before the JNI copy so we can
+         * correlate with the test-side encapsulation print */
+        {
+            int i;
             fprintf(stderr,
-                    "[KEM_encapsulate] DEBUG: generated shared secret first 8 bytes: "
-                    "%02x%02x%02x%02x%02x%02x%02x%02x ... (total %zu bytes)\n",
-                    genkeylocal[0], genkeylocal[1], genkeylocal[2], genkeylocal[3],
-                    genkeylocal[4], genkeylocal[5], genkeylocal[6], genkeylocal[7],
-                    genkeylen);
+                    "[KEM_encapsulate] DEBUG: pa=%p ciphertext len=%zu first16=",
+                    (void *)pa, wrappedkeylen);
+            for (i = 0; i < (int)wrappedkeylen && i < 16; i++) {
+                fprintf(stderr, "%02x", wrappedKeyLocal[i]);
+            }
+            fprintf(stderr, "\n");
+            fflush(stderr);
+        }
+
+        /* GAP #4 fix: print 16 bytes (not 8) to match Java hex16 convention */
+        {
+            int i;
+            fprintf(stderr,
+                    "[KEM_encapsulate] DEBUG: pa=%p shared secret len=%zu first16=",
+                    (void *)pa, genkeylen);
+            for (i = 0; i < (int)genkeylen && i < 16; i++) {
+                fprintf(stderr, "%02x", genkeylocal[i]);
+            }
+            fprintf(stderr, "\n");
             fflush(stderr);
         }
 
@@ -348,14 +391,16 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
             return retRndKeyBytes;
         }
 
-        /* Debug: print first 8 bytes of decapsulated secret to correlate with Java-side keyD */
-        if (genkeylen >= 8) {
+        /* GAP #4 fix (decap side): print 16 bytes to match Java hex16 convention */
+        {
+            int i;
             fprintf(stderr,
-                    "[KEM_decapsulate] DEBUG: decapsulated secret first 8 bytes: "
-                    "%02x%02x%02x%02x%02x%02x%02x%02x ... (total %zu bytes)\n",
-                    genkeylocal[0], genkeylocal[1], genkeylocal[2], genkeylocal[3],
-                    genkeylocal[4], genkeylocal[5], genkeylocal[6], genkeylocal[7],
-                    genkeylen);
+                    "[KEM_decapsulate] DEBUG: ockPKey=%p secret len=%zu first16=",
+                    (void *)ockPKey, genkeylen);
+            for (i = 0; i < (int)genkeylen && i < 16; i++) {
+                fprintf(stderr, "%02x", genkeylocal[i]);
+            }
+            fprintf(stderr, "\n");
             fflush(stderr);
         }
 
