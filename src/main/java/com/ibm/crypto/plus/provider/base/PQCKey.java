@@ -9,6 +9,7 @@
 package com.ibm.crypto.plus.provider.base;
 
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
+import com.ibm.crypto.plus.provider.PrimitiveWrapper;
 import java.util.Arrays;
 
 public final class PQCKey implements AsymmetricKey {
@@ -20,7 +21,11 @@ public final class PQCKey implements AsymmetricKey {
 
     private OpenJCEPlusProvider provider;
     private NativeInterface nativeInterface;
-    private final long pkeyId;
+    // PrimitiveWrapper.Long is used so the cleaner lambda can zero the id
+    // after calling MLKEY_delete.  Once zeroed, any subsequent getPKeyId()
+    // call returns 0, which validId() rejects — giving a clean exception
+    // instead of a silent use-after-free on a recycled native address.
+    private PrimitiveWrapper.Long pkeyId = new PrimitiveWrapper.Long(0);
     private String algName;
     private byte[] privateKeyBytes;
     private byte[] publicKeyBytes;
@@ -76,7 +81,8 @@ public final class PQCKey implements AsymmetricKey {
                 Arrays.fill(privateKeyBytes, (byte) 0);
                 throw new NativeException("PQCKey.generateKeyPair: MLKEY_createPrivateKey failed");
             }
-            return new PQCKey(nativeInterface, privKeyId, privateKeyBytes, publicKeyBytes, algName, provider);
+            PQCKey result = new PQCKey(nativeInterface, privKeyId, privateKeyBytes, publicKeyBytes, algName, provider);
+            return result;
 
         } catch (NativeException e) {
             if (keyId != 0) {
@@ -106,7 +112,7 @@ public final class PQCKey implements AsymmetricKey {
         String NoDashAlg = algName.replace('-', '_');
         keyId = nativeInterface.MLKEY_createPrivateKey(NoDashAlg, privateKeyBytes);
 
-        return new PQCKey(nativeInterface, keyId, privateKeyBytes.clone(), null, algName, provider);
+        return new PQCKey(nativeInterface, keyId, privateKeyBytes.clone(), (byte[]) null, algName, provider);
     }
 
     public static PQCKey createPublicKey(String algName, byte[] publicKeyBytes, OpenJCEPlusProvider provider, String configType)
@@ -131,11 +137,11 @@ public final class PQCKey implements AsymmetricKey {
     private PQCKey(NativeInterface nativeInterface, long keyId, byte[] privateKeyBytes,
             byte[] publicKeyBytes, String algName, OpenJCEPlusProvider provider) throws NativeException {
         this.nativeInterface = nativeInterface;
-        this.pkeyId = keyId;
+        this.pkeyId.setValue(keyId);
         this.algName = algName;
         this.provider = provider;
 
-        if (!validId(pkeyId)) {
+        if (!validId(keyId)) {
             throw new NativeException(badIdMsg);
         }
 
@@ -155,31 +161,21 @@ public final class PQCKey implements AsymmetricKey {
         }
 
         System.err.printf("[PQCKey] DEBUG: constructor alg=%s pkeyId=0x%x"
-                + " identityHashCode=0x%x thread=%d"
-                + " privateKeyBytes_param_is_unobtained=%b%n",
+                + " identityHashCode=0x%x thread=%d%n",
                 algName, keyId, System.identityHashCode(this),
-                Thread.currentThread().getId(),
-                (privateKeyBytes == unobtainedKeyBytes));
-        // IMPORTANT: the lambda captures the 'privateKeyBytes' *parameter* reference,
-        // not 'this.privateKeyBytes'.  When called from generateKeyPair() the parameter
-        // is the sentinel 'unobtainedKeyBytes'.  If the cleaner fires before the key
-        // is used, it will NOT zero 'this.privateKeyBytes' (which holds the real
-        // material).  More critically, if the pkeyId is freed by the cleaner of a
-        // *different* PQCKey object that happens to have the same numeric id (e.g. due
-        // to allocator reuse) the decapsulation will silently produce the wrong secret.
-        // Log both references so the mismatch is visible.
-        System.err.printf("[PQCKey] DEBUG: registering cleaner pkeyId=0x%x"
-                + " cleaner_param_ref=%s this.privateKeyBytes_ref=%s%n",
-                keyId,
-                (privateKeyBytes == null ? "null"
-                        : (privateKeyBytes == unobtainedKeyBytes ? "unobtainedKeyBytes"
-                                : "user-supplied")),
-                (this.privateKeyBytes == null ? "null"
-                        : (this.privateKeyBytes == unobtainedKeyBytes ? "unobtainedKeyBytes"
-                                : "resolved[" + this.privateKeyBytes.length + "]")));
+                Thread.currentThread().getId());
         System.err.flush();
 
-        this.provider.registerCleanable(this, cleanOCKResources(privateKeyBytes, pkeyId, this.nativeInterface));
+        // The cleaner captures pkeyId (PrimitiveWrapper.Long) by reference and
+        // this.privateKeyBytes by reference via the ByteArray wrapper.
+        // After MLKEY_delete fires, pkeyId is zeroed so any subsequent
+        // getPKeyId() call returns 0 and validId() throws — preventing
+        // silent use of a recycled native address.
+        PrimitiveWrapper.ByteArray privBytesWrapper = new PrimitiveWrapper.ByteArray(this.privateKeyBytes);
+        System.err.printf("[PQCKey] DEBUG: registering cleaner pkeyId=0x%x%n", keyId);
+        System.err.flush();
+
+        this.provider.registerCleanable(this, cleanOCKResources(privBytesWrapper, pkeyId, this.nativeInterface));
     }
 
     @Override
@@ -189,12 +185,16 @@ public final class PQCKey implements AsymmetricKey {
 
     @Override
     public long getPKeyId() throws NativeException {
+        long id = pkeyId.getValue();
         System.err.printf("[PQCKey] DEBUG: getPKeyId alg=%s pkeyId=0x%x"
                 + " identityHashCode=0x%x thread=%d%n",
-                algName, pkeyId, System.identityHashCode(this),
+                algName, id, System.identityHashCode(this),
                 Thread.currentThread().getId());
         System.err.flush();
-        return pkeyId;
+        if (!validId(id)) {
+            throw new NativeException(badIdMsg + " (already freed)");
+        }
+        return id;
     }
 
     @Override
@@ -221,12 +221,12 @@ public final class PQCKey implements AsymmetricKey {
         // native code one time.
         //
         if (privateKeyBytes == unobtainedKeyBytes) {
-            if (!validId(pkeyId)) {
+            long id = pkeyId.getValue();
+            if (!validId(id)) {
                 throw new NativeException(badIdMsg);
             }
-        
-            System.out.println("getPrivKeyBytes - pkeyId :" + pkeyId);
-            this.privateKeyBytes = this.nativeInterface.MLKEY_getPrivateKeyBytes(pkeyId);
+            System.err.printf("[PQCKey] DEBUG: obtainPrivateKeyBytes pkeyId=0x%x%n", id);
+            this.privateKeyBytes = this.nativeInterface.MLKEY_getPrivateKeyBytes(id);
         }
     }
 
@@ -236,10 +236,11 @@ public final class PQCKey implements AsymmetricKey {
         // native code one time.
         //
         if (publicKeyBytes == unobtainedKeyBytes) {
-            if (!validId(pkeyId)) {
+            long id = pkeyId.getValue();
+            if (!validId(id)) {
                 throw new NativeException(badIdMsg);
             }
-            this.publicKeyBytes = this.nativeInterface.MLKEY_getPublicKeyBytes(pkeyId);
+            this.publicKeyBytes = this.nativeInterface.MLKEY_getPublicKeyBytes(id);
         }
     }
 
@@ -257,31 +258,29 @@ public final class PQCKey implements AsymmetricKey {
         return out;
     }
 
-    private Runnable cleanOCKResources(byte[] privateKeyBytes, long pkeyId, NativeInterface nativeInterface) {
+    private Runnable cleanOCKResources(PrimitiveWrapper.ByteArray privBytesWrapper,
+            PrimitiveWrapper.Long pkeyIdWrapper, NativeInterface nativeInterface) {
         return () -> {
             try {
-                System.err.printf("[PQCKey] DEBUG: CLEANER FIRED pkeyId=0x%x"
-                        + " thread=%d"
-                        + " privateKeyBytes_captured_ref=%s%n",
-                        pkeyId,
-                        Thread.currentThread().getId(),
-                        (privateKeyBytes == null ? "null"
-                                : (privateKeyBytes == unobtainedKeyBytes ? "unobtainedKeyBytes"
-                                        : "user-supplied[" + privateKeyBytes.length + "]")));
+                long id = pkeyIdWrapper.getValue();
+                System.err.printf("[PQCKey] DEBUG: CLEANER FIRED pkeyId=0x%x thread=%d%n",
+                        id, Thread.currentThread().getId());
                 System.err.flush();
 
-                if ((privateKeyBytes != null) && (privateKeyBytes != unobtainedKeyBytes)) {
-                    Arrays.fill(privateKeyBytes, (byte) 0x00);
+                byte[] privBytes = privBytesWrapper.getValue();
+                if (privBytes != null && privBytes != unobtainedKeyBytes) {
+                    Arrays.fill(privBytes, (byte) 0x00);
                 }
-                if (pkeyId != 0) {
-                    System.err.printf("[PQCKey] DEBUG: CLEANER calling MLKEY_delete pkeyId=0x%x%n",
-                            pkeyId);
+                if (id != 0) {
+                    System.err.printf("[PQCKey] DEBUG: CLEANER calling MLKEY_delete pkeyId=0x%x%n", id);
                     System.err.flush();
-                    nativeInterface.MLKEY_delete(pkeyId);
+                    // Zero the wrapper BEFORE freeing so any concurrent getPKeyId()
+                    // call sees 0 and throws rather than using the freed address.
+                    pkeyIdWrapper.setValue(0);
+                    nativeInterface.MLKEY_delete(id);
                 }
             } catch (Exception e) {
-                System.err.printf("[PQCKey] DEBUG: CLEANER exception for pkeyId=0x%x: %s%n",
-                        pkeyId, e.getMessage());
+                System.err.printf("[PQCKey] DEBUG: CLEANER exception: %s%n", e.getMessage());
                 System.err.flush();
                 if (OpenJCEPlusProvider.getDebug() != null) {
                     OpenJCEPlusProvider.getDebug().println("An error occurred while cleaning : " + e.getMessage());
