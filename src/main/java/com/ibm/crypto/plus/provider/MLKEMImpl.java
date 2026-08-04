@@ -178,14 +178,34 @@ public class MLKEMImpl implements KEMSpi {
             long pubPKeyId = 0;
             try {
                 pubPKeyId = pqcPubKey.getPKeyId();
+                // GAP #2 fix: dump Java-side public key bytes before the native call so
+                // they can be correlated with the C-side ICC_i2d_PublicKey dump in KEM_encapsulate.
+                // BIT STRING format: 03 82 xx xx 00 <raw key bytes>; raw starts at offset 5.
+                byte[] pubKB = pqcPubKey.getPublicKeyBytes();
+                String pubKBfirst16 = "(null)";
+                String pubKBrawFirst16 = "(null)";
+                if (pubKB != null) {
+                    pubKBfirst16  = pubKB.length >= 16 ? toHex16(pubKB) : "(short)";
+                    pubKBrawFirst16 = pubKB.length >= 21
+                        ? toHex16(java.util.Arrays.copyOfRange(pubKB, 5, 21)) : "(short)";
+                }
                 System.err.printf("[MLKEMImpl] DEBUG: encapsulate alg=%s pubKey.identityHash=0x%x"
-                        + " pqcPubKey.identityHash=0x%x pubPKeyId=0x%x thread=%d%n",
+                        + " pqcPubKey.identityHash=0x%x pubPKeyId=0x%x thread=%d"
+                        + " pubKeyBytes.len=%d pubKeyBytes.first16=%s pubKeyRawFirst16=%s%n",
                         algName, System.identityHashCode(publicKey),
                         System.identityHashCode(pqcPubKey),
-                        pubPKeyId, Thread.currentThread().getId());
+                        pubPKeyId, Thread.currentThread().getId(),
+                        pubKB != null ? pubKB.length : -1,
+                        pubKBfirst16, pubKBrawFirst16);
                 System.err.flush();
                 OJPKEM.KEM_encapsulate(pubPKeyId,
                         encapsulation, secret, provider, algName);
+                // GAP #2 (output side): print the produced ciphertext and secret first16
+                System.err.printf("[MLKEMImpl] DEBUG: encapsulate done alg=%s pubPKeyId=0x%x"
+                        + " thread=%d cipherFirst16=%s secretFirst16=%s%n",
+                        algName, pubPKeyId, Thread.currentThread().getId(),
+                        toHex16(encapsulation), toHex16(secret));
+                System.err.flush();
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             } finally {
