@@ -311,14 +311,17 @@ public class MLKEMImpl implements KEMSpi {
                     privPubRawFirst16 = privPubBytes.length >= 21
                         ? toHex16(java.util.Arrays.copyOfRange(privPubBytes, 5, 21)) : "(short)";
                 }
+                // Print ciphertext first16 so it can be matched to C-side ciphertext print
+                String cipherFirst16 = toHex16(cipherText);
                 System.err.printf("[MLKEMImpl] DEBUG: decapsulate alg=%s privKey.identityHash=0x%x"
                         + " pqcPrivKey.identityHash=0x%x privPKeyId=0x%x thread=%d"
-                        + " cipherText.length=%d privPubKeyBytes.len=%d"
+                        + " cipherText.length=%d cipherFirst16=%s"
+                        + " privPubKeyBytes.len=%d"
                         + " privPubKeyBytes.first16=%s rawKeyFirst16=%s%n",
                         algName, System.identityHashCode(this.privateKey),
                         System.identityHashCode(pqcPrivKey),
                         privPKeyId, Thread.currentThread().getId(),
-                        cipherText.length,
+                        cipherText.length, cipherFirst16,
                         privPubBytes != null ? privPubBytes.length : -1,
                         privPubFirst16,
                         privPubRawFirst16);

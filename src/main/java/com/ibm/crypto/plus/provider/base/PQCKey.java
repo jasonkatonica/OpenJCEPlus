@@ -77,10 +77,20 @@ public final class PQCKey implements AsymmetricKey {
             // free only that private-key-only pointer.
             String NoDashAlg2 = algName.replace('-', '_');
             long privKeyId = nativeInterface.MLKEY_createPrivateKey(NoDashAlg2, privateKeyBytes);
+            System.err.printf("[PQCKey.generateKeyPair] DEBUG: alg=%s MLKEY_createPrivateKey"
+                    + " returned privKeyId=0x%x thread=%d%n",
+                    algName, privKeyId, Thread.currentThread().getId());
+            System.err.flush();
             if (privKeyId == 0) {
                 Arrays.fill(privateKeyBytes, (byte) 0);
                 throw new NativeException("PQCKey.generateKeyPair: MLKEY_createPrivateKey failed");
             }
+            // privKeyBytes.first16 for correlation with C-side MLKEY_createPrivateKey log
+            System.err.printf("[PQCKey.generateKeyPair] DEBUG: alg=%s privKeyBytes.len=%d"
+                    + " first16=%s thread=%d%n",
+                    algName, privateKeyBytes.length,
+                    toHex16Java(privateKeyBytes), Thread.currentThread().getId());
+            System.err.flush();
             PQCKey result = new PQCKey(nativeInterface, privKeyId, privateKeyBytes, publicKeyBytes, algName, provider);
             return result;
 
@@ -256,6 +266,17 @@ public final class PQCKey implements AsymmetricKey {
             "Private Key - " + this.privateKeyBytes + "\n" +
             "Public Key - " + this.publicKeyBytes;
         return out;
+    }
+
+    /** Debug helper: hex-encode the first 16 bytes of a byte array. */
+    private static String toHex16Java(byte[] b) {
+        if (b == null || b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder();
+        int len = Math.min(b.length, 16);
+        for (int i = 0; i < len; i++) {
+            sb.append(String.format("%02x", b[i] & 0xFF));
+        }
+        return sb.toString();
     }
 
     private Runnable cleanOCKResources(PrimitiveWrapper.ByteArray privBytesWrapper,

@@ -189,8 +189,11 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* ---- DEBUG: dump the public key bytes accessible from ockPKey ---- */
+    /* ---- DEBUG: dump pub + priv key bytes accessible from ockPKey ---- */
     {
+        int i;
+
+        /* Public key */
         unsigned char *pub_bytes  = NULL;
         unsigned char *pub_ptr    = NULL;
         int            pub_len    = ICC_i2d_PublicKey(ockCtx, ockPKey, NULL);
@@ -198,11 +201,9 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
             pub_bytes = (unsigned char *)malloc(pub_len);
             pub_ptr   = pub_bytes;
             ICC_i2d_PublicKey(ockCtx, ockPKey, &pub_ptr);
-            /* Print first 16 bytes and total length */
             fprintf(stderr,
-                    "[KEM_decapsulate] DEBUG: ockPKey pub key len=%d first16=",
-                    pub_len);
-            int i;
+                    "[KEM_decapsulate] DEBUG: ockPKey=%p pub key len=%d first16=",
+                    (void *)ockPKey, pub_len);
             for (i = 0; i < pub_len && i < 16; i++) {
                 fprintf(stderr, "%02x", pub_bytes[i]);
             }
@@ -213,6 +214,30 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
                     "[KEM_decapsulate] DEBUG: ICC_i2d_PublicKey returned %d"
                     " (no pub key in ockPKey?)\n", pub_len);
         }
+
+        /* Private key — print first 16 bytes to confirm identity matches
+         * what was created in MLKEY_createPrivateKey and stored in PQCKey */
+        unsigned char *priv_bytes = NULL;
+        unsigned char *priv_ptr   = NULL;
+        int            priv_len   = ICC_i2d_PrivateKey(ockCtx, ockPKey, NULL);
+        if (priv_len > 0) {
+            priv_bytes = (unsigned char *)malloc(priv_len);
+            priv_ptr   = priv_bytes;
+            ICC_i2d_PrivateKey(ockCtx, ockPKey, &priv_ptr);
+            fprintf(stderr,
+                    "[KEM_decapsulate] DEBUG: ockPKey=%p priv key len=%d first16=",
+                    (void *)ockPKey, priv_len);
+            for (i = 0; i < priv_len && i < 16; i++) {
+                fprintf(stderr, "%02x", priv_bytes[i]);
+            }
+            fprintf(stderr, "\n");
+            free(priv_bytes);
+        } else {
+            fprintf(stderr,
+                    "[KEM_decapsulate] DEBUG: ICC_i2d_PrivateKey returned %d"
+                    " (no priv key in ockPKey?)\n", priv_len);
+        }
+
         fflush(stderr);
     }
     /* ------------------------------------------------------------------ */
@@ -261,6 +286,19 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
     }
 
     wrappedkeylen = (*env)->GetArrayLength(env, wrappedKey);
+
+    /* DEBUG: print first 16 bytes of ciphertext (encapsulation) for correlation */
+    {
+        int i;
+        fprintf(stderr,
+                "[KEM_decapsulate] DEBUG: ockPKey=%p ciphertext len=%zu first16=",
+                (void *)ockPKey, wrappedkeylen);
+        for (i = 0; i < (int)wrappedkeylen && i < 16; i++) {
+            fprintf(stderr, "%02x", wrappedKeyNative[i]);
+        }
+        fprintf(stderr, "\n");
+        fflush(stderr);
+    }
 
     fprintf(stderr,
             "[KEM_decapsulate] DEBUG: calling ICC_EVP_PKEY_decapsulate (length query) evp_pk=%p wrappedkeylen=%zu\n",
