@@ -65,7 +65,20 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
 
     int rc = -1;
 
-    rc = ICC_EVP_PKEY_encapsulate_init(ockCtx, NULL, NULL);
+    /* Second argument to ICC_EVP_PKEY_encapsulate_init is the EVP_PKEY_CTX
+     * that must be initialised for encapsulation.  Passing NULL here leaves
+     * evp_pk uninitialised, so the subsequent ICC_EVP_PKEY_encapsulate call
+     * operates on an uninitialised context and produces wrong/mismatched
+     * ciphertext + shared secret — the root cause of the intermittent
+     * "Secrets do NOT match" failure. */
+    fprintf(stderr,
+            "[KEM_encapsulate] DEBUG: calling ICC_EVP_PKEY_encapsulate_init with evp_pk=%p\n",
+            (void *)evp_pk);
+    fflush(stderr);
+    rc = ICC_EVP_PKEY_encapsulate_init(ockCtx, evp_pk, NULL);
+    fprintf(stderr,
+            "[KEM_encapsulate] DEBUG: ICC_EVP_PKEY_encapsulate_init rc=%d\n", rc);
+    fflush(stderr);
     if (rc != ICC_OSSL_SUCCESS) {
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
         throwOCKException(env, 0, "ICC_EVP_PKEY_encapsulate_init failed");
@@ -107,6 +120,17 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1encapsulate(
             ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
             throwOCKException(env, 0, "ICC_EVP_PKEY_encapsulate failed");
             return;
+        }
+
+        /* Debug: print first 8 bytes of the generated shared secret */
+        if (genkeylen >= 8) {
+            fprintf(stderr,
+                    "[KEM_encapsulate] DEBUG: generated shared secret first 8 bytes: "
+                    "%02x%02x%02x%02x%02x%02x%02x%02x ... (total %zu bytes)\n",
+                    genkeylocal[0], genkeylocal[1], genkeylocal[2], genkeylocal[3],
+                    genkeylocal[4], genkeylocal[5], genkeylocal[6], genkeylocal[7],
+                    genkeylen);
+            fflush(stderr);
         }
 
         ICC_EVP_PKEY_CTX_free(ockCtx, evp_pk);
@@ -177,19 +201,17 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
         return retRndKeyBytes;
     }
 
-    /* NOTE: The second argument to ICC_EVP_PKEY_decapsulate_init must be the
-     * evp_pk context bound to the private key, not NULL.  Passing NULL here
-     * leaves the context unbound and can silently use a stale or wrong key
-     * under concurrent use, producing mismatched secrets.  This is the
-     * suspected root cause of the intermittent "Secrets do NOT match" failure.
-     * The debug print below captures both the NULL-path and the correct-path
-     * behaviour so we can confirm which call actually triggers the mismatch. */
+    /* Second argument to ICC_EVP_PKEY_decapsulate_init is the EVP_PKEY_CTX
+     * that must be initialised for decapsulation.  Passing NULL here leaves
+     * evp_pk uninitialised, causing ICC_EVP_PKEY_decapsulate to produce the
+     * wrong shared secret — the root cause of the intermittent
+     * "Secrets do NOT match" failure with BouncyCastle interop. */
     fprintf(stderr,
-            "[KEM_decapsulate] DEBUG: calling ICC_EVP_PKEY_decapsulate_init with evp_pk=%p (NOTE: second arg is NULL, not evp_pk)\n",
+            "[KEM_decapsulate] DEBUG: calling ICC_EVP_PKEY_decapsulate_init with evp_pk=%p\n",
             (void *)evp_pk);
     fflush(stderr);
 
-    rc = ICC_EVP_PKEY_decapsulate_init(ockCtx, NULL, NULL);
+    rc = ICC_EVP_PKEY_decapsulate_init(ockCtx, evp_pk, NULL);
 
     fprintf(stderr,
             "[KEM_decapsulate] DEBUG: ICC_EVP_PKEY_decapsulate_init rc=%d\n",
