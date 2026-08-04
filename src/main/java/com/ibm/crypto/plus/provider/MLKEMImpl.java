@@ -209,7 +209,13 @@ public class MLKEMImpl implements KEMSpi {
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
             } finally {
+                // Fence on both the inner PQCKey AND the wrapper that holds it.
+                // Fencing only pqcPubKey is not enough: if the PQCPublicKey
+                // wrapper becomes unreachable before the JNI call returns, the
+                // GC can collect it -> cleaner fires MLKEY_delete on the same
+                // EVP_PKEY* still in use by KEM_encapsulate.
                 Reference.reachabilityFence(pqcPubKey);
+                Reference.reachabilityFence(publicKey);
             }
 
             return new KEM.Encapsulated(
@@ -356,7 +362,13 @@ public class MLKEMImpl implements KEMSpi {
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
             } finally {
+                // Fence on both the inner PQCKey AND the wrapper that holds it.
+                // Fencing only pqcPrivKey is not enough: if the PQCPrivateKey
+                // wrapper (this.privateKey) becomes unreachable before the JNI
+                // call returns, the GC can collect it -> cleaner fires
+                // MLKEY_delete on the pkeyId still being used by KEM_decapsulate.
                 Reference.reachabilityFence(pqcPrivKey);
+                Reference.reachabilityFence(this.privateKey);
             }
 
             return new SecretKeySpec(secret, from, to - from, algorithm);
