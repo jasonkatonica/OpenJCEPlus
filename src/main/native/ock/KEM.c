@@ -274,14 +274,16 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
          * print the ek portion (encapsulation key embedded in dk) so we
          * can confirm it matches the public key bytes BC used for encap.
          *
-         * ML-KEM expanded dk layout (per FIPS 203):
-         *   dk = z (32) || sk (768/1152/1536) || ek (800/1184/1568) || H(ek) (32)
+         * ML-KEM expanded dk layout per FIPS 203 §7.3 (dk_PKE-first, NOT z-first):
+         *   dk = dk_PKE || ek || H(ek) || z
          * ICC stores dk inside a DER OctetString: 04 82 xx xx <dk bytes>
          * So raw dk starts at offset 4 in the DER blob returned by i2d_PrivateKey.
          *
-         * ML-KEM-512 : z=32 sk=768  => ek starts at raw offset 800  => DER offset 804
-         * ML-KEM-768 : z=32 sk=1152 => ek starts at raw offset 1184 => DER offset 1188
-         * ML-KEM-1024: z=32 sk=1536 => ek starts at raw offset 1568 => DER offset 1572
+         * dk_PKE sizes: ML-KEM-512=768, ML-KEM-768=1152, ML-KEM-1024=1536
+         * ek starts at raw dk offset equal to dk_PKE size:
+         *   ML-KEM-512 : dk_PKE=768  => ek at raw offset 768  => DER offset 772
+         *   ML-KEM-768 : dk_PKE=1152 => ek at raw offset 1152 => DER offset 1156
+         *   ML-KEM-1024: dk_PKE=1536 => ek at raw offset 1536 => DER offset 1540
          */
         unsigned char *priv_bytes = NULL;
         unsigned char *priv_ptr   = NULL;
@@ -308,14 +310,16 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
                  *   512 : priv_len = 4 + 1632 = 1636
                  *   768 : priv_len = 4 + 2400 = 2404
                  *  1024 : priv_len = 4 + 3168 = 3172 */
+                /* FIPS 203 §7.3: dk = dk_PKE || ek || H(ek) || z
+                 * ek starts at raw offset = dk_PKE size; DER offset = dk_PKE + 4 */
                 if (dk_raw_len == 1632) {
-                    ek_offset_in_der = 4 + 800;  /* z(32)+sk(768)=800, +4 header */
+                    ek_offset_in_der = 4 + 768;  /* dk_PKE=768, ek at raw 768, DER 772 */
                     ek_len = 800;
                 } else if (dk_raw_len == 2400) {
-                    ek_offset_in_der = 4 + 1184; /* z(32)+sk(1152)=1184, +4 header */
+                    ek_offset_in_der = 4 + 1152; /* dk_PKE=1152, ek at raw 1152, DER 1156 */
                     ek_len = 1184;
                 } else if (dk_raw_len == 3168) {
-                    ek_offset_in_der = 4 + 1568; /* z(32)+sk(1536)=1568, +4 header */
+                    ek_offset_in_der = 4 + 1536; /* dk_PKE=1536, ek at raw 1536, DER 1540 */
                     ek_len = 1568;
                 }
                 if (ek_offset_in_der >= 0 && priv_len >= ek_offset_in_der + 16) {
@@ -326,6 +330,38 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_KEM_1decapsulate(
                         fprintf(stderr, "%02x", priv_bytes[ek_offset_in_der + i]);
                     }
                     fprintf(stderr, "\n");
+
+                    /* Compare ek-in-dk against the exported public key (at offset 5 of
+                     * the BIT STRING: 03 82 xx xx 00 <raw_ek>).
+                     * We need to re-export the public key here for the comparison. */
+                    {
+                        unsigned char *pub2_bytes = NULL;
+                        unsigned char *pub2_ptr   = NULL;
+                        int            pub2_len   = ICC_i2d_PublicKey(ockCtx, ockPKey, NULL);
+                        int            ek_matches = -1; /* -1=unknown, 1=match, 0=mismatch */
+                        if (pub2_len >= 5 + 16) {
+                            pub2_bytes = (unsigned char *)malloc(pub2_len);
+                            pub2_ptr   = pub2_bytes;
+                            ICC_i2d_PublicKey(ockCtx, ockPKey, &pub2_ptr);
+                            /* raw ek from exported pub key starts at offset 5 */
+                            ek_matches = (memcmp(priv_bytes + ek_offset_in_der,
+                                                  pub2_bytes + 5, 16) == 0) ? 1 : 0;
+                            fprintf(stderr,
+                                    "[KEM_decapsulate] DEBUG: ockPKey=%p pub_raw_ek (offset 5) first16=",
+                                    (void *)ockPKey);
+                            for (i = 5; i < pub2_len && i < 5 + 16; i++) {
+                                fprintf(stderr, "%02x", pub2_bytes[i]);
+                            }
+                            fprintf(stderr, "\n");
+                            free(pub2_bytes);
+                        }
+                        fprintf(stderr,
+                                "[KEM_decapsulate] DEBUG: ockPKey=%p ek-in-dk vs pub_raw_ek: %s\n",
+                                (void *)ockPKey,
+                                ek_matches == 1 ? "MATCH" :
+                                ek_matches == 0 ? "MISMATCH <<<" : "UNKNOWN (pub too short)");
+                        fflush(stderr);
+                    }
                 }
             }
             free(priv_bytes);
