@@ -41,13 +41,13 @@ public class MLKEMImpl implements KEMSpi {
         this.alg = alg;
     }
 
-    /** Debug helper: hex-encode the first 16 bytes of a byte array. */
-    private static String toHex16(byte[] b) {
-        if (b == null || b.length == 0) return "(empty)";
-        StringBuilder sb = new StringBuilder();
-        int len = Math.min(b.length, 16);
-        for (int i = 0; i < len; i++) {
-            sb.append(String.format("%02x", b[i] & 0xFF));
+    /** Debug helper: hex-encode the entire byte array. */
+    private static String toHexFull(byte[] b) {
+        if (b == null) return "<null>";
+        if (b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte v : b) {
+            sb.append(String.format("%02x", v & 0xFF));
         }
         return sb.toString();
     }
@@ -178,33 +178,25 @@ public class MLKEMImpl implements KEMSpi {
             long pubPKeyId = 0;
             try {
                 pubPKeyId = pqcPubKey.getPKeyId();
-                // GAP #2 fix: dump Java-side public key bytes before the native call so
-                // they can be correlated with the C-side ICC_i2d_PublicKey dump in KEM_encapsulate.
+                // Dump the full public key bytes before the native call so they can be
+                // correlated with the C-side ICC_i2d_PublicKey dump in KEM_encapsulate.
                 // BIT STRING format: 03 82 xx xx 00 <raw key bytes>; raw starts at offset 5.
                 byte[] pubKB = pqcPubKey.getPublicKeyBytes();
-                String pubKBfirst16 = "(null)";
-                String pubKBrawFirst16 = "(null)";
-                if (pubKB != null) {
-                    pubKBfirst16  = pubKB.length >= 16 ? toHex16(pubKB) : "(short)";
-                    pubKBrawFirst16 = pubKB.length >= 21
-                        ? toHex16(java.util.Arrays.copyOfRange(pubKB, 5, 21)) : "(short)";
-                }
                 System.err.printf("[MLKEMImpl] DEBUG: encapsulate alg=%s pubKey.identityHash=0x%x"
                         + " pqcPubKey.identityHash=0x%x pubPKeyId=0x%x thread=%d"
-                        + " pubKeyBytes.len=%d pubKeyBytes.first16=%s pubKeyRawFirst16=%s%n",
+                        + " pubKeyBytes.len=%d pubKeyBytes=%s%n",
                         algName, System.identityHashCode(publicKey),
                         System.identityHashCode(pqcPubKey),
                         pubPKeyId, Thread.currentThread().getId(),
                         pubKB != null ? pubKB.length : -1,
-                        pubKBfirst16, pubKBrawFirst16);
+                        toHexFull(pubKB));
                 System.err.flush();
                 OJPKEM.KEM_encapsulate(pubPKeyId,
                         encapsulation, secret, provider, algName);
-                // GAP #2 (output side): print the produced ciphertext and secret first16
                 System.err.printf("[MLKEMImpl] DEBUG: encapsulate done alg=%s pubPKeyId=0x%x"
-                        + " thread=%d cipherFirst16=%s secretFirst16=%s%n",
+                        + " thread=%d encapsulation.len=%d encapsulation=%s secret=%s%n",
                         algName, pubPKeyId, Thread.currentThread().getId(),
-                        toHex16(encapsulation), toHex16(secret));
+                        encapsulation.length, toHexFull(encapsulation), toHexFull(secret));
                 System.err.flush();
             } catch (NativeException e) {
                 throw new ProviderException("OCK Exception: ", e);
@@ -323,41 +315,28 @@ public class MLKEMImpl implements KEMSpi {
             long privPKeyId = 0;
             try {
                 privPKeyId = pqcPrivKey.getPKeyId();
-                // Print public key bytes stored in the private key object for correlation.
-                // pqcPrivKey.getPublicKeyBytes() returns ICC's raw format which starts with
-                // a BIT STRING header (03 82 xx xx 00), so offset 5 onward is the raw key.
-                // Compare first16 at offset 5 with "pubPlus raw key first16" in the test log
-                // and with "[KEM_decapsulate] DEBUG: ockPKey pub key first16" in C.
+                // Dump the full public key bytes embedded in the private key and the full
+                // ciphertext so every field needed to reproduce the decapsulation is logged.
+                // pqcPrivKey.getPublicKeyBytes() is in BIT STRING format (03 82 xx xx 00 <raw>).
                 byte[] privPubBytes = pqcPrivKey.getPublicKeyBytes();
-                String privPubFirst16 = "(null)";
-                String privPubRawFirst16 = "(null)";
-                if (privPubBytes != null) {
-                    privPubFirst16 = privPubBytes.length >= 16 ? toHex16(privPubBytes) : "(short)";
-                    // Skip 5-byte BIT STRING header: 03 82 xx xx 00
-                    privPubRawFirst16 = privPubBytes.length >= 21
-                        ? toHex16(java.util.Arrays.copyOfRange(privPubBytes, 5, 21)) : "(short)";
-                }
-                // Print ciphertext first16 so it can be matched to C-side ciphertext print
-                String cipherFirst16 = toHex16(cipherText);
                 System.err.printf("[MLKEMImpl] DEBUG: decapsulate alg=%s privKey.identityHash=0x%x"
                         + " pqcPrivKey.identityHash=0x%x privPKeyId=0x%x thread=%d"
-                        + " cipherText.length=%d cipherFirst16=%s"
-                        + " privPubKeyBytes.len=%d"
-                        + " privPubKeyBytes.first16=%s rawKeyFirst16=%s%n",
+                        + " cipherText.len=%d cipherText=%s"
+                        + " privPubKeyBytes.len=%d privPubKeyBytes=%s%n",
                         algName, System.identityHashCode(this.privateKey),
                         System.identityHashCode(pqcPrivKey),
                         privPKeyId, Thread.currentThread().getId(),
-                        cipherText.length, cipherFirst16,
+                        cipherText.length, toHexFull(cipherText),
                         privPubBytes != null ? privPubBytes.length : -1,
-                        privPubFirst16,
-                        privPubRawFirst16);
+                        toHexFull(privPubBytes));
                 System.err.flush();
                 secret = OJPKEM.KEM_decapsulate(privPKeyId,
                         cipherText, provider, algName);
                 System.err.printf("[MLKEMImpl] DEBUG: decapsulate completed alg=%s privPKeyId=0x%x"
-                        + " thread=%d secret.length=%d%n",
+                        + " thread=%d secret.len=%d secret=%s%n",
                         algName, privPKeyId, Thread.currentThread().getId(),
-                        (secret != null ? secret.length : -1));
+                        (secret != null ? secret.length : -1),
+                        toHexFull(secret));
                 System.err.flush();
             } catch (NativeException e) {
                 throw new DecapsulateException("Decapsulation Error: ", e);
