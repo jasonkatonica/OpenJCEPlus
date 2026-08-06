@@ -85,11 +85,14 @@ public final class PQCKey implements AsymmetricKey {
                 Arrays.fill(privateKeyBytes, (byte) 0);
                 throw new NativeException("PQCKey.generateKeyPair: MLKEY_createPrivateKey failed");
             }
-            // privKeyBytes.first16 for correlation with C-side MLKEY_createPrivateKey log
-            System.err.printf("[PQCKey.generateKeyPair] DEBUG: alg=%s privKeyBytes.len=%d"
-                    + " first16=%s thread=%d%n",
-                    algName, privateKeyBytes.length,
-                    toHex16Java(privateKeyBytes), Thread.currentThread().getId());
+            System.err.printf("[PQCKey.generateKeyPair] DEBUG: alg=%s thread=%d"
+                    + " privateKeyBytes.len=%d privateKeyBytes=%s%n",
+                    algName, Thread.currentThread().getId(),
+                    privateKeyBytes.length, toHexFull(privateKeyBytes));
+            System.err.printf("[PQCKey.generateKeyPair] DEBUG: alg=%s thread=%d"
+                    + " publicKeyBytes.len=%d publicKeyBytes=%s%n",
+                    algName, Thread.currentThread().getId(),
+                    publicKeyBytes.length, toHexFull(publicKeyBytes));
             System.err.flush();
             PQCKey result = new PQCKey(nativeInterface, privKeyId, privateKeyBytes, publicKeyBytes, algName, provider);
             return result;
@@ -120,7 +123,16 @@ public final class PQCKey implements AsymmetricKey {
         NativeInterface nativeInterface = NativeCryptoSelector.selectBackend(provider, configType, algName);
         long keyId = 0;
         String NoDashAlg = algName.replace('-', '_');
+        System.err.printf("[PQCKey.createPrivateKey] DEBUG: alg=%s configType=%s thread=%d"
+                + " privateKeyBytes.len=%d privateKeyBytes=%s%n",
+                algName, configType, Thread.currentThread().getId(),
+                privateKeyBytes.length, toHexFull(privateKeyBytes));
+        System.err.flush();
         keyId = nativeInterface.MLKEY_createPrivateKey(NoDashAlg, privateKeyBytes);
+        System.err.printf("[PQCKey.createPrivateKey] DEBUG: alg=%s MLKEY_createPrivateKey"
+                + " returned keyId=0x%x thread=%d%n",
+                algName, keyId, Thread.currentThread().getId());
+        System.err.flush();
 
         return new PQCKey(nativeInterface, keyId, privateKeyBytes.clone(), (byte[]) null, algName, provider);
     }
@@ -138,7 +150,18 @@ public final class PQCKey implements AsymmetricKey {
         NativeInterface nativeInterface = NativeCryptoSelector.selectBackend(provider, configType, algName);
         long keyId = 0;
         String NoDashAlg = algName.replace('-', '_');
+        // publicKeyBytes is in BIT STRING format: 03 82 xx xx 00 <raw key bytes>.
+        // Log the full buffer so the exact bytes passed to MLKEY_createPublicKey are reproducible.
+        System.err.printf("[PQCKey.createPublicKey] DEBUG: alg=%s configType=%s thread=%d"
+                + " publicKeyBytes.len=%d publicKeyBytes=%s%n",
+                algName, configType, Thread.currentThread().getId(),
+                publicKeyBytes.length, toHexFull(publicKeyBytes));
+        System.err.flush();
         keyId = nativeInterface.MLKEY_createPublicKey(NoDashAlg, publicKeyBytes);
+        System.err.printf("[PQCKey.createPublicKey] DEBUG: alg=%s MLKEY_createPublicKey"
+                + " returned keyId=0x%x thread=%d%n",
+                algName, keyId, Thread.currentThread().getId());
+        System.err.flush();
 
         // OCKDebug.Msg (debPrefix, methodName, "mlkemKeyId :" + mlkemKeyId);
         return new PQCKey(nativeInterface, keyId, null, publicKeyBytes.clone(), algName, provider);
@@ -268,13 +291,13 @@ public final class PQCKey implements AsymmetricKey {
         return out;
     }
 
-    /** Debug helper: hex-encode the first 16 bytes of a byte array. */
-    private static String toHex16Java(byte[] b) {
-        if (b == null || b.length == 0) return "(empty)";
-        StringBuilder sb = new StringBuilder();
-        int len = Math.min(b.length, 16);
-        for (int i = 0; i < len; i++) {
-            sb.append(String.format("%02x", b[i] & 0xFF));
+    /** Debug helper: hex-encode the entire byte array. */
+    private static String toHexFull(byte[] b) {
+        if (b == null) return "<null>";
+        if (b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte v : b) {
+            sb.append(String.format("%02x", v & 0xFF));
         }
         return sb.toString();
     }
