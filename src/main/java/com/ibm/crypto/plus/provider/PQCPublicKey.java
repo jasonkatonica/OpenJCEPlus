@@ -25,6 +25,17 @@ import sun.security.x509.X509Key;
 final class PQCPublicKey extends X509Key
         implements Destroyable {
 
+    /** Debug helper: hex-encode the entire byte array. */
+    private static String toHexFull(byte[] b) {
+        if (b == null) return "<null>";
+        if (b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte v : b) {
+            sb.append(String.format("%02x", v & 0xFF));
+        }
+        return sb.toString();
+    }
+
 
 
     private static final long serialVersionUID = -7291096793479000585L;
@@ -83,7 +94,17 @@ final class PQCPublicKey extends X509Key
             tmp.putUnalignedBitString(getKey());
             byte[] b = tmp.toByteArray();
             tmp.close();
-            
+
+            // Log the full BIT STRING bytes being handed to OCK so we can correlate with
+            // [PQCKey.createPublicKey] DEBUG and detect any encoding mismatch at the parse boundary.
+            // Format: 03 82 xx xx 00 <raw key bytes>
+            System.err.printf("[PQCPublicKey.<init>(encoded)] DEBUG: alg=%s thread=%d"
+                    + " spki.len=%d spki=%s bitStringBytes.len=%d bitStringBytes=%s%n",
+                    this.name, Thread.currentThread().getId(),
+                    encoded.length, toHexFull(encoded),
+                    b.length, toHexFull(b));
+            System.err.flush();
+
             this.pqcKey = PQCKey.createPublicKey(name, b, provider, "KeyFactory");
         } catch (Exception e) {
             throw new InvalidKeyException("Failure in PublicKey -" + e.getMessage(), e);

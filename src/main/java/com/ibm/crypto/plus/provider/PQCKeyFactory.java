@@ -25,6 +25,17 @@ class PQCKeyFactory extends KeyFactorySpi {
     private OpenJCEPlusProvider provider;
     private String algName = null;
 
+    /** Debug helper: hex-encode the entire byte array. */
+    private static String toHexFull(byte[] b) {
+        if (b == null) return "<null>";
+        if (b.length == 0) return "(empty)";
+        StringBuilder sb = new StringBuilder(b.length * 2);
+        for (byte v : b) {
+            sb.append(String.format("%02x", v & 0xFF));
+        }
+        return sb.toString();
+    }
+
     static Key toPQCKey(OpenJCEPlusProvider provider, Key key) throws InvalidKeyException {
         return (new PQCKeyFactory(provider, key.getAlgorithm())).engineTranslateKey(key);
     }
@@ -39,14 +50,24 @@ class PQCKeyFactory extends KeyFactorySpi {
         byte[] bytes = null;
         try {
             if (keySpec instanceof PKCS8EncodedKeySpec) {
-                PrivateKey generated = new PQCPrivateKey(provider,
-                        ((PKCS8EncodedKeySpec) keySpec).getEncoded());
+                byte[] encoded = ((PKCS8EncodedKeySpec) keySpec).getEncoded();
+                System.err.printf("[PQCKeyFactory.engineGeneratePrivate] DEBUG: alg=%s thread=%d"
+                        + " PKCS8EncodedKeySpec.len=%d PKCS8EncodedKeySpec=%s%n",
+                        algName, Thread.currentThread().getId(),
+                        encoded.length, toHexFull(encoded));
+                System.err.flush();
+                PrivateKey generated = new PQCPrivateKey(provider, encoded);
                 checkKeyAlgo(generated);
                 return generated;
             }
 
             bytes = getRawBytes(keySpec);
-            
+            System.err.printf("[PQCKeyFactory.engineGeneratePrivate] DEBUG: alg=%s thread=%d"
+                    + " rawKeySpec.len=%d rawKeySpec=%s%n",
+                    algName, Thread.currentThread().getId(),
+                    bytes.length, toHexFull(bytes));
+            System.err.flush();
+
             if (!(keySpec instanceof EncodedKeySpec) && checkEncoded(bytes, false)) {
                 throw new InvalidKeySpecException("Key spec does not match Spec indicated");
             }
@@ -66,13 +87,23 @@ class PQCKeyFactory extends KeyFactorySpi {
         byte[] bytes = null;
         try {
             if (keySpec instanceof X509EncodedKeySpec) {
-                PQCPublicKey generated = new PQCPublicKey(provider,
-                        ((X509EncodedKeySpec) keySpec).getEncoded());
+                byte[] encoded = ((X509EncodedKeySpec) keySpec).getEncoded();
+                System.err.printf("[PQCKeyFactory.engineGeneratePublic] DEBUG: alg=%s thread=%d"
+                        + " X509EncodedKeySpec.len=%d X509EncodedKeySpec=%s%n",
+                        algName, Thread.currentThread().getId(),
+                        encoded.length, toHexFull(encoded));
+                System.err.flush();
+                PQCPublicKey generated = new PQCPublicKey(provider, encoded);
                 checkKeyAlgo(generated);
                 return generated;
             }
 
             bytes = getRawBytes(keySpec);
+            System.err.printf("[PQCKeyFactory.engineGeneratePublic] DEBUG: alg=%s thread=%d"
+                    + " rawKeySpec.len=%d rawKeySpec=%s%n",
+                    algName, Thread.currentThread().getId(),
+                    bytes.length, toHexFull(bytes));
+            System.err.flush();
 
             if (!(keySpec instanceof EncodedKeySpec) && checkEncoded(bytes, true)) {
                 throw new InvalidKeySpecException("Key does not match Spec indicated");
