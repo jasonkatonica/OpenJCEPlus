@@ -16,47 +16,10 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include <pthread.h>
 
 #include "com_ibm_crypto_plus_provider_ock_NativeOCKImplementation.h"
 #include "Utils.h"
 #include <stdint.h>
-
-/* =========================================================================
- * Freed-pointer ring buffer for reuse-detection debugging.
- *
- * Every call to MLKEY_delete records the freed EVP_PKEY* here.
- * Every call to MLKEY_createPrivateKey / MLKEY_createPublicKey checks
- * whether the newly-allocated pointer matches any recently-freed one.
- * A match means the same native address was recycled — this is the
- * aliasing race that caused "Secrets do NOT match" failures.
- * ========================================================================= */
-#define FREED_RING_SIZE 256
-static void           *g_freed_ring[FREED_RING_SIZE];
-static volatile int    g_freed_ring_head = 0;
-static pthread_mutex_t g_freed_ring_lock = PTHREAD_MUTEX_INITIALIZER;
-
-/* Record a freed pointer in the ring buffer. */
-static void pkey_freed_record(void *ptr) {
-    pthread_mutex_lock(&g_freed_ring_lock);
-    g_freed_ring[g_freed_ring_head % FREED_RING_SIZE] = ptr;
-    g_freed_ring_head++;
-    pthread_mutex_unlock(&g_freed_ring_lock);
-}
-
-/* Return 1 if the pointer was recently freed (i.e. a reuse is happening). */
-static int pkey_was_recently_freed(void *ptr) {
-    int found = 0;
-    pthread_mutex_lock(&g_freed_ring_lock);
-    for (int i = 0; i < FREED_RING_SIZE; i++) {
-        if (g_freed_ring[i] == ptr) {
-            found = 1;
-            break;
-        }
-    }
-    pthread_mutex_unlock(&g_freed_ring_lock);
-    return found;
-}
 
 //============================================================================
 /*
@@ -436,8 +399,8 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPriva
             {
                 int i;
                 fprintf(stderr,
-                        "[MLKEY_createPrivateKey] DEBUG: thread=%p alg=%s size=%zu first16=",
-                        (void *)pthread_self(), algoChars, size);
+                        "[MLKEY_createPrivateKey] DEBUG: alg=%s size=%zu first16=",
+                        algoChars, size);
                 for (i = 0; i < (int)size && i < 16; i++) {
                     fprintf(stderr, "%02x", keyBytesNative[i]);
                 }
@@ -454,14 +417,11 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPriva
                     throwOCKException(env, 0, "ICC_d2i_PrivateKey failed");
                 } else {
                     mlkeyId = (jlong)((intptr_t)ockPKey);
-                    /* DEBUG: print the returned pkey pointer and check for reuse */
-                    int reused = pkey_was_recently_freed((void *)ockPKey);
+                    /* DEBUG: print the returned pkey pointer */
                     fprintf(stderr,
-                            "[MLKEY_createPrivateKey] DEBUG: thread=%p ICC_d2i_PrivateKey"
-                            " returned ockPKey=%p mlkeyId=%lx %s\n",
-                            (void *)pthread_self(),
-                            (void *)ockPKey, (unsigned long)mlkeyId,
-                            reused ? "<<< REUSE-DETECTED: address was recently freed! >>>" : "");
+                            "[MLKEY_createPrivateKey] DEBUG: ICC_d2i_PrivateKey"
+                            " returned ockPKey=%p mlkeyId=%lx\n",
+                            (void *)ockPKey, (unsigned long)mlkeyId);
                     fflush(stderr);
                 }
             } else {
@@ -470,7 +430,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPriva
                     gslogMessage("cipherName = NULL");
                 }
 #endif
-            }
+            } 
         }
     }
 
@@ -539,8 +499,8 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPubli
             {
                 int di;
                 fprintf(stderr,
-                        "[MLKEY_createPublicKey] DEBUG: thread=%p alg=%s size=%ld first16=",
-                        (void *)pthread_self(), algoChars, size);
+                        "[MLKEY_createPublicKey] DEBUG: alg=%s size=%ld first16=",
+                        algoChars, size);
                 for (di = 0; di < (int)size && di < 16; di++) {
                     fprintf(stderr, "%02x", keyBytesNative[di]);
                 }
@@ -563,13 +523,10 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1createPubli
                 throwOCKException(env, 0, "ICC_d2i_PublicKey failed");
             } else {
                 mlkeyId = (jlong)((intptr_t)ockPKey);
-                int reused = pkey_was_recently_freed((void *)ockPKey);
                 fprintf(stderr,
-                        "[MLKEY_createPublicKey] DEBUG: thread=%p ICC_d2i_PublicKey"
-                        " returned ockPKey=%p mlkeyId=%lx %s\n",
-                        (void *)pthread_self(),
-                        (void *)ockPKey, (unsigned long)mlkeyId,
-                        reused ? "<<< REUSE-DETECTED: address was recently freed! >>>" : "");
+                        "[MLKEY_createPublicKey] DEBUG: ICC_d2i_PublicKey"
+                        " returned ockPKey=%p mlkeyId=%lx\n",
+                        (void *)ockPKey, (unsigned long)mlkeyId);
                 fflush(stderr);
             }
         }
@@ -766,20 +723,8 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_MLKEY_1delete(
     ICC_CTX      *ockCtx = (ICC_CTX *)((intptr_t)ockContextId);
     ICC_EVP_PKEY *ockKey = (ICC_EVP_PKEY *)((intptr_t)mlkeyId);
 
-    fprintf(stderr,
-            "[MLKEY_delete] DEBUG: thread=%p mlkeyId=%lx ockKey=%p\n",
-            (void *)pthread_self(), (unsigned long)mlkeyId, (void *)ockKey);
-    fflush(stderr);
-
     if (ockKey != NULL) {
-        /* Record the freed pointer BEFORE releasing it so the ring buffer
-         * can detect if the same address is handed out again immediately. */
-        pkey_freed_record((void *)ockKey);
         ICC_EVP_PKEY_free(ockCtx, ockKey);
-        fprintf(stderr,
-                "[MLKEY_delete] DEBUG: ICC_EVP_PKEY_free completed for ockKey=%p\n",
-                (void *)ockKey);
-        fflush(stderr);
         ockKey = NULL;
     }
 }
