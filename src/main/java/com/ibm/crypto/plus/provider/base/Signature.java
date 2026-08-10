@@ -9,6 +9,8 @@
 package com.ibm.crypto.plus.provider.base;
 
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
+
+import java.lang.ref.Reference;
 import java.security.InvalidKeyException;
 
 public final class Signature {
@@ -77,6 +79,10 @@ public final class Signature {
         } finally {
             // Try to reset even if NativeException is thrown
             this.digest.reset();
+            // Fence on the inner AsymmetricKey and the digest. This ensures that GC does not prematurely 
+            // cleanup the native key that is in use in the above SIGNATURE_sign method call.
+            Reference.reachabilityFence(this.key);
+            Reference.reachabilityFence(this.digest);
         }
 
         //OCKDebug.Msg (debPrefix, "sign",  "signature :" + signature);
@@ -106,6 +112,10 @@ public final class Signature {
         } finally {
             // Try to reset even if NativeException is thrown
             this.digest.reset();
+            // Fence on the inner AsymmetricKey and the digest. This ensures that GC does not prematurely 
+            // cleanup the native key that is in use in the above SIGNATURE_verify method call.
+            Reference.reachabilityFence(this.key);
+            Reference.reachabilityFence(this.digest);
         }
 
         //        if (!verified) {
