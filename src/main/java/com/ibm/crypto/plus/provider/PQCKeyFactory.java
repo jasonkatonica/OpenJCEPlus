@@ -92,7 +92,7 @@ class PQCKeyFactory extends KeyFactorySpi {
     protected <T extends KeySpec> T engineGetKeySpec(Key key, Class<T> keySpec)
             throws InvalidKeySpecException {
         try {
-            if (key instanceof com.ibm.crypto.plus.provider.PQCPublicKey) {
+            if (key instanceof PublicKey) {
                 // Determine valid key specs
                 Class<?> x509KeySpec = Class.forName("java.security.spec.X509EncodedKeySpec");
 
@@ -101,7 +101,7 @@ class PQCKeyFactory extends KeyFactorySpi {
                 } else {
                     throw new InvalidKeySpecException("Inappropriate key specification");
                 }
-            } else if (key instanceof com.ibm.crypto.plus.provider.PQCPrivateKey) {
+            } else if (key instanceof PrivateKey) {
                 // Determine valid key specs
                 Class<?> pkcs8KeySpec = Class.forName("java.security.spec.PKCS8EncodedKeySpec");
 
@@ -183,19 +183,25 @@ class PQCKeyFactory extends KeyFactorySpi {
     // Internal utility method for checking key algorithm
     private void checkKeyAlgo(Key key) throws InvalidKeyException {
         String keyAlg = key.getAlgorithm();
+        boolean matches = false;
+
         if (keyAlg == null) {
             throw new InvalidKeyException("Algorithm associate with key is null.");
         }
-        
-        // Check if algorithms match exactly or via OID lookup
-        boolean matches = key.getAlgorithm().equalsIgnoreCase(this.algName) ||
-            (PQCKnownOIDs.findMatch(key.getAlgorithm()).stdName().equalsIgnoreCase(this.algName));
-        
-        // Special case for generic ML-KEM: Allow any ML-KEM parameter set variant
-        // (ML-KEM-512, ML-KEM-768, ML-KEM-1024) when using the generic "ML-KEM" KeyFactory.
-        // This enables interoperability with KEM.getInstance("ML-KEM", ...).
-        if (!matches && "ML-KEM".equals(this.algName) && keyAlg.startsWith("ML-KEM")) {
+
+        //Key is generic identified by generic family alg name
+        //This enables interoperability with getInstance using ML-KEM, ML-DSA, etc.
+        if (("ML-KEM".equals(this.algName) && keyAlg.startsWith("ML-KEM")) ||
+            ("ML-DSA".equals(this.algName) && keyAlg.startsWith("ML-DSA")) ||
+            ("ML-KEM".equals(keyAlg) && this.algName.startsWith("ML-KEM")) ||
+            ("ML-DSA".equals(keyAlg) && this.algName.startsWith("ML-DSA"))
+        ) {
             matches = true;
+        } else {
+            // Check if algorithms match exactly or via OID lookup
+            matches = key.getAlgorithm().equalsIgnoreCase(this.algName) ||
+                (PQCKnownOIDs.findMatch(key.getAlgorithm()).stdName().equalsIgnoreCase(this.algName));
+        
         }
         
         if (!matches) {
