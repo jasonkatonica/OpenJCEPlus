@@ -196,13 +196,8 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         PKCS8EncodedKeySpec privateKeySpecPlus = new PKCS8EncodedKeySpec(privateKeyBytesPlus);
         EncodedKeySpec publicKeySpecPlus = new X509EncodedKeySpec(publicKeyBytesPlus);
         PublicKey publicKeyInterop = keyFactoryInterop.generatePublic(publicKeySpecPlus);
-<<<<<<< HEAD
-        // BC is using a different encoding today for thier ML-DSA private keys.
-        // So we can not compare these today.
-=======
         //BC is using a different encoding today for their ML-DSA private keys.
         // So we cannot compare these today.
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
             PrivateKey privateKeyInterop = keyFactoryInterop.generatePrivate(privateKeySpecPlus);
             same = Arrays.equals(privateKeyBytesPlus, privateKeyInterop.getEncoded());
@@ -243,13 +238,8 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         PublicKey publicKeyPlus = keyFactoryPlus.generatePublic(publicKeySpecInterop);
         PrivateKey privateKeyPlus = keyFactoryPlus.generatePrivate(privateKeySpecInterop);
 
-<<<<<<< HEAD
-        // BC is using a different encoding today for thier ML-DSA private keys.
-        // So we can not compare these today.
-=======
         //BC is using a different encoding today for their ML-DSA private keys.
         // So we cannot compare these today.
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
             same = Arrays.equals(privateKeyBytesInterop, privateKeyPlus.getEncoded());
             assertTrue(same, "Private key bytes differ for " + pqcAlgorithm);
@@ -287,15 +277,9 @@ public class BaseTestPQCKeyInterop extends BaseTestJunit5Interop {
         PublicKey pub = keyFactoryPlus.generatePublic(eksInterop);
         EncodedKeySpec eksPrivInterop = keyFactoryInterop.getKeySpec(privateKeyInterop, EncodedKeySpec.class);
         PrivateKey priv = keyFactoryPlus.generatePrivate(eksPrivInterop);
-<<<<<<< HEAD
-        
-        // BC is using a different encoding today for thier ML-DSA private keys.
-        // So we can not compare these today.
-=======
 
         //BC is using a different encoding today for their ML-DSA private keys.
         // So we cannot compare these today.
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
         if (getInteropProviderName().equals(Utils.PROVIDER_SunJCE)) {
             same = Arrays.equals(privateKeyBytesInterop, priv.getEncoded());
             assertTrue(same, "Private key bytes differ for " + pqcAlgorithm);

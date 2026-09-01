@@ -29,13 +29,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-<<<<<<< HEAD
-import static org.junit.jupiter.api.Assertions.assertSame;
-=======
 import static org.junit.jupiter.api.Assertions.assertNotNull;
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -99,12 +97,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
      * @throws Exception if key pair generation fails unexpectedly
      */
     @ParameterizedTest
-<<<<<<< HEAD
-    @CsvSource({"ML-KEM", "ML-KEM-512", "ML-KEM-768", "ML-KEM-1024",
-                "MLKEM512", "ML_KEM_512", "ML_KEM_768", "ML_KEM_1024",
-                "ML-DSA", "ML-DSA-44", "ML-DSA-65", "ML-DSA-87",
-                "ML_DSA_44", "ML_DSA_65", "ML_DSA_87"})
-=======
     @CsvSource({
         // canonical family names
         "ML-KEM", "ML-DSA",
@@ -136,7 +128,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
         "2.16.840.1.101.3.4.4.1", "2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.3",
         "2.16.840.1.101.3.4.3.17", "2.16.840.1.101.3.4.3.18", "2.16.840.1.101.3.4.3.19"
     })
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
     public void testPQCKeyGen(String Algorithm) throws Exception {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         try {
@@ -158,12 +149,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
      * @throws Exception if key factory creation or encoding round-trip fails unexpectedly
      */
     @ParameterizedTest
-<<<<<<< HEAD
-    @CsvSource({"ML-KEM", "ML-KEM-512", "ML-KEM-768", "ML-KEM-1024",
-                "ML_KEM_512", "ML_KEM_768", "ML_KEM_1024",
-                "ML-DSA", "ML-DSA-44", "ML-DSA-65", "ML-DSA-87",
-                "ML_DSA_44", "ML_DSA_65", "ML_DSA_87"})
-=======
     @CsvSource({
         // canonical family names
         "ML-KEM", "ML-DSA",
@@ -201,7 +186,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
         "2.16.840.1.101.3.4.4.1", "2.16.840.1.101.3.4.4.2", "2.16.840.1.101.3.4.4.3",
         "2.16.840.1.101.3.4.3.17", "2.16.840.1.101.3.4.3.18", "2.16.840.1.101.3.4.3.19"
     })
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
     public void testPQCKeyFactoryCreateFromEncoded(String Algorithm) throws Exception {
         assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
         keyFactoryCreateFromEncoded(Algorithm);
@@ -305,33 +289,6 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
     }
 
     /**
-<<<<<<< HEAD
-     * Verifies that a specific-variant ML-KEM {@link KeyPairGenerator} rejects
-     * {@link NamedParameterSpec} values for other ML-KEM variants. Tests both '-' and '_'
-     * name forms.
-     *
-     * @param generatorAlg  the algorithm used to obtain the {@link KeyPairGenerator}
-     * @param paramSpecName the mismatched {@link NamedParameterSpec} name
-     * @throws Exception if an unexpected error occurs
-     */
-    @ParameterizedTest
-    @CsvSource({"ML-KEM-512, ML-KEM-768", "ML-KEM-512, ML-KEM-1024",
-                "ML-KEM-512, ML_KEM_768", "ML-KEM-512, ML_KEM_1024",
-                "ML-KEM-768, ML-KEM-512", "ML-KEM-1024, ML-KEM-512",
-                "ML-KEM-768, ML_KEM_512", "ML-KEM-1024, ML_KEM_512"})
-    public void genWithAlgParameterSpecMLKEMFailure(
-            String generatorAlg, String paramSpecName) throws Exception {
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance(generatorAlg, getProviderName());
-        AlgorithmParameterSpec param = new NamedParameterSpec(paramSpecName);
-        try {
-            kpg.initialize(param);
-            fail("Expected InvalidAlgorithmParameterException not thrown for "
-                    + generatorAlg + " / " + paramSpecName);
-        } catch (InvalidAlgorithmParameterException e) {
-            assertTrue(e.getMessage().equals("Algorithm in AlgorithmParameterSpec: " + paramSpecName + 
-                " must match the Algorithnm for this KeyPairGenerator: " + generatorAlg), 
-                 "Different Message than expected: " + e.getMessage());
-=======
      * Tests that the generic "ML-DSA" KeyFactory can decode public and private
      * keys originally generated with any specific ML-DSA parameter set.
      * <p>
@@ -592,7 +549,35 @@ public class BaseTestPQCKeys extends BaseTestJunit5 {
             assertEquals("Inappropriate key specification: ", e.getMessage());
             assertNotNull(e.getCause(), "Expected a cause on the InvalidKeySpecException");
             assertEquals(expectedCauseMsg, e.getCause().getMessage());
->>>>>>> 96a95836a (Add generic ML-DSA KeyFactory and Signature)
+        }
+    }
+
+    /**
+     * Verifies that a specific-variant ML-KEM {@link KeyPairGenerator} rejects
+     * {@link NamedParameterSpec} values for other ML-KEM variants. Tests both '-' and '_'
+     * name forms.
+     *
+     * @param generatorAlg  the algorithm used to obtain the {@link KeyPairGenerator}
+     * @param paramSpecName the mismatched {@link NamedParameterSpec} name
+     * @throws Exception if an unexpected error occurs
+     */
+    @ParameterizedTest
+    @CsvSource({"ML-KEM-512, ML-KEM-768", "ML-KEM-512, ML-KEM-1024",
+                "ML-KEM-512, ML_KEM_768", "ML-KEM-512, ML_KEM_1024",
+                "ML-KEM-768, ML-KEM-512", "ML-KEM-1024, ML-KEM-512",
+                "ML-KEM-768, ML_KEM_512", "ML-KEM-1024, ML_KEM_512"})
+    public void genWithAlgParameterSpecMLKEMFailure(
+            String generatorAlg, String paramSpecName) throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance(generatorAlg, getProviderName());
+        AlgorithmParameterSpec param = new NamedParameterSpec(paramSpecName);
+        try {
+            kpg.initialize(param);
+            fail("Expected InvalidAlgorithmParameterException not thrown for "
+                    + generatorAlg + " / " + paramSpecName);
+        } catch (InvalidAlgorithmParameterException e) {
+            assertTrue(e.getMessage().equals("Algorithm in AlgorithmParameterSpec: " + paramSpecName +
+                " must match the Algorithnm for this KeyPairGenerator: " + generatorAlg),
+                 "Different Message than expected: " + e.getMessage());
         }
     }
 
