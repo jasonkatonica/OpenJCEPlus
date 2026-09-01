@@ -235,8 +235,7 @@ final class PQCPrivateKey extends PKCS8Key {
     }
 
     /**
-     * Returns the family name for a known PQC algorithm, or the param-set name
-     * itself if no family grouping applies.
+     * Returns the family name for a known PQC algorithm.
      * <ul>
      *   <li>ML-DSA-44/65/87 all map to "ML-DSA"</li>
      *   <li>ML-KEM-512/768/1024 all map to "ML-KEM"</li>

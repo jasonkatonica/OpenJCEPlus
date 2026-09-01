@@ -84,13 +84,13 @@ abstract class PQCSignatureImpl extends SignatureSpi {
         // The generic "ML-DSA" instance accepts any ML-DSA parameter-set key.
         String keyParam = keyPrivate.getParamSetName();
         boolean paramMatches = keyParam.equalsIgnoreCase(this.alg)
-            || ("ML-DSA".equals(this.alg) && keyParam.startsWith("ML-DSA"));
+            || ("ML-DSA".equals(this.alg) && keyParam.startsWith("ML-DSA-"));
         if (!paramMatches) {
             throw new InvalidKeyException("Key must be of algorithm " + this.alg);
         }
 
         try {
-            this.signature.initialize(keyPrivate.getPQCKey(), keyPrivate.getParamSetName().replace('_', '-'));
+            this.signature.initialize(keyPrivate.getPQCKey(), keyPrivate.getParamSetName());
         } catch (Exception e) {
             throw provider.providerException("Failure in engineInitSign", e);
         }
@@ -115,12 +115,12 @@ abstract class PQCSignatureImpl extends SignatureSpi {
         // The generic "ML-DSA" instance accepts any ML-DSA parameter-set key.
         String keyParam = keyPublic.getParamSetName();
         boolean paramMatches = keyParam.equalsIgnoreCase(this.alg)
-            || ("ML-DSA".equals(this.alg) && keyParam.startsWith("ML-DSA"));
+            || ("ML-DSA".equals(this.alg) && keyParam.startsWith("ML-DSA-"));
         if (!paramMatches) {
             throw new InvalidKeyException("Expected algorithm " + this.alg + ", but got " + keyParam);
         }
         try {
-            this.signature.initialize(keyPublic.getPQCKey(), keyPublic.getParamSetName().replace('_', '-'));
+            this.signature.initialize(keyPublic.getPQCKey(), keyPublic.getParamSetName());
         } catch (Exception e) {
             throw provider.providerException("Failure in engineInitVerify", e);
         }

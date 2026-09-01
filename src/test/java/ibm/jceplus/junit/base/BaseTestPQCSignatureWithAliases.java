@@ -15,7 +15,6 @@ import java.security.PublicKey;
 import java.security.Signature;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 public class BaseTestPQCSignatureWithAliases extends BaseTestJunit5Signature {
 
@@ -93,8 +92,6 @@ public class BaseTestPQCSignatureWithAliases extends BaseTestJunit5Signature {
 
 
     public void testPQCSignature(String Algorithm, byte[] dataToBeSigned) throws Exception {
-
-        assumeFalse("OpenJCEPlusFIPS".equals(getProviderName()));
 
         //System.out.println("generateKeyPair( ):   The provider name is:  " + getProviderName( ) );
         //System.out.println("testPQCSignature( ):  Calling generateKeyPair( " + Algorithm + " ) ");
