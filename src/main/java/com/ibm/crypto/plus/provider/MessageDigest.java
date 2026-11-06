@@ -16,6 +16,11 @@ abstract class MessageDigest extends MessageDigestSpi implements Cloneable {
     private OpenJCEPlusProvider provider = null;
     private Digest digest = null;
 
+    // Optimization: pre-allocated single-byte buffer reused across engineUpdate(byte)
+    // calls to eliminate per-invocation byte[1] heap allocation.
+    // Safe because MessageDigestSpi instances are not required to be thread-safe.
+    private final byte[] singleByteBuffer = new byte[1];
+
     MessageDigest(OpenJCEPlusProvider provider, String ockDigestAlgo, String configAlgName) {
         try {
             this.provider = provider;
@@ -36,9 +41,10 @@ abstract class MessageDigest extends MessageDigestSpi implements Cloneable {
 
     @Override
     protected void engineUpdate(byte input) {
-        byte[] singleByte = new byte[1];
-        singleByte[0] = input;
-        engineUpdate(singleByte, 0, 1);
+        // Optimization: reuse instance-level single-byte buffer to avoid a new byte[1]
+        // allocation on every call. MessageDigestSpi is single-threaded per instance.
+        singleByteBuffer[0] = input;
+        engineUpdate(singleByteBuffer, 0, 1);
     }
 
     @Override
