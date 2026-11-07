@@ -135,6 +135,21 @@ Aggregate summary (geomean over the 10 methods, per payload size):
 - Result: SUCCESS (improvement, no regression; no individual score dropped more than -0.6% which is within noise)
 - Notes: gain is entirely at payload 16B (md5/sha1 +8% to +15% vs iter1, sha512/sha256 +2% to +10%); payloads 2048B and 32768B are unchanged vs iteration 1 (they are bound by native hash speed, not per-call overhead). OCK is still ~26-36% slower than OpenSSL for SHA-2 at 2048B and 32768B (e.g. sha512 2048B OCK 218717 vs OpenSSL 297299; sha256 32768B OCK 11970 vs OpenSSL 13907) and that is now the biggest remaining OCK-specific gap. For OpenSSL the 2048B/32768B scores are essentially at native speed. Headline geomean is mathematically limited because 20 of the 30 scores per provider (2048B, 32768B) cannot be improved by call-overhead removal.
 
+### Iteration 3: Large-payload (2048B/32768B) byte-path analysis; no code change (2KB single-call experiment measured and reverted)
+- Status: COMPLETE (analysis only, source tree identical to iteration 2)
+- Bob Shell UUID: 5ae67dfc-606d-49b5-a245-4dba698d436a
+- Commit Hash: fb276419a0c9d2b9da78fef94b1b20ce65440512 (notes only)
+- GitHub Commit: https://github.com/jasonkatonica/OpenJCEPlus/commit/fb276419a0c9d2b9da78fef94b1b20ce65440512
+- Files Changed: 1 (notes/optimization_notes.md)
+- Benchmark: NOT RUN (code identical to iteration 2, so scores equal Iteration 2: OCK 253782.2, OpenSSL 291841.4 headline; no Jenkins build needed)
+- Result: NO_CHANGE
+- Findings:
+  - Path is one pinned zero-copy native update call per payload with no Java-side chunking/copy/zero-fill; JNI array access does not copy (isCopy==false verified).
+  - Time is linear in bytes so 2048B/32768B are bound by the native compression function.
+  - On aarch64 OCK and OpenSSL SHA-2 are the same speed, the 26-36% x86_64 OCK SHA-2 gap on Jenkins is in the native ICC library/CPU dispatch and is not visible in the Java/JNI path.
+  - The experiment of raising the pending buffer from 256B to 2048B to merge into one JNI call was 2.5-8.7% SLOWER at 2048B and was reverted.
+- Notes: 20 of 30 scores per provider (2048B, 32768B) are native-bound, so the +40% headline target is not reachable by Java/JNI work alone; remaining levers are the 16B per-call overhead (headline ceiling about +14.5% even if the 10 16B scores improved another 50%) and decisions outside this code (routing SHA-2 to the OpenSSL backend, newer ICC build/CPU dispatch on x86_64).
+
 ## Best Performing State
 - Iteration: 2
 - Headline OCK: 253782.2, OpenSSL: 291841.4
@@ -142,4 +157,4 @@ Aggregate summary (geomean over the 10 methods, per payload size):
 - Build UUID: 987b76c2-0dc8-4b0c-ab56-f508321b2954
 
 ## Next Steps
-- Iteration 3: per-call overhead at 16B has been mostly removed by iterations 1-2, so now focus on what limits 2048B/32768B: the OCK SHA-2 throughput gap vs OpenSSL (OCK sha256 32768B 11970 vs OpenSSL 13907; sha512 2048B 218717 vs 297299). Based on "Ideas NOT Yet Tried" in notes/optimization_notes.md: (a) check exactly how OCK is invoked for sha256/sha512 on large inputs (chunking, buffer copy per update, native context handling in src/main/native/ock/Digest.c and base/Digest.java; confirm GetPrimitiveArrayCritical does not copy the array and that ICC_EVP_DigestUpdate gets the whole buffer in one call), and whether a faster implementation or call mode exists (e.g. verify on x86_64 via ldd/perf whether OCK's ICC SHA-2 uses SHA-NI/AVX2 like OpenSSL, and whether a different ICC digest entry point or algorithm selection is faster); (b) try chunked updates (4-8KB) for 32768B inputs and the DIGEST_updateFastJNI/direct-buffer path as low-risk experiments; (c) keep investigating the remaining per-call overhead at 16B (sha512 ~2.5M ops/s vs md5 ~5.3M ops/s), e.g. the cost of re-init/finalisation of the larger SHA-512 context and the pending-buffer copy in Digest.java. Routing SHA-2 to the OpenSSL backend when both are available is a behavioural/config change and needs an owner decision, so it is not part of this iteration unless approved.
+- Iteration 4: attack the remaining per-call overhead at payload 16B (the only payload where Java/JNI work still pays off). Candidate ideas from notes/optimization_notes.md 'Ideas NOT Yet Tried' and the iteration 3 notes: avoid per-call result byte[] / object allocation where possible, replace shared PrimitiveWrapper.Bool needsReinit bookkeeping with a plain field, reduce JNI crossings or state checks on the update+digest path, reduce MessageDigest API dispatch overhead on the Java side.
