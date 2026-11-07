@@ -94,3 +94,42 @@ For small payloads (16B benchmark) the cost is dominated by JNI crossings + crit
 - Skip `needsReinit` bookkeeping via `PrimitiveWrapper.Bool` (shared object, extra indirection) with a plain field + volatile only for cleaner.
 - Avoid result `byte[]` allocation: not possible through the `MessageDigest.digest()` API.
 - Cache `SetByteArrayRegion`-free path: return digest in a `long`/`long[]` for fixed sizes (negligible).
+
+## Iteration 3
+
+### Findings & Analysis (byte path for update/digest of 2048B and 32768B)
+Path (identical structure for both backends): `MessageDigest.engineUpdate` -> `base/Digest.update` -> (length > 256B, so no Java buffering) `NativeInterface.DIGEST_update` -> `Native{OCK,OpenSSL}Adapter` -> JNI `DIGEST_update` -> `GetPrimitiveArrayCritical` -> ONE `ICC_EVP_DigestUpdate` / `EVP_DigestUpdate` call with the whole array -> `ReleasePrimitiveArrayCritical(JNI_ABORT)`. Then `digest()` -> one `DIGEST_digest_and_reset` (final + re-init, 16-64B output). `digest(byte[])` = the same two crossings. Checked item by item:
+1. **No Java-side chunking loop, no intermediate buffer, no zero-fill, no defensive copy** for inputs > 256B (`pending` is only used for <= 256B; large inputs call `flushPending()` which is a no-op when empty). The payload array is handed to native untouched.
+2. **JNI array access does not copy.** Verified in the container with a small JNI probe (`GetPrimitiveArrayCritical(..., &isCopy)` on the same OpenJ9 VM): `isCopy == false` for 16B, 2048B, 32768B and 1MB arrays, i.e. the heap array is pinned, not copied; `JNI_ABORT` on release is a no-op. (No `GetByteArrayElements`/`GetByteArrayRegion` is used on the large path.)
+3. **No native-side staging copy or per-call context work:** the whole input goes to the library's update in one call; per-call context handling is one `Final` + one re-`Init` (OpenSSL: `EVP_DigestInit_ex2(ctx, NULL, NULL)`, OCK: `ICC_EVP_DigestInit(ctx, mdCtx, md)`), constant cost independent of payload size. No `EVP_MD_fetch`/`get_digestbyname` per call (done once at create, contexts are pooled).
+4. **Scaling is linear in bytes on both backends.** Local aarch64 micro-benchmark (`update(payload); digest()`, single thread, best of 7x1s, same JIT/JVM, current HEAD): SHA-256 2048B 1.09M ops/s vs 4096B 0.57M vs 32768B 74K ops/s; SHA-512 2048B 626K / 4096B 330K / 32768B 43.5K; MD5 2048B 286K / 4096B 146K / 32768B 18.6K. 32768B throughput is exactly 16x lower than 2048B (+-3%), so the fixed per-call cost (JNI crossings, pin, final+init) is already <5% of the 2048B time and ~0% of the 32768B time: SHA-256 at 32768B = 74.3K ops/s = 2.4 GB/s on both backends. The remaining time is the hash compression function itself.
+5. **OCK vs OpenSSL on large inputs (aarch64 container):** SHA-256 and SHA-512 are the same speed (SHA-256 74.3K vs 74.3K at 32768B; SHA-512 43.5K vs 43.5K; 2048B within 1-3%). Both use the ARMv8 crypto-extension code (the ICC library `libicclib085.so` contains CRYPTOGAMS ARMv8 `sha256`/`sha512` block code and the same `sha256su0`/`sha512su0` instructions as system OpenSSL 3.5). MD5 (no hardware instruction, scalar code) is ~10-14% slower in OCK than OpenSSL here (18.6K vs 21.2K at 32768B), which matches the md5 gap seen on Jenkins. Therefore the 26-36% SHA-2 gap seen on the Jenkins x86_64 machine is NOT visible or reproducible here and is not caused by anything in the Java/JNI path (the code path is the same two crossings with the same arguments in both backends; the only difference is the callee). On x86_64 the likely cause is the ICC build selecting a different SHA-2 implementation than system OpenSSL 3.x (e.g. no SHA-NI/AVX2 path or an older CPU-capability dispatch in the bundled ICC); that is inside the native library and cannot be influenced from OpenJCEPlus (no ICC API to choose an implementation, and the capability vector is read by the library at load time).
+6. **Per-call overhead is not what limits 2048B/32768B:** removing every remaining JNI crossing/alloc would give at most the fixed cost (~0.3-0.5us out of ~0.9us for SHA-256 2048B on this machine, i.e. a few %, and nothing at 32768B), and the only way to remove one more crossing for a >256B input would be an extra Java and native copy of the payload, which is more expensive than the crossing (see experiment).
+
+### Hypothesis
+Large-payload (2048B/32768B) throughput can be improved from the Java side only if (a) a JNI crossing can be removed for 2048B or (b) a copy/chunking cost can be removed. (b) does not exist (no copies, pinned arrays, one native update call). (a) could be tried by raising the Java-side `pending` buffer / native stack buffer limit from 256B to 2048B so that `update(2048B)+digest()` is a single `DIGEST_updateDigestAndReset` call.
+
+### Experiment (measured and REVERTED)
+Raised `PENDING_MAX` (Digest.java) and the native `inBuf` (ock/openssl Digest.c) from 256 to 2048 so that 2048B inputs are merged into one JNI call. Local result (aarch64, same harness as above), 2048B update+digest: OCK SHA-256 1092K -> 1004K ops/s (-8.1%), SHA-512 626K -> 599K (-4.3%), MD5 286K -> 279K (-2.5%); OpenSSL SHA-256 1106K -> 1010K (-8.7%), SHA-512 643K -> 610K (-5.1%), MD5 327K -> 318K (-2.6%). 4096B/32768B unchanged (go through the old path), 16B unchanged. The Java `arraycopy` + `Arrays.fill` zeroisation + native `GetByteArrayRegion` copy of 2KB costs more than the saved crossing + pin (confirms that pinned direct access is the cheaper design for >256B). Not kept; the source tree is identical to the iteration-2 commit.
+
+### Exact Change
+None in `src/`. Iteration 3 only adds this analysis; the code is unchanged versus iteration 2 (verified `git status` clean for `src/main` before committing the notes).
+
+### Files modified
+- `notes/optimization_notes.md` (this section)
+
+### What limits large-payload throughput
+- **OpenSSL backend:** the hash compression function of system OpenSSL itself (2.4 GB/s SHA-256, 1.4 GB/s SHA-512 on the aarch64 container; time is exactly linear in bytes). One pinned, zero-copy `EVP_DigestUpdate` call per payload, constant ~sub-microsecond overhead per call. Cannot be improved from OpenJCEPlus; native-bound.
+- **OCK backend:** the hash compression function inside the bundled ICC library (`libicclib085.so`). Same Java/JNI path and cost as OpenSSL; identical SHA-2 speed to OpenSSL on aarch64; on Jenkins x86_64 it is 26-36% slower for SHA-2 (and 5-17% for md5/sha1), which is a property of the ICC implementation/CPU dispatch, not of OpenJCEPlus. Native-bound.
+- Consequently 20 of the 30 scores per provider (2048B, 32768B) cannot be raised by further Java/JNI changes; the only levers left are outside this code (use a faster native SHA-2 for OCK, or route SHA-2 to the OpenSSL backend when both are configured) and the +40% headline target is not reachable by Java/JNI-side work alone: even if the 10 payload-16B scores improved by another +50% (very optimistic), the geomean would gain only (1.5)^(1/3) = +14.5%.
+
+### Tests run (all with -Dock.library.path=/ock -Dopenssl.library.path=/openssl, OPENSSL_HOME=/openssl)
+- `mvn clean compile`: OK (native libs for OCK and OpenSSL rebuilt with -O3 -Werror).
+- `-Dtest='TestSHA256*,TestSHA512*,TestMD5,TestSHA1*'`: 239 run, 0 failures, 0 errors, 12 skipped (state unchanged from iteration 2, run to confirm the final tree).
+- `checkstyle:checkstyle`: no violations.
+
+### Ideas NOT Yet Tried
+- Route SHA-2 (and md5/sha1) to the OpenSSL backend when both backends are available (config/behavioural decision; would bring OCK-provider SHA-2 large payloads up to OpenSSL speed on x86_64 if the ICC gap is real). Needs an owner decision.
+- Measure on x86_64 (`perf stat`, `OPENSSL_ia32cap` for OpenSSL, `ldd`/disassembly of the ICC library) whether ICC SHA-2 uses SHA-NI/AVX2; if the OCK package has a newer ICC build or an environment switch enabling the fast path, document/ship it.
+- Multi-buffer / parallel hashing is not applicable (single stream per MessageDigest).
+- Further 16B work: SHA-512 16B (2.5-2.8M ops/s) vs MD5 (5.3M ops/s) is final+init cost of the 216B SHA-512 context inside the native library; only the allocation of the result `byte[]` and `MessageDigest` API dispatch remain on the Java side.
