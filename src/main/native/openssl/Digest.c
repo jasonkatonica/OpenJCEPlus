@@ -432,12 +432,15 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1up
         return -2;
     }
 
-    if ((*env)->GetArrayLength(env, output) < (jsize)digestLen) {
-        throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: The output buffer is too small");
-        return -1;
-    }
+    /*
+     * No separate GetArrayLength() crossing: SetByteArrayRegion bounds-checks
+     * itself and throws ArrayIndexOutOfBoundsException if 'output' is too short.
+     */
     (*env)->SetByteArrayRegion(env, output, 0, (jsize)digestLen,
                                (const jbyte *)digestBuf);
+    if ((*env)->ExceptionCheck(env)) {
+        return -1;
+    }
 
     return (jint)digestLen;
 }

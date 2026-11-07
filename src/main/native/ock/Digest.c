@@ -637,13 +637,15 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1updateDige
         return FAIL_DIGEST_INIT;
     }
 
-    if ((*env)->GetArrayLength(env, output) < (jsize)digestLen) {
-        throwOCKException(env, 0,
-                          "Digest output buffer is too small for the digest.");
-        return FAIL_DIGEST_FINAL;
-    }
+    /*
+     * No separate GetArrayLength() crossing: SetByteArrayRegion bounds-checks
+     * itself and throws ArrayIndexOutOfBoundsException if 'output' is too short.
+     */
     (*env)->SetByteArrayRegion(env, output, 0, (jsize)digestLen,
                                (const jbyte *)digestBuf);
+    if ((*env)->ExceptionCheck(env)) {
+        return FAIL_DIGEST_FINAL;
+    }
 
     return (jint)digestLen;
 }

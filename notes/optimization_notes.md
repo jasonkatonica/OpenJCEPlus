@@ -133,3 +133,43 @@ None in `src/`. Iteration 3 only adds this analysis; the code is unchanged versu
 - Measure on x86_64 (`perf stat`, `OPENSSL_ia32cap` for OpenSSL, `ldd`/disassembly of the ICC library) whether ICC SHA-2 uses SHA-NI/AVX2; if the OCK package has a newer ICC build or an environment switch enabling the fast path, document/ship it.
 - Multi-buffer / parallel hashing is not applicable (single stream per MessageDigest).
 - Further 16B work: SHA-512 16B (2.5-2.8M ops/s) vs MD5 (5.3M ops/s) is final+init cost of the 216B SHA-512 context inside the native library; only the allocation of the result `byte[]` and `MessageDigest` API dispatch remain on the Java side.
+
+## Iteration 4
+
+### Findings & Analysis (payload 16B, per-call overhead)
+Local harness (aarch64 container, single thread, `update(16B); digest()`, best of 4x1s after 2 warm-up rounds, JIT-warm, same machine, `/tmp/h/B.java`, loaded through `--patch-module`): current code is about 69-75 ns per SHA-256 op and 147-170 ns per SHA-512 op. Native floor measured with a plain C loop calling `EVP_DigestUpdate(16B) + EVP_DigestFinal_ex + EVP_DigestInit_ex2(ctx,NULL,NULL)` against the same OpenSSL: MD5 115 ns, SHA-1 70 ns, SHA-256 62 ns, SHA-512 99 ns. Therefore the OpenSSL backend is already within ~7 ns (SHA-256) to ~35-50 ns (SHA-512) of the pure native cost, and the JNI + Java overhead left per op is only ~7-10 ns for SHA-256, the rest is Final+Init inside the library (Final+Init of an empty SHA-512 ctx is 95 ns, SHA-256 40 ns). Specific candidates checked:
+- (a) result `byte[]`: allocation of 16-64 bytes by TLAB is a pointer bump, JIT escape analysis cannot remove it (returned to caller). `digest()` alone costs 58 ns (SHA-256) and `update(..)+reset()` costs 9.5 ns, i.e. the Java side (update buffering with arraycopy) is ~10 ns total. No removable allocation: the only `new byte[]` on the path is the API-mandated result. The extra 16-64B `memset` is not avoidable from Java.
+- (b) `PrimitiveWrapper.Bool needsReinit`: it is a plain (non-volatile) field in a small heap object; there is no volatile, atomic, synchronized or lock on the hot path anymore (iteration 1 removed them). Replacing it with a plain field would need the Cleaner lambda to read the up-to-date value (it currently captures the shared object precisely for that), so the change would be a correctness risk for ~1 load/store pair per call (< 1 ns). Not changed.
+- (c) JNI crossings: already ONE crossing per `update(<=256B)+digest()` (DIGEST_updateDigestAndReset); `flushPending` is a no-op check on the hot path, there is no context pool get/put per call (only at construction/cleaning). Nothing left to merge.
+- (d) JNI side: no FindClass/GetFieldID/GetMethodID in the hot path. The 256B `inBuf` is NOT zeroed (uninitialised stack array), only `GetByteArrayRegion` copies `len` bytes. Remaining JNI function-table calls per op were: `GetByteArrayRegion`, `ExceptionCheck`, `GetArrayLength`, `SetByteArrayRegion`. **`GetArrayLength` was redundant**: `SetByteArrayRegion` already bounds-checks and throws `ArrayIndexOutOfBoundsException` (the Java caller always passes an array of exactly the digest length, so the check never triggers anyway).
+- (e) API dispatch: `java.security.MessageDigest` (JDK) -> `engineUpdate` -> `Digest.update`; `engineDigest` -> `Digest.digest`. Bounds checks are the minimum required by the contract (needed also for the `System.arraycopy` safety), one array-length compare each; try/catch costs nothing on the non-exceptional path. No string comparisons per call (the algorithm switch is in the constructor only).
+
+### Hypothesis
+Removing the redundant `GetArrayLength` JNI crossing (one function-table call, non-inlinable in the interpreter/JNI stub) from `DIGEST_updateDigestAndReset` saves ~1-3 ns of the 60-170 ns per op; the effect is a ~0.5-1.5% gain at 16B, nothing at 2048B/32768B (<0.1%).
+
+### Exact Change
+`src/main/native/ock/Digest.c` and `src/main/native/openssl/Digest.c`, function `DIGEST_updateDigestAndReset`: removed `GetArrayLength(output) < digestLen` check; `SetByteArrayRegion` (which performs the same bounds check itself and throws `ArrayIndexOutOfBoundsException`) is followed by `ExceptionCheck` and returns an error code if it threw. The Java `Digest.digestInto` always supplies an array of exactly the digest length, so behaviour for callers is identical (digests unchanged, no new exception on the normal path).
+
+### Files modified
+- `src/main/native/ock/Digest.c`
+- `src/main/native/openssl/Digest.c`
+- `notes/optimization_notes.md` (this section)
+
+### Local A/B (aarch64 container, 16B `update+digest`, geomean of MD5/SHA-1/SHA-256/SHA-512/SHA-512-224, 3 alternating runs each, ops/s)
+- OCK: base 8867508 / 8878222 / 8857475 -> new 8952457 / 8969966 / 9007596 (about +1.2%; SHA-256 +1.5-1.9%, MD5 +1.7-4.4%, SHA-512 ~0%).
+- OpenSSL: base 9866440 / 9793183 / 9987727 -> new 9976942 / 10015539 (about +0.7-1.0%).
+- Small, within run-to-run noise on a single run but consistent in the A/B pairs. Do not expect more than ~+1% on Jenkins at 16B and nothing at 2048B/32768B.
+- Other micro-experiments (not kept): native floor measurement showed `EVP_DigestInit_ex` vs `_ex2` identical (no gain from changing the re-init call); output pointer alignment irrelevant.
+
+### Tests run (all with -Dock.library.path=/ock -Dopenssl.library.path=/openssl, OPENSSL_HOME=/openssl)
+- `mvn clean compile`: BUILD SUCCESS (OCK and OpenSSL native libs rebuilt with -O3 -Werror).
+- `-Dtest='TestSHA256*,TestSHA512*,TestMD5,TestSHA1*,TestSHA224*,TestSHA384*,TestSHA3*,TestSHA256Clone_SharedMD,TestAliases,TestTruncatedDigest'`: 705 run, 1 failure, 0 errors, 12 skipped. The only failure is the pre-existing `TestTruncatedDigest.testRSASignatureSHA512_224` (OpenJCEPlusFIPS provider not available in the container; documented in iteration 2, identical on earlier commits).
+- `mvn checkstyle:checkstyle`: BUILD SUCCESS.
+
+### Conclusion / what remains
+After this change the Java/JNI layer is within ~10 ns of the native floor for SHA-256 and within ~30-50 ns for SHA-512 per update+digest op on this machine; everything left is the library's Final+Init (SHA-512/MD5 contexts are costlier). No further meaningful 16B win from Java/JNI work was found; the +40% target remains out of reach without changing the native hashing.
+
+### Ideas NOT Yet Tried
+- Avoid the library's `Final` + `Init` pair for fixed 16B..<=256B one-shot digests by using a one-shot `EVP_Q_digest`/`EVP_Digest` style call on a fresh stack context for tiny inputs (needs checking that it is not slower than the cached ctx; for OpenSSL 3.x `EVP_Digest` includes an implicit fetch, so likely slower unless the `EVP_MD*` is cached - would need a new native entry holding the `EVP_MD*`; and for OCK no equivalent known).
+- Replace `JNI` with a Panama/`Linker` downcall (JDK 22+) for tiny calls: removes JNI transition cost, but needs native-memory segments (copy) and the JDK baseline of the project must be checked; large refactor, uncertain on OpenJ9.
+- Plain-field `needsReinit` with the Cleaner reading it from the `Digest` weak/phantom-safe holder (< 1 ns, correctness risk).
