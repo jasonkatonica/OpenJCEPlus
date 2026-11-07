@@ -52,3 +52,45 @@ Enabling `-O3` in native compilation, using `JNI_ABORT` in JNI critical array re
 - Direct JNI output into destination buffer in `DIGEST_digest_and_reset` taking `(jbyteArray output, jint offset, jint len)`.
 - FastJNI / CriticalNative JNI bindings or direct memory buffers for update-heavy streaming workloads.
 - Optimizing context reset in JNI to avoid full re-initialization if backend supports lighter-weight state zeroing.
+
+## Iteration 2
+
+### Findings & Analysis
+1. **JNI crossings per call (benchmark sequence `update(payload); digest()`)**: 2 crossings (`DIGEST_update` then `DIGEST_digest_and_reset`). `digest(byte[])` single shot = `update` + `digest`, also 2. Each crossing pins an array via `GetPrimitiveArrayCritical` (the output array is pinned a second time in `digest_and_reset`).
+2. **No per-call native `reset`**: `reset()` only calls native when `needsReinit` is set, and `digest_and_reset` already re-inits inside the same crossing, so there is no extra reset crossing on the benchmark path.
+3. **OpenSSL EVP_MD fetch is already cached**: `EVP_MD_fetch` is only done in `DIGEST_create`; reset uses `EVP_DigestInit_ex2(ctx, NULL, NULL)` which reuses `ctx->fetched_digest` (no implicit fetch per call). OCK uses `ICC_EVP_get_digestbyname` once in create and stores `md` in `OCKDigest`. Digest contexts are pooled in Java (`contextsPerBackend`). So neither fetch nor context reuse explains the OCK vs OpenSSL gap.
+4. **OCK vs OpenSSL SHA-2 gap at 2048B/32768B**: the JNI layer hands the whole array to `ICC_EVP_DigestUpdate`/`EVP_DigestUpdate` in a single call in both backends (no chunking in our code), so the gap is inside the native SHA-2 implementations (OCK's bundled ICC vs system OpenSSL 3.5 with CPU-accelerated SHA code). It cannot be fixed from the Java/JNI layer. The container is aarch64 (hardware sha2/sha512 flags present), the Jenkins platform is x86_64, so the cause could not be reproduced/confirmed locally.
+5. **Local measurements are not comparable with Jenkins** (aarch64 container, ~2.5x higher absolute ops/s, noise 5-100% on 16B cases). All deltas below are A/B against the iteration-1 commit built in a separate worktree on the same machine.
+
+### Hypothesis
+For small payloads (16B benchmark) the cost is dominated by JNI crossings + critical-array pin/unpin. Buffering small updates in Java and merging them into the digest call (`update + final + re-init` in ONE JNI call, digest returned through a stack buffer + `SetByteArrayRegion`, small input read with `GetByteArrayRegion` into a stack buffer) removes one crossing and 2 of 3 critical sections per `update(small)+digest()` sequence.
+
+### Exact Change
+- New native method `DIGEST_updateDigestAndReset(long ctx, long digestId, byte[] in, int off, int len, byte[] out)` for OCK and OpenSSL (`src/main/native/ock/Digest.c`, `src/main/native/openssl/Digest.c`): update (if len > 0) + final + re-init in one crossing; input <= 256B copied with `GetByteArrayRegion` into a stack buffer, larger input via `GetPrimitiveArrayCritical`/`JNI_ABORT`; digest written to a stack buffer and copied to `out` with `SetByteArrayRegion` (also checks output length). Added to `NativeInterface`, both `*Adapter` and both `*Implementation` classes.
+- `base/Digest.java`: `update()` with total pending input <= 256B copies it into a per-instance 256B `pending` buffer and returns without calling native; `digest()`/`digest(buf,off,len)` send pending + final in one `DIGEST_updateDigestAndReset` call. Larger updates first `flushPending()` then go directly to native as before (no extra copy for big payloads). Pending data is zeroised after being handed to native and on `reset()`. `clone()`, `getId()` (used by `Signature`) and `PKCS12KeyDeriveHelp` call `flushPending()` first, so clone/reset/signature semantics are unchanged. The caller's array is copied at `update()` time, so later modification of the caller's array does not change the result (same as native behaviour that consumes data immediately).
+- Not thread safe (as before, per JCA).
+
+### Modified Files
+- `src/main/java/com/ibm/crypto/plus/provider/base/Digest.java`
+- `src/main/java/com/ibm/crypto/plus/provider/base/NativeInterface.java`
+- `src/main/java/com/ibm/crypto/plus/provider/ock/NativeOCKAdapter.java`, `NativeOCKImplementation.java`
+- `src/main/java/com/ibm/crypto/plus/provider/openssl/NativeOpenSSLAdapter.java`, `NativeOpenSSLImplementation.java`
+- `src/main/native/ock/Digest.c`, `src/main/native/openssl/Digest.c`
+
+### Local A/B result (aarch64 container, JMH 5x3s, payload 16B only, vs iteration-1 commit)
+- OCK geomean of the 10 methods: +3.5% (per method -0% .. +7.4%); OpenSSL: about +0.2% (per method -1.3% .. +3.7%), i.e. within noise. 2048B/32768B are unaffected by design (native bound). Expect only a small gain on Jenkins; this is not enough to reach +40%.
+
+### Tests run (all with -Dock.library.path=/ock -Dopenssl.library.path=/openssl, OPENSSL_HOME=/openssl exported)
+- `mvn clean compile`: OK (native libs for OCK and OpenSSL built with -Werror).
+- `-Dtest='TestSHA*,TestMD5,TestTruncatedDigest,TestAliases,TestSHA256Clone_SharedMD,TestECDSASignatureInterop*,TestRSASignatureInterop*,TestHmacSHA*,TestHKDF*,TestPBKDF2*'`: 1386 tests, 1 failure + 10 errors, all pre-existing: `TestTruncatedDigest.testRSASignatureSHA512_224` and `TestHmacSHA1InteropSunJCE` (OpenJCEPlusFIPS provider not available in this container). The same classes fail identically on the iteration-1 commit (verified for TestTruncatedDigest, TestRSAPSSSignature, TestRSAPSSInterop: 40 run, 16 failures, 4 errors before and after). All SHA/MD5/KAT/clone/alias tests pass.
+- Earlier broader run (also DSA/EdDSA/RSAPSS/ECDSA signature tests): only pre-existing failures (FIPS provider missing, expired 2016 certificates, RSA-PSS/TruncatedDigest).
+- Ad-hoc differential fuzz vs SUN provider (random update sizes 0..5000, single-byte updates, offsets, clone mid-stream, reset, digest(buf,off,len), mutation of caller array after update) for 10 algorithms on both backends: 60000 digests, all match.
+- `checkstyle:checkstyle`: BUILD SUCCESS.
+
+### Ideas NOT Yet Tried
+- Direct ByteBuffer / `FastJNIBuffer` based update path (`DIGEST_updateFastJNI` exists) for large payloads: avoids pinning, but needs a copy into the direct buffer so unlikely to win.
+- Chunked updates (e.g. 4-8KB) for 32768B inputs to keep data in L1 cache while hashing (only matters if the native code touches data more than once; unlikely).
+- Verify on x86_64 whether OCK's SHA-2 uses SHA-NI/AVX2 vs OpenSSL (`perf`/`ldd`), possibly route SHA-2 to the OpenSSL backend when both are available (behavioural/config change, needs owner decision).
+- Skip `needsReinit` bookkeeping via `PrimitiveWrapper.Bool` (shared object, extra indirection) with a plain field + volatile only for cleaner.
+- Avoid result `byte[]` allocation: not possible through the `MessageDigest.digest()` API.
+- Cache `SetByteArrayRegion`-free path: return digest in a `long`/`long[]` for fixed sizes (negligible).

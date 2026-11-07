@@ -566,6 +566,91 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1an
 //============================================================================
 /*
  * Class:     com_ibm_crypto_plus_provider_ock_NativeOCKImplementation
+ * Method:    DIGEST_updateDigestAndReset
+ * Signature: (JJ[BII[B)I
+ *
+ * Optimization: performs update + final + re-init in a single JNI crossing.
+ * The digest is produced into a stack buffer and copied into the caller's
+ * output array with SetByteArrayRegion, so the (potentially large) input array
+ * is only pinned for the duration of the update and no second critical
+ * section on the output array is needed.
+ */
+JNIEXPORT jint JNICALL
+Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1updateDigestAndReset(
+    JNIEnv *env, jclass thisObj, jlong ockContextId, jlong digestId,
+    jbyteArray data, jint offset, jint dataLen, jbyteArray output) {
+
+    ICC_CTX      *ockCtx    = (ICC_CTX *)((intptr_t)ockContextId);
+    OCKDigest    *ockDigest = (OCKDigest *)((intptr_t)digestId);
+    unsigned char digestBuf[ICC_EVP_MAX_MD_SIZE];
+    unsigned char inBuf[256];
+    unsigned int  digestLen = 0;
+
+    if ((ockDigest == NULL) || (ockDigest->mdCtx == NULL) || (output == NULL) ||
+        (offset < 0) || (dataLen < 0) || ((dataLen > 0) && (data == NULL))) {
+        throwOCKException(env, 0,
+                          "Digest update and digest failed. The specified "
+                          "input parameters are incorrect.");
+        return FAIL_DIGEST_INIT;
+    }
+
+    if (dataLen > 0) {
+        int rc;
+        if (dataLen <= (jint)sizeof(inBuf)) {
+            /* Small input: plain region copy is cheaper than a critical section */
+            (*env)->GetByteArrayRegion(env, data, offset, dataLen, (jbyte *)inBuf);
+            if ((*env)->ExceptionCheck(env)) {
+                return FAIL_DIGEST_UPDATE;
+            }
+            rc = DIGEST_update_internal(ockCtx, ockDigest, inBuf, (int)dataLen);
+        } else {
+            unsigned char *dataNative =
+                (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, data, NULL));
+            if (NULL == dataNative) {
+                throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
+                return FAIL_DIGEST_UPDATE;
+            }
+            rc = DIGEST_update_internal(ockCtx, ockDigest, dataNative + offset,
+                                        (int)dataLen);
+            /* Input is read-only: discard any temporary copy */
+            (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, JNI_ABORT);
+        }
+        if (DIGEST_INTERNAL_SUCCESS > rc) {
+            ockCheckStatus(ockCtx);
+            throwOCKException(env, 0, "ICC_EVP_DigestUpdate failed");
+            return rc;
+        }
+    }
+
+    if (ICC_OSSL_SUCCESS != ICC_EVP_DigestFinal(ockCtx, ockDigest->mdCtx,
+                                                digestBuf, &digestLen)) {
+        ockCheckStatus(ockCtx);
+        throwOCKException(env, 0, "ICC_EVP_DigestFinal failed");
+        return FAIL_DIGEST_FINAL;
+    }
+
+    /* digest reset */
+    if (ICC_OSSL_SUCCESS !=
+        ICC_EVP_DigestInit(ockCtx, ockDigest->mdCtx, ockDigest->md)) {
+        ockCheckStatus(ockCtx);
+        throwOCKException(env, 0, "ICC_EVP_DigestInit failed");
+        return FAIL_DIGEST_INIT;
+    }
+
+    if ((*env)->GetArrayLength(env, output) < (jsize)digestLen) {
+        throwOCKException(env, 0,
+                          "Digest output buffer is too small for the digest.");
+        return FAIL_DIGEST_FINAL;
+    }
+    (*env)->SetByteArrayRegion(env, output, 0, (jsize)digestLen,
+                               (const jbyte *)digestBuf);
+
+    return (jint)digestLen;
+}
+
+//============================================================================
+/*
+ * Class:     com_ibm_crypto_plus_provider_ock_NativeOCKImplementation
  * Method:    DIGEST_size
  * Signature: (JJ)V
  */

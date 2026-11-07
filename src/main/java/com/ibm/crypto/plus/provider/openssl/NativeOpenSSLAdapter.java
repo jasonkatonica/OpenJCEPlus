@@ -910,6 +910,13 @@ public abstract class NativeOpenSSLAdapter implements NativeInterface {
     }
 
     @Override
+    public int DIGEST_updateDigestAndReset(long digestId, byte[] input, int offset, int length,
+            byte[] output) throws OpenSSLException {
+        return NativeOpenSSLImplementation.DIGEST_updateDigestAndReset(this.osslContextId, digestId,
+                input, offset, length, output);
+    }
+
+    @Override
     public int DIGEST_size(long digestId) throws OpenSSLException {
         return NativeOpenSSLImplementation.DIGEST_size(this.osslContextId, digestId);
     }

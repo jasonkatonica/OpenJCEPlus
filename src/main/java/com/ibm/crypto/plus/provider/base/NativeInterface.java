@@ -389,6 +389,9 @@ public interface NativeInterface {
     public int DIGEST_digest_and_reset(long digestId,
             byte[] output) throws NativeException;
 
+    public int DIGEST_updateDigestAndReset(long digestId, byte[] input,
+            int offset, int length, byte[] output) throws NativeException;
+
     public int DIGEST_size(long digestId) throws NativeException;
 
     public void DIGEST_reset(long digestId) throws NativeException;

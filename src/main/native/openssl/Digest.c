@@ -370,6 +370,81 @@ cleanup:
 //============================================================================
 /*
  * Class:     com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation
+ * Method:    DIGEST_updateDigestAndReset
+ * Signature: (JJ[BII[B)I
+ *
+ * Optimization: performs update + final + re-init in a single JNI crossing.
+ * The digest is produced into a stack buffer and copied into the caller's
+ * output array with SetByteArrayRegion, so the (potentially large) input array
+ * is only pinned for the duration of the update and no second critical
+ * section on the output array is needed.
+ */
+JNIEXPORT jint JNICALL
+Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1updateDigestAndReset(
+    JNIEnv *env, jclass thisObj, jlong osslContextId, jlong digestId,
+    jbyteArray data, jint offset, jint dataLen, jbyteArray output) {
+
+    EVP_MD_CTX   *mdCtx = (EVP_MD_CTX *)((intptr_t)digestId);
+    unsigned char digestBuf[EVP_MAX_MD_SIZE];
+    unsigned char inBuf[256];
+    unsigned int  digestLen = 0;
+
+    if ((NULL == mdCtx) || (NULL == output) || (offset < 0) || (dataLen < 0) ||
+        ((dataLen > 0) && (NULL == data))) {
+        throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: The specified input parameters are incorrect");
+        return -1;
+    }
+
+    if (dataLen > 0) {
+        int rc;
+        if (dataLen <= (jint)sizeof(inBuf)) {
+            /* Small input: plain region copy is cheaper than a critical section */
+            (*env)->GetByteArrayRegion(env, data, offset, dataLen, (jbyte *)inBuf);
+            if ((*env)->ExceptionCheck(env)) {
+                return -3;
+            }
+            rc = EVP_DigestUpdate(mdCtx, inBuf, (size_t)dataLen);
+        } else {
+            unsigned char *dataNative =
+                (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, data, NULL));
+            if (NULL == dataNative) {
+                throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: GetPrimitiveArrayCritical failed");
+                return -3;
+            }
+            rc = EVP_DigestUpdate(mdCtx, dataNative + offset, (size_t)dataLen);
+            /* Input is read-only: discard any temporary copy */
+            (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, JNI_ABORT);
+        }
+        if (1 != rc) {
+            throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: EVP_DigestUpdate failed");
+            return -3;
+        }
+    }
+
+    if (1 != EVP_DigestFinal_ex(mdCtx, digestBuf, &digestLen)) {
+        throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: EVP_DigestFinal_ex failed");
+        return -1;
+    }
+
+    /* digest reset */
+    if (1 != EVP_DigestInit_ex2(mdCtx, NULL, NULL)) {
+        throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: EVP_DigestInit_ex2 failed");
+        return -2;
+    }
+
+    if ((*env)->GetArrayLength(env, output) < (jsize)digestLen) {
+        throwOSSLException(env, 0, "DIGEST_updateDigestAndReset: The output buffer is too small");
+        return -1;
+    }
+    (*env)->SetByteArrayRegion(env, output, 0, (jsize)digestLen,
+                               (const jbyte *)digestBuf);
+
+    return (jint)digestLen;
+}
+
+//============================================================================
+/*
+ * Class:     com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation
  * Method:    DIGEST_size
  * Signature: (J)V
  */

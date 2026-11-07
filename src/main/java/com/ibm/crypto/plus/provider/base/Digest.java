@@ -11,6 +11,7 @@ package com.ibm.crypto.plus.provider.base;
 import com.ibm.crypto.plus.provider.OpenJCEPlusProvider;
 import com.ibm.crypto.plus.provider.PrimitiveWrapper;
 import com.ibm.crypto.plus.provider.SystemAccessUtils;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -165,6 +166,15 @@ public final class Digest implements Cloneable {
      * ===========================================================================
      */
 
+    // Optimization: small inputs are buffered in Java (copied, so later changes by the
+    // caller to its array cannot affect the result) and handed to the native layer
+    // together with the final digest in ONE JNI call (update + final + reset). This
+    // removes one JNI crossing for the common update(small) + digest() sequence.
+    // Larger inputs go directly to native (no extra copy) as before.
+    private static final int PENDING_MAX = 256;
+    private byte[] pending = null;
+    private int pendingLen = 0;
+
     private int digestLength = 0;
     private final String badIdMsg = "Digest Identifier is not valid";
     private static final String debPrefix = "DIGEST";
@@ -264,11 +274,75 @@ public final class Digest implements Cloneable {
             throw new NativeException(badIdMsg);
         }
 
+        if (length <= PENDING_MAX - this.pendingLen) {
+            // Buffer small input; it is sent to native with the next digest()/flush.
+            if (this.pending == null) {
+                this.pending = new byte[PENDING_MAX];
+            }
+            System.arraycopy(input, offset, this.pending, this.pendingLen, length);
+            this.pendingLen += length;
+            return;
+        }
+
+        flushPending();
+
+        if (length <= PENDING_MAX) {
+            if (this.pending == null) {
+                this.pending = new byte[PENDING_MAX];
+            }
+            System.arraycopy(input, offset, this.pending, 0, length);
+            this.pendingLen = length;
+            return;
+        }
+
         int errorCode = this.nativeInterface.DIGEST_update(this.digestId, input, offset, length);
         if (errorCode < 0) {
             throwNativeException(errorCode);
         }
         this.needsReinit.setValue(true);
+    }
+
+    // Sends any buffered input to the native context. Must be called before anything
+    // else touches the native context (clone, PKCS12 helper, getId() users).
+    private void flushPending() throws NativeException {
+        int len = this.pendingLen;
+        if (len == 0) {
+            return;
+        }
+        this.pendingLen = 0;
+        byte[] buf = this.pending;
+        int errorCode;
+        try {
+            errorCode = this.nativeInterface.DIGEST_update(this.digestId, buf, 0, len);
+        } finally {
+            Arrays.fill(buf, 0, len, (byte) 0);
+        }
+        if (errorCode < 0) {
+            throwNativeException(errorCode);
+        }
+        this.needsReinit.setValue(true);
+    }
+
+    // Final digest into 'out' (exactly digest length), merging buffered input, if any,
+    // into the same JNI call. Resets the native context.
+    private void digestInto(byte[] out) throws NativeException {
+        int len = this.pendingLen;
+        int errorCode;
+        if (len == 0) {
+            errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, out);
+        } else {
+            this.pendingLen = 0;
+            byte[] buf = this.pending;
+            try {
+                errorCode = this.nativeInterface.DIGEST_updateDigestAndReset(this.digestId, buf, 0, len, out);
+            } finally {
+                Arrays.fill(buf, 0, len, (byte) 0);
+            }
+        }
+        if (errorCode < 0) {
+            throwNativeException(errorCode);
+        }
+        this.needsReinit.setValue(false);
     }
 
     // Optimization: MessageDigest is not thread-safe per JCA specification.
@@ -281,11 +355,7 @@ public final class Digest implements Cloneable {
         int len = (this.digestLength != 0) ? this.digestLength : getDigestLength();
         byte[] digestBytes = new byte[len];
 
-        int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, digestBytes);
-        if (errorCode < 0) {
-            throwNativeException(errorCode);
-        }
-        this.needsReinit.setValue(false);
+        digestInto(digestBytes);
 
         return digestBytes;
     }
@@ -298,19 +368,12 @@ public final class Digest implements Cloneable {
 
         int dLen = (this.digestLength != 0) ? this.digestLength : getDigestLength();
         if (offset == 0 && buf.length == dLen) {
-            int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, buf);
-            if (errorCode < 0) {
-                throwNativeException(errorCode);
-            }
+            digestInto(buf);
         } else {
             byte[] digestBytes = new byte[dLen];
-            int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, digestBytes);
-            if (errorCode < 0) {
-                throwNativeException(errorCode);
-            }
+            digestInto(digestBytes);
             System.arraycopy(digestBytes, 0, buf, offset, dLen);
         }
-        this.needsReinit.setValue(false);
 
         return dLen;
     }
@@ -318,6 +381,10 @@ public final class Digest implements Cloneable {
     protected long getId() throws NativeException {
         //final String methodName = "getId()";
         //OCKDebug.Msg(debPrefix, methodName, "digestId :" + this.digestId);
+        // Callers use the native context directly, so it must hold all input.
+        if (this.digestId != 0) {
+            flushPending();
+        }
         return this.digestId;
     }
 
@@ -343,6 +410,11 @@ public final class Digest implements Cloneable {
 
         if (!validId(this.digestId)) {
             throw new NativeException(badIdMsg);
+        }
+        // Buffered input was never sent to native, simply discard (and zeroise) it.
+        if (this.pendingLen != 0) {
+            Arrays.fill(this.pending, 0, this.pendingLen, (byte) 0);
+            this.pendingLen = 0;
         }
         if (this.needsReinit.getValue()) {
             this.nativeInterface.DIGEST_reset(this.digestId);
@@ -382,6 +454,11 @@ public final class Digest implements Cloneable {
         // Clones do not make use of the cache so always set the value of
         // contextFromQueue to false to ensure that the context is later freed
         // correctly.
+        try {
+            flushPending();
+        } catch (NativeException e) {
+            throw new CloneNotSupportedException(e.getMessage());
+        }
         Digest copy = new Digest();
         copy.digestLength = this.digestLength;
         copy.algIndx = this.algIndx;
@@ -425,6 +502,8 @@ public final class Digest implements Cloneable {
         if (!validId(this.digestId)) {
             throw new NativeException(badIdMsg);
         }
+
+        flushPending();
 
         errorCode = this.nativeInterface.DIGEST_PKCS12KeyDeriveHelp(this.digestId, input, offset, length, iterationCount);
         if (errorCode < 0) {

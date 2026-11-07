@@ -860,6 +860,13 @@ public abstract class NativeOCKAdapter implements NativeInterface {
     }
 
     @Override
+    public int DIGEST_updateDigestAndReset(long digestId, byte[] input, int offset, int length,
+            byte[] output) throws OCKException {
+        return NativeOCKImplementation.DIGEST_updateDigestAndReset(this.ockContextId, digestId, input,
+                offset, length, output);
+    }
+
+    @Override
     public int DIGEST_size(long digestId) throws OCKException {
         return NativeOCKImplementation.DIGEST_size(this.ockContextId, digestId);
     }

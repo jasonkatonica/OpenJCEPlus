@@ -547,6 +547,9 @@ final class NativeOCKImplementation extends NativeImplementation {
     static public native int DIGEST_digest_and_reset(long ockContextId, long digestId,
             byte[] output) throws OCKException;
 
+    static public native int DIGEST_updateDigestAndReset(long ockContextId, long digestId,
+            byte[] input, int offset, int length, byte[] output) throws OCKException;
+
     static public native int DIGEST_size(long ockContextId, long digestId) throws OCKException;
 
     static public native void DIGEST_reset(long ockContextId, long digestId) throws OCKException;

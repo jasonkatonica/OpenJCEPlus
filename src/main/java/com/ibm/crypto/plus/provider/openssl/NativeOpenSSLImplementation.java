@@ -545,6 +545,9 @@ final class NativeOpenSSLImplementation extends NativeImplementation {
     static public native int DIGEST_digest_and_reset(long osslContextId, long digestId,
             byte[] output) throws OpenSSLException;
 
+    static public native int DIGEST_updateDigestAndReset(long osslContextId, long digestId,
+            byte[] input, int offset, int length, byte[] output) throws OpenSSLException;
+
     static public native int DIGEST_size(long osslContextId, long digestId) throws OpenSSLException;
 
     static public native void DIGEST_reset(long osslContextId, long digestId) throws OpenSSLException;
