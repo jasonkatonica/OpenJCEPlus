@@ -12,72 +12,76 @@
 - Baseline Build URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/java25/107/
 
 ## Score History (all individual results, ops/s)
-One row per individual result (benchmark method x payloadSize x provider). A new column pair is added after every iteration; headline geomean rows are at the bottom. Delta is vs the iteration 0 baseline.
+One row per individual result (benchmark method x payloadSize x provider). A new column is added after every iteration; Δ columns are vs the iteration 0 baseline and vs the previous iteration. Headline geomean rows are at the bottom.
 
-| Benchmark method | Payload | Provider | Iter 0 baseline | Iter 1 | Δ iter1 vs baseline |
-|---|---|---|---|---|---|
-| sha512UpdateDigest | 16 | OCK | 2325553 | 2478580 | +6.6% |
-| sha512UpdateDigest | 2048 | OCK | 189334 | 219266 | +15.8% |
-| sha512UpdateDigest | 32768 | OCK | 14931 | 15030 | +0.7% |
-| sha512SingleShotDigest | 16 | OCK | 2000677 | 2473122 | +23.6% |
-| sha512SingleShotDigest | 2048 | OCK | 217021 | 218848 | +0.8% |
-| sha512SingleShotDigest | 32768 | OCK | 14987 | 14971 | -0.1% |
-| md5SingleShotDigest | 16 | OCK | 4378990 | 4909901 | +12.1% |
-| md5SingleShotDigest | 2048 | OCK | 316468 | 321401 | +1.6% |
-| md5SingleShotDigest | 32768 | OCK | 21364 | 21528 | +0.8% |
-| sha512_224UpdateDigest | 16 | OCK | 2378458 | 2555090 | +7.4% |
-| sha512_224UpdateDigest | 2048 | OCK | 210824 | 219635 | +4.2% |
-| sha512_224UpdateDigest | 32768 | OCK | 12798 | 14992 | +17.1% |
-| sha512_256UpdateDigest | 16 | OCK | 2196947 | 2572674 | +17.1% |
-| sha512_256UpdateDigest | 2048 | OCK | 217790 | 219515 | +0.8% |
-| sha512_256UpdateDigest | 32768 | OCK | 14986 | 15026 | +0.3% |
-| md5UpdateDigest | 16 | OCK | 4346669 | 4826728 | +11.0% |
-| md5UpdateDigest | 2048 | OCK | 319816 | 321076 | +0.4% |
-| md5UpdateDigest | 32768 | OCK | 21372 | 21497 | +0.6% |
-| sha256UpdateDigest | 16 | OCK | 2722196 | 3438296 | +26.3% |
-| sha256UpdateDigest | 2048 | OCK | 176460 | 181265 | +2.7% |
-| sha256UpdateDigest | 32768 | OCK | 10241 | 11967 | +16.9% |
-| sha1SingleShotDigest | 16 | OCK | 4286429 | 4745368 | +10.7% |
-| sha1SingleShotDigest | 2048 | OCK | 361930 | 370026 | +2.2% |
-| sha1SingleShotDigest | 32768 | OCK | 25879 | 26511 | +2.4% |
-| sha1UpdateDigest | 16 | OCK | 4306765 | 4867678 | +13.0% |
-| sha1UpdateDigest | 2048 | OCK | 352969 | 369443 | +4.7% |
-| sha1UpdateDigest | 32768 | OCK | 23980 | 26553 | +10.7% |
-| sha256SingleShotDigest | 16 | OCK | 2979387 | 3448250 | +15.7% |
-| sha256SingleShotDigest | 2048 | OCK | 180572 | 181640 | +0.6% |
-| sha256SingleShotDigest | 32768 | OCK | 11927 | 11983 | +0.5% |
-| sha512UpdateDigest | 16 | OpenSSL | 2391988 | 2554807 | +6.8% |
-| sha512UpdateDigest | 2048 | OpenSSL | 285702 | 298257 | +4.4% |
-| sha512UpdateDigest | 32768 | OpenSSL | 20662 | 20731 | +0.3% |
-| sha512SingleShotDigest | 16 | OpenSSL | 2579267 | 2768196 | +7.3% |
-| sha512SingleShotDigest | 2048 | OpenSSL | 294728 | 298339 | +1.2% |
-| sha512SingleShotDigest | 32768 | OpenSSL | 20680 | 20764 | +0.4% |
-| md5SingleShotDigest | 16 | OpenSSL | 4349339 | 4904280 | +12.8% |
-| md5SingleShotDigest | 2048 | OpenSSL | 335274 | 337803 | +0.8% |
-| md5SingleShotDigest | 32768 | OpenSSL | 22577 | 22638 | +0.3% |
-| sha512_224UpdateDigest | 16 | OpenSSL | 2594220 | 2767051 | +6.7% |
-| sha512_224UpdateDigest | 2048 | OpenSSL | 295509 | 298150 | +0.9% |
-| sha512_224UpdateDigest | 32768 | OpenSSL | 18283 | 20743 | +13.5% |
-| sha512_256UpdateDigest | 16 | OpenSSL | 2629171 | 2801300 | +6.5% |
-| sha512_256UpdateDigest | 2048 | OpenSSL | 295265 | 296901 | +0.6% |
-| sha512_256UpdateDigest | 32768 | OpenSSL | 20650 | 20741 | +0.4% |
-| md5UpdateDigest | 16 | OpenSSL | 4333819 | 4845673 | +11.8% |
-| md5UpdateDigest | 2048 | OpenSSL | 333205 | 334457 | +0.4% |
-| md5UpdateDigest | 32768 | OpenSSL | 22463 | 22630 | +0.7% |
-| sha256UpdateDigest | 16 | OpenSSL | 2632624 | 3476853 | +32.1% |
-| sha256UpdateDigest | 2048 | OpenSSL | 206058 | 208009 | +0.9% |
-| sha256UpdateDigest | 32768 | OpenSSL | 11578 | 13937 | +20.4% |
-| sha1SingleShotDigest | 16 | OpenSSL | 4175881 | 4715926 | +12.9% |
-| sha1SingleShotDigest | 2048 | OpenSSL | 435973 | 443732 | +1.8% |
-| sha1SingleShotDigest | 32768 | OpenSSL | 30084 | 30529 | +1.5% |
-| sha1UpdateDigest | 16 | OpenSSL | 3992695 | 4561486 | +14.2% |
-| sha1UpdateDigest | 2048 | OpenSSL | 433131 | 442496 | +2.2% |
-| sha1UpdateDigest | 32768 | OpenSSL | 28256 | 30572 | +8.2% |
-| sha256SingleShotDigest | 16 | OpenSSL | 3059962 | 3492679 | +14.1% |
-| sha256SingleShotDigest | 2048 | OpenSSL | 208278 | 209229 | +0.5% |
-| sha256SingleShotDigest | 32768 | OpenSSL | 12685 | 13921 | +9.7% |
-| **HEADLINE geomean** | all | OCK | 230905.8 | 247801.6 | +7.32% |
-| **HEADLINE geomean** | all | OpenSSL | 268320.8 | 285058.0 | +6.24% |
+| Benchmark method | Payload | Provider | Iter 0 baseline | Iter 1 | Iter 2 | Δ iter2 vs baseline | Δ iter2 vs iter1 |
+|---|---|---|---|---|---|---|---|
+| sha512UpdateDigest | 16 | OCK | 2325553 | 2478580 | 2560354 | +10.1% | +3.3% |
+| sha512UpdateDigest | 2048 | OCK | 189334 | 219266 | 218717 | +15.5% | -0.3% |
+| sha512UpdateDigest | 32768 | OCK | 14931 | 15030 | 14937 | +0.0% | -0.6% |
+| sha512SingleShotDigest | 16 | OCK | 2000677 | 2473122 | 2461462 | +23.0% | -0.5% |
+| sha512SingleShotDigest | 2048 | OCK | 217021 | 218848 | 218661 | +0.8% | -0.1% |
+| sha512SingleShotDigest | 32768 | OCK | 14987 | 14971 | 15005 | +0.1% | +0.2% |
+| md5SingleShotDigest | 16 | OCK | 4378990 | 4909901 | 5476106 | +25.1% | +11.5% |
+| md5SingleShotDigest | 2048 | OCK | 316468 | 321401 | 322400 | +1.9% | +0.3% |
+| md5SingleShotDigest | 32768 | OCK | 21364 | 21528 | 21530 | +0.8% | +0.0% |
+| sha512_224UpdateDigest | 16 | OCK | 2378458 | 2555090 | 2693502 | +13.2% | +5.4% |
+| sha512_224UpdateDigest | 2048 | OCK | 210824 | 219635 | 219715 | +4.2% | +0.0% |
+| sha512_224UpdateDigest | 32768 | OCK | 12798 | 14992 | 15020 | +17.4% | +0.2% |
+| sha512_256UpdateDigest | 16 | OCK | 2196947 | 2572674 | 2694286 | +22.6% | +4.7% |
+| sha512_256UpdateDigest | 2048 | OCK | 217790 | 219515 | 219305 | +0.7% | -0.1% |
+| sha512_256UpdateDigest | 32768 | OCK | 14986 | 15026 | 15036 | +0.3% | +0.1% |
+| md5UpdateDigest | 16 | OCK | 4346669 | 4826728 | 5550417 | +27.7% | +15.0% |
+| md5UpdateDigest | 2048 | OCK | 319816 | 321076 | 322481 | +0.8% | +0.4% |
+| md5UpdateDigest | 32768 | OCK | 21372 | 21497 | 21497 | +0.6% | +0.0% |
+| sha256UpdateDigest | 16 | OCK | 2722196 | 3438296 | 3676474 | +35.1% | +6.9% |
+| sha256UpdateDigest | 2048 | OCK | 176460 | 181265 | 181001 | +2.6% | -0.1% |
+| sha256UpdateDigest | 32768 | OCK | 10241 | 11967 | 11970 | +16.9% | +0.0% |
+| sha1SingleShotDigest | 16 | OCK | 4286429 | 4745368 | 5351120 | +24.8% | +12.8% |
+| sha1SingleShotDigest | 2048 | OCK | 361930 | 370026 | 370362 | +2.3% | +0.1% |
+| sha1SingleShotDigest | 32768 | OCK | 25879 | 26511 | 26476 | +2.3% | -0.1% |
+| sha1UpdateDigest | 16 | OCK | 4306765 | 4867678 | 5345373 | +24.1% | +9.8% |
+| sha1UpdateDigest | 2048 | OCK | 352969 | 369443 | 370259 | +4.9% | +0.2% |
+| sha1UpdateDigest | 32768 | OCK | 23980 | 26553 | 26547 | +10.7% | -0.0% |
+| sha256SingleShotDigest | 16 | OCK | 2979387 | 3448250 | 3648478 | +22.5% | +5.8% |
+| sha256SingleShotDigest | 2048 | OCK | 180572 | 181640 | 181507 | +0.5% | -0.1% |
+| sha256SingleShotDigest | 32768 | OCK | 11927 | 11983 | 11994 | +0.6% | +0.1% |
+| sha512UpdateDigest | 16 | OpenSSL | 2391988 | 2554807 | 2820343 | +17.9% | +10.4% |
+| sha512UpdateDigest | 2048 | OpenSSL | 285702 | 298257 | 297299 | +4.1% | -0.3% |
+| sha512UpdateDigest | 32768 | OpenSSL | 20662 | 20731 | 20754 | +0.4% | +0.1% |
+| sha512SingleShotDigest | 16 | OpenSSL | 2579267 | 2768196 | 2826857 | +9.6% | +2.1% |
+| sha512SingleShotDigest | 2048 | OpenSSL | 294728 | 298339 | 297356 | +0.9% | -0.3% |
+| sha512SingleShotDigest | 32768 | OpenSSL | 20680 | 20764 | 20770 | +0.4% | +0.0% |
+| md5SingleShotDigest | 16 | OpenSSL | 4349339 | 4904280 | 5287648 | +21.6% | +7.8% |
+| md5SingleShotDigest | 2048 | OpenSSL | 335274 | 337803 | 338837 | +1.1% | +0.3% |
+| md5SingleShotDigest | 32768 | OpenSSL | 22577 | 22638 | 22638 | +0.3% | +0.0% |
+| sha512_224UpdateDigest | 16 | OpenSSL | 2594220 | 2767051 | 2852481 | +10.0% | +3.1% |
+| sha512_224UpdateDigest | 2048 | OpenSSL | 295509 | 298150 | 297892 | +0.8% | -0.1% |
+| sha512_224UpdateDigest | 32768 | OpenSSL | 18283 | 20743 | 20752 | +13.5% | +0.0% |
+| sha512_256UpdateDigest | 16 | OpenSSL | 2629171 | 2801300 | 2897696 | +10.2% | +3.4% |
+| sha512_256UpdateDigest | 2048 | OpenSSL | 295265 | 296901 | 298706 | +1.2% | +0.6% |
+| sha512_256UpdateDigest | 32768 | OpenSSL | 20650 | 20741 | 20747 | +0.5% | +0.0% |
+| md5UpdateDigest | 16 | OpenSSL | 4333819 | 4845673 | 5244805 | +21.0% | +8.2% |
+| md5UpdateDigest | 2048 | OpenSSL | 333205 | 334457 | 338136 | +1.5% | +1.1% |
+| md5UpdateDigest | 32768 | OpenSSL | 22463 | 22630 | 22615 | +0.7% | -0.1% |
+| sha256UpdateDigest | 16 | OpenSSL | 2632624 | 3476853 | 3652157 | +38.7% | +5.0% |
+| sha256UpdateDigest | 2048 | OpenSSL | 206058 | 208009 | 209875 | +1.9% | +0.9% |
+| sha256UpdateDigest | 32768 | OpenSSL | 11578 | 13937 | 13907 | +20.1% | -0.2% |
+| sha1SingleShotDigest | 16 | OpenSSL | 4175881 | 4715926 | 5287499 | +26.6% | +12.1% |
+| sha1SingleShotDigest | 2048 | OpenSSL | 435973 | 443732 | 443808 | +1.8% | +0.0% |
+| sha1SingleShotDigest | 32768 | OpenSSL | 30084 | 30529 | 30492 | +1.4% | -0.1% |
+| sha1UpdateDigest | 16 | OpenSSL | 3992695 | 4561486 | 5191979 | +30.0% | +13.8% |
+| sha1UpdateDigest | 2048 | OpenSSL | 433131 | 442496 | 443836 | +2.5% | +0.3% |
+| sha1UpdateDigest | 32768 | OpenSSL | 28256 | 30572 | 30525 | +8.0% | -0.2% |
+| sha256SingleShotDigest | 16 | OpenSSL | 3059962 | 3492679 | 3678623 | +20.2% | +5.3% |
+| sha256SingleShotDigest | 2048 | OpenSSL | 208278 | 209229 | 208741 | +0.2% | -0.2% |
+| sha256SingleShotDigest | 32768 | OpenSSL | 12685 | 13921 | 13964 | +10.1% | +0.3% |
+| **HEADLINE geomean** | all | OCK | 230905.8 | 247801.6 | 253782.2 | +9.91% | +2.41% |
+| **HEADLINE geomean** | all | OpenSSL | 268320.8 | 285058.0 | 291841.4 | +8.77% | +2.38% |
+
+Aggregate summary (geomean over the 10 methods, per payload size):
+- OCK: 16B +22.6% vs baseline (+7.4% vs iter1); 2048B +3.3% (+0.0%); 32768B +4.8% (-0.0%)
+- OpenSSL: 16B +20.3% vs baseline (+7.1% vs iter1); 2048B +1.6% (+0.2%); 32768B +5.3% (-0.0%)
 
 ## Optimization Parameters
 - Repository: OPENJCEPLUS
@@ -114,7 +118,13 @@ One row per individual result (benchmark method x payloadSize x provider). A new
 - Notes: The gain is mostly Java-side overhead removal (monitor enter/exit on update/digest/reset, native DIGEST_size and context reallocation for MD5/SHA-512/224/SHA-512/256/SHA3 that were not cached, getId() indirection, temp byte[] + arraycopy in engineDigest(byte[],int,int)); the -O3 and JNI_ABORT changes only affect the thin JNI wrapper, not the hashing code inside the OCK/OpenSSL libraries, so they cannot speed up native hashing itself. Gains concentrate at small payloads (16B, per-call overhead dominated) while large payloads stay bounded by native hashing speed (OCK sha2 32768B is still ~15-25% slower than OpenSSL). The noise level of this run is lower than the baseline (many scoreErrors < 2%), so these deltas are more trustworthy than the baseline comparison suggests.
 
 ### Iteration 2: Merge small update + digest into one JNI call (DIGEST_updateDigestAndReset) and buffer small inputs in Java
-- Status: CODE COMMITTED, benchmark pending
+- Status: COMPLETE
+- Headline (geomean of 30 scores per provider): OCK 253782.2 ops/s, OpenSSL 291841.4 ops/s
+- Improvement vs baseline: OCK +9.91%, OpenSSL +8.77% (target +40% each)
+- Change vs previous iteration (iter 1): OCK +2.41%, OpenSSL +2.38%
+- Individual results: see the Score History table (columns Iter 2, Δ iter2 vs baseline, Δ iter2 vs iter1)
+- Build UUID: 987b76c2-0dc8-4b0c-ab56-f508321b2954
+- Build URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/java25/109/
 - Bob Shell UUID: a1c01b71-47f0-4122-9177-855a821972db
 - Commit Hash: ce6aa00d9b60f1816207a541ef2cd4af2626740a
 - GitHub Commit: https://github.com/jasonkatonica/OpenJCEPlus/commit/ce6aa00d9b60f1816207a541ef2cd4af2626740a
@@ -122,13 +132,14 @@ One row per individual result (benchmark method x payloadSize x provider). A new
 - Lines Added/Removed: 318/14
 - Approach: For small payloads, cost is dominated by JNI crossings and critical-array pin/unpin. Added DIGEST_updateDigestAndReset to combine update + final + re-init in one JNI crossing for OCK and OpenSSL. In Digest.java, updates <=256B are buffered in a per-instance pending array and flushed together with the final digest call, reducing JNI crossings from 2 to 1 and eliminating critical array pin/unpin for small payloads. Larger updates flush pending data and go directly to native.
 - Tests run (targeted): -Dtest='TestSHA*,TestMD5,TestTruncatedDigest,TestAliases,TestSHA256Clone_SharedMD,TestECDSASignatureInterop*,TestRSASignatureInterop*,TestHmacSHA*,TestHKDF*,TestPBKDF2*' (1386 tests, 1 failure + 10 errors, all pre-existing: TestTruncatedDigest.testRSASignatureSHA512_224 and TestHmacSHA1InteropSunJCE due to OpenJCEPlusFIPS provider not available in this container; all SHA/MD5/KAT/clone/alias pass), ad-hoc differential fuzz vs SUN provider (60000 digests match), checkstyle:checkstyle BUILD SUCCESS
-- Result: PENDING (Jenkins benchmark to be run)
+- Result: SUCCESS (improvement, no regression; no individual score dropped more than -0.6% which is within noise)
+- Notes: gain is entirely at payload 16B (md5/sha1 +8% to +15% vs iter1, sha512/sha256 +2% to +10%); payloads 2048B and 32768B are unchanged vs iteration 1 (they are bound by native hash speed, not per-call overhead). OCK is still ~26-36% slower than OpenSSL for SHA-2 at 2048B and 32768B (e.g. sha512 2048B OCK 218717 vs OpenSSL 297299; sha256 32768B OCK 11970 vs OpenSSL 13907) and that is now the biggest remaining OCK-specific gap. For OpenSSL the 2048B/32768B scores are essentially at native speed. Headline geomean is mathematically limited because 20 of the 30 scores per provider (2048B, 32768B) cannot be improved by call-overhead removal.
 
 ## Best Performing State
-- Iteration: 1
-- Headline OCK: 247801.6, OpenSSL: 285058.0
-- Commit Hash: 6299cc6adbf7ef0d78d7002cb1b955f1ccab0bd0
-- Build UUID: 6718831d-747c-4d01-88b7-42df64d1301b
+- Iteration: 2
+- Headline OCK: 253782.2, OpenSSL: 291841.4
+- Commit Hash: ce6aa00d9b60f1816207a541ef2cd4af2626740a
+- Build UUID: 987b76c2-0dc8-4b0c-ab56-f508321b2954
 
 ## Next Steps
-- Iteration 2: the remaining gap to +40% is large (about +30% more per provider), so target larger structural overheads rather than micro-tuning. Highest-impact candidate from the "ideas not yet tried" in notes/optimization_notes.md: add a single-shot JNI entry point (e.g. DIGEST_digestSingleShot(contextId, digestAlgo, data, offset, len, output, outOffset)) that does update + final + reset in ONE JNI crossing, with the digest written directly into the caller's output array, so a single-shot digest(byte[]) drops from 2 native calls (DIGEST_update + DIGEST_digest_and_reset) to 1 and avoids the per-call result byte[] allocation. Pair this with (a) using GetPrimitiveArrayCritical/JNI_ABORT consistently (or direct/off-heap buffers) to avoid JNI array copy mode for 2048B/32768B inputs, (b) reusing a per-instance output buffer and avoiding per-call object allocation in the engine, (c) lighter-weight context reset (e.g. re-init only, no free/alloc) in the JNI layer, and (d) for update-heavy streaming, checking whether the existing DIGEST_updateFastJNI / direct-buffer path can be used from the byte[] update path. Also investigate whether the large-payload sha2 gap between OCK and OpenSSL (32768B) is due to the native build/algorithm selection (e.g. OCK's SHA-2 implementation without SHA-NI/AVX2 acceleration, or non-optimized native build flags in the bundled OCK libs) by checking which library/CPU features are used, since that is outside the Java/JNI layer and may need a different approach.
+- Iteration 3: per-call overhead at 16B has been mostly removed by iterations 1-2, so now focus on what limits 2048B/32768B: the OCK SHA-2 throughput gap vs OpenSSL (OCK sha256 32768B 11970 vs OpenSSL 13907; sha512 2048B 218717 vs 297299). Based on "Ideas NOT Yet Tried" in notes/optimization_notes.md: (a) check exactly how OCK is invoked for sha256/sha512 on large inputs (chunking, buffer copy per update, native context handling in src/main/native/ock/Digest.c and base/Digest.java; confirm GetPrimitiveArrayCritical does not copy the array and that ICC_EVP_DigestUpdate gets the whole buffer in one call), and whether a faster implementation or call mode exists (e.g. verify on x86_64 via ldd/perf whether OCK's ICC SHA-2 uses SHA-NI/AVX2 like OpenSSL, and whether a different ICC digest entry point or algorithm selection is faster); (b) try chunked updates (4-8KB) for 32768B inputs and the DIGEST_updateFastJNI/direct-buffer path as low-risk experiments; (c) keep investigating the remaining per-call overhead at 16B (sha512 ~2.5M ops/s vs md5 ~5.3M ops/s), e.g. the cost of re-init/finalisation of the larger SHA-512 context and the pending-buffer copy in Digest.java. Routing SHA-2 to the OpenSSL backend when both are available is a behavioural/config change and needs an owner decision, so it is not part of this iteration unless approved.
