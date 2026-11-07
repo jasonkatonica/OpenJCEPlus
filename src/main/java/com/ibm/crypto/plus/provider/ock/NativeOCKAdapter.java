@@ -35,6 +35,8 @@ public abstract class NativeOCKAdapter implements NativeInterface {
     private static final boolean validateOCKVersion = false;
 
     private OCKContext ockContext = null;
+    // Optimization: Cache ockContextId to avoid getter overhead on hot path native calls
+    private long ockContextId = 0;
     private boolean ockInitialized = false;
     private boolean useFIPSMode;
 
@@ -68,6 +70,7 @@ public abstract class NativeOCKAdapter implements NativeInterface {
         try {
             long ockContextId =  NativeOCKImplementation.initializeOCK(this.useFIPSMode);
             this.ockContext = OCKContext.createContext(ockContextId, this.useFIPSMode);
+            this.ockContextId = ockContextId;
             getLibraryBuildDate();
 
             if (validateOCKLocation) {
@@ -823,58 +826,58 @@ public abstract class NativeOCKAdapter implements NativeInterface {
 
     @Override
     public long DIGEST_create(String digestAlgo) throws OCKException {
-        return NativeOCKImplementation.DIGEST_create(ockContext.getId(), digestAlgo);
+        return NativeOCKImplementation.DIGEST_create(this.ockContextId, digestAlgo);
     }
 
     @Override
     public long DIGEST_copy(long digestId) throws OCKException {
-        return NativeOCKImplementation.DIGEST_copy(ockContext.getId(), digestId);
+        return NativeOCKImplementation.DIGEST_copy(this.ockContextId, digestId);
     }
 
     @Override
     public int DIGEST_update(long digestId, byte[] input, int offset, int length) throws OCKException {
-        return NativeOCKImplementation.DIGEST_update(ockContext.getId(), digestId, input, offset, length);
+        return NativeOCKImplementation.DIGEST_update(this.ockContextId, digestId, input, offset, length);
     }
 
     @Override
     public void DIGEST_updateFastJNI(long digestId, long inputBuffer, int length) throws OCKException {
-        NativeOCKImplementation.DIGEST_updateFastJNI(ockContext.getId(), digestId, inputBuffer, length);
+        NativeOCKImplementation.DIGEST_updateFastJNI(this.ockContextId, digestId, inputBuffer, length);
     }
 
     @Override
     public byte[] DIGEST_digest(long digestId) throws OCKException {
-        return NativeOCKImplementation.DIGEST_digest(ockContext.getId(), digestId);
+        return NativeOCKImplementation.DIGEST_digest(this.ockContextId, digestId);
     }
 
     @Override
     public void DIGEST_digest_and_reset(long digestId, long outputBuffer, int length) throws OCKException {
-        NativeOCKImplementation.DIGEST_digest_and_reset(ockContext.getId(), digestId, outputBuffer, length);
+        NativeOCKImplementation.DIGEST_digest_and_reset(this.ockContextId, digestId, outputBuffer, length);
     }
 
     @Override
     public int DIGEST_digest_and_reset(long digestId, byte[] output) throws OCKException {
-        return NativeOCKImplementation.DIGEST_digest_and_reset(ockContext.getId(), digestId, output);
+        return NativeOCKImplementation.DIGEST_digest_and_reset(this.ockContextId, digestId, output);
     }
 
     @Override
     public int DIGEST_size(long digestId) throws OCKException {
-        return NativeOCKImplementation.DIGEST_size(ockContext.getId(), digestId);
+        return NativeOCKImplementation.DIGEST_size(this.ockContextId, digestId);
     }
 
     @Override
     public void DIGEST_reset(long digestId) throws OCKException {
-        NativeOCKImplementation.DIGEST_reset(ockContext.getId(), digestId);
+        NativeOCKImplementation.DIGEST_reset(this.ockContextId, digestId);
     }
 
     @Override
     public void DIGEST_delete(long digestId) throws OCKException {
-        NativeOCKImplementation.DIGEST_delete(ockContext.getId(), digestId);
+        NativeOCKImplementation.DIGEST_delete(this.ockContextId, digestId);
     }
 
     @Override
     public int DIGEST_PKCS12KeyDeriveHelp(long digestId, byte[] input,
             int offset, int length, int iterationCount) throws OCKException {
-        return NativeOCKImplementation.DIGEST_PKCS12KeyDeriveHelp(ockContext.getId(),
+        return NativeOCKImplementation.DIGEST_PKCS12KeyDeriveHelp(this.ockContextId,
                 digestId, input, offset, length, iterationCount);
     }
 

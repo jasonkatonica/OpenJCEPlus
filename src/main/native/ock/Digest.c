@@ -247,29 +247,23 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1copy(
  * Method:    DIGEST_update
  * Signature: (JJ[BII)V
  */
-JNIEXPORT int DIGEST_update_internal(ICC_CTX *ockCtx, OCKDigest *ockDigest,
-                                     unsigned char *dataNative, int dataLen) {
-    int                rc           = ICC_OSSL_SUCCESS;
-    static const char *functionName = "NativeInterface.DIGEST_update";
+// Optimization: Static inline helper avoiding global debug check branching on hot path
+static inline int DIGEST_update_internal(ICC_CTX *ockCtx, OCKDigest *ockDigest,
+                                         unsigned char *dataNative, int dataLen) {
     if ((ockDigest == NULL) || (dataNative == NULL) || (dataLen < 0) ||
         (ockDigest->mdCtx == NULL)) {
-        if (debug) {
-            gslogFunctionExit(functionName);
-        }
         return FAIL_DIGEST_UPDATE;
     }
-    rc = ICC_EVP_DigestUpdate(ockCtx, ockDigest->mdCtx, dataNative, dataLen);
-    if (ICC_OSSL_SUCCESS != rc) {
+    if (ICC_OSSL_SUCCESS != ICC_EVP_DigestUpdate(ockCtx, ockDigest->mdCtx, dataNative, dataLen)) {
         return FAIL_DIGEST_UPDATE;
     }
-    return rc;
+    return DIGEST_INTERNAL_SUCCESS;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1update(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jlong digestId,
     jbyteArray data, jint offset, jint dataLen) {
-    static const char *functionName = "NativeInterface.DIGEST_update";
 
     ICC_CTX       *ockCtx       = (ICC_CTX *)((intptr_t)ockContextId);
     OCKDigest     *ockDigest    = (OCKDigest *)((intptr_t)digestId);
@@ -277,62 +271,27 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1update(
     jboolean       isCopy       = 0;
     int            returnResult = 0;
 
-    if (debug) {
-        gslogFunctionEntry(functionName);
-    }
     if ((ockDigest == NULL) || (data == NULL) || (offset < 0)) {
         throwOCKException(env, 0,
                           "Digest Update failed. The specified input "
                           "parameters are incorrect.");
-        if (debug) {
-            gslogFunctionExit(functionName);
-        }
         return (jint)returnResult;
     }
     dataNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, data,
                                                                      &isCopy));
     if (NULL == dataNative) {
-#ifdef DEBUG_DIGEST_DETAIL
-        if (debug) {
-            gslogMessage("DETAIL_DIGEST FAILURE ICC_EVP_DigestInit failed");
-        }
-#endif
         throwOCKException(env, 0, "GetPrimitiveArrayCritical failed");
     } else {
-#ifdef DEBUG_DIGEST_DETAIL
-        if (debug) {
-            gslogMessagePrefix("DETAIL_DIGEST %d bytes to update offset %d: ",
-                               (int)dataLen, (int)offset);
-            gslogMessageHex((char *)dataNative + offset, 0, (int)dataLen, 0, 0,
-                            NULL);
-        }
-#endif
-
-#ifdef DEBUG_DIGEST_DETAIL
-        if (debug) {
-            gslogMessage("DETAIL_DIGEST digestId=%lx ockDigest->mdCtx=%lx ",
-                         (long)digestId, ockDigest->mdCtx);
-        }
-#endif
         returnResult = DIGEST_update_internal(
             ockCtx, ockDigest, dataNative + offset, (int)dataLen);
         if (DIGEST_INTERNAL_SUCCESS > returnResult) {
-#ifdef DEBUG_DIGEST_DETAIL
-            if (debug) {
-                gslogMessage(
-                    "DETAIL_DIGEST FAILURE ICC_EVP_DigestUpdate failed");
-            }
-#endif
             ockCheckStatus(ockCtx);
         }
     }
 
     if (dataNative != NULL) {
-        (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, 0);
-    }
-
-    if (debug) {
-        gslogFunctionExit(functionName);
+        /* Release critical array with JNI_ABORT because data buffer is read-only */
+        (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, JNI_ABORT);
     }
 
     return (jint)returnResult;
@@ -551,33 +510,25 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1an
  * Method:    DIGEST_digest_and_reset
  * Signature: (JJ[B)V
  */
-JNIEXPORT int DIGEST_digest_and_reset_internal(
+// Optimization: Static inline helper avoiding global debug check branching on hot path
+static inline int DIGEST_digest_and_reset_internal(
     ICC_CTX *ockCtx, OCKDigest *ockDigest, unsigned char *digestBytesNative) {
-    int                rc = ICC_OSSL_SUCCESS;
-    static const char *functionName =
-        "NativeInterface.DIGEST_digest_and_reset_internal";
     if ((ockDigest == NULL) || (digestBytesNative == NULL)) {
-        if (debug) {
-            gslogFunctionExit(functionName);
-        }
         return FAIL_DIGEST_INIT;
     }
-    rc = ICC_EVP_DigestFinal(ockCtx, ockDigest->mdCtx, digestBytesNative, NULL);
-    if (ICC_OSSL_SUCCESS != rc) {
+    if (ICC_OSSL_SUCCESS != ICC_EVP_DigestFinal(ockCtx, ockDigest->mdCtx, digestBytesNative, NULL)) {
         return FAIL_DIGEST_FINAL;
     }
-    rc = ICC_EVP_DigestInit(ockCtx, ockDigest->mdCtx, ockDigest->md);
-    if (ICC_OSSL_SUCCESS != rc) {
+    if (ICC_OSSL_SUCCESS != ICC_EVP_DigestInit(ockCtx, ockDigest->mdCtx, ockDigest->md)) {
         return FAIL_DIGEST_INIT;
     }
-    return rc;
+    return DIGEST_INTERNAL_SUCCESS;
 }
 
 JNIEXPORT jint JNICALL
 Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1and_1reset__JJ_3B(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jlong digestId,
     jbyteArray digestBytes) {
-    static const char *functionName = "NativeInterface.DIGEST_digest_and_reset";
 
     ICC_CTX       *ockCtx            = (ICC_CTX *)((intptr_t)ockContextId);
     OCKDigest     *ockDigest         = (OCKDigest *)((intptr_t)digestId);
@@ -585,17 +536,10 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1an
     jboolean       isCopy            = 0;
     int            returnResult      = 0;
 
-    if (debug) {
-        gslogFunctionEntry(functionName);
-    }
-
     if ((ockDigest == NULL) || (digestBytes == NULL)) {
         throwOCKException(env, 0,
                           "Digest reset failed. The specified Digest identfier "
                           "or the digest bytes are incorrect.");
-        if (debug) {
-            gslogFunctionExit(functionName);
-        }
         return returnResult;
     }
 
@@ -614,10 +558,6 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1an
     if (digestBytesNative != NULL) {
         (*env)->ReleasePrimitiveArrayCritical(env, digestBytes,
                                               digestBytesNative, 0);
-    }
-
-    if (debug) {
-        gslogFunctionExit(functionName);
     }
 
     return (jint)returnResult;

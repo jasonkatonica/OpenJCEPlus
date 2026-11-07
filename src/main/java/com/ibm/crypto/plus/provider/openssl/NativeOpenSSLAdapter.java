@@ -30,6 +30,8 @@ public abstract class NativeOpenSSLAdapter implements NativeInterface {
     private static final boolean validateOSSLLocation = true;
 
     private OpenSSLContext osslContext = null;
+    // Optimization: Cache osslContextId to avoid getter overhead on hot path native calls
+    private long osslContextId = 0;
     private boolean osslInitialized = false;
     private boolean useFIPSMode;
 
@@ -65,6 +67,7 @@ public abstract class NativeOpenSSLAdapter implements NativeInterface {
         try {
             long osslContextId =  NativeOpenSSLImplementation.initializeOSSL(this.useFIPSMode);
             this.osslContext = OpenSSLContext.createContext(osslContextId, this.useFIPSMode);
+            this.osslContextId = osslContextId;
             getLibraryBuildDate();
 
             /*if (validateOSSLLocation) {
@@ -873,52 +876,52 @@ public abstract class NativeOpenSSLAdapter implements NativeInterface {
 
     @Override
     public long DIGEST_create(String digestAlgo) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_create(osslContext.getId(), digestAlgo);
+        return NativeOpenSSLImplementation.DIGEST_create(this.osslContextId, digestAlgo);
     }
 
     @Override
     public long DIGEST_copy(long digestId) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_copy(osslContext.getId(), digestId);
+        return NativeOpenSSLImplementation.DIGEST_copy(this.osslContextId, digestId);
     }
 
     @Override
     public int DIGEST_update(long digestId, byte[] input, int offset, int length) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_update(osslContext.getId(), digestId, input, offset, length);
+        return NativeOpenSSLImplementation.DIGEST_update(this.osslContextId, digestId, input, offset, length);
     }
 
     @Override
     public void DIGEST_updateFastJNI(long digestId, long inputBuffer, int length) throws OpenSSLException {
-        NativeOpenSSLImplementation.DIGEST_updateFastJNI(osslContext.getId(), digestId, inputBuffer, length);
+        NativeOpenSSLImplementation.DIGEST_updateFastJNI(this.osslContextId, digestId, inputBuffer, length);
     }
 
     @Override
     public byte[] DIGEST_digest(long digestId) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_digest(osslContext.getId(), digestId);
+        return NativeOpenSSLImplementation.DIGEST_digest(this.osslContextId, digestId);
     }
 
     @Override
     public void DIGEST_digest_and_reset(long digestId, long outputBuffer, int length) throws OpenSSLException {
-        NativeOpenSSLImplementation.DIGEST_digest_and_reset(osslContext.getId(), digestId, outputBuffer, length);
+        NativeOpenSSLImplementation.DIGEST_digest_and_reset(this.osslContextId, digestId, outputBuffer, length);
     }
 
     @Override
     public int DIGEST_digest_and_reset(long digestId, byte[] output) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_digest_and_reset(osslContext.getId(), digestId, output);
+        return NativeOpenSSLImplementation.DIGEST_digest_and_reset(this.osslContextId, digestId, output);
     }
 
     @Override
     public int DIGEST_size(long digestId) throws OpenSSLException {
-        return NativeOpenSSLImplementation.DIGEST_size(osslContext.getId(), digestId);
+        return NativeOpenSSLImplementation.DIGEST_size(this.osslContextId, digestId);
     }
 
     @Override
     public void DIGEST_reset(long digestId) throws OpenSSLException {
-        NativeOpenSSLImplementation.DIGEST_reset(osslContext.getId(), digestId);
+        NativeOpenSSLImplementation.DIGEST_reset(this.osslContextId, digestId);
     }
 
     @Override
     public void DIGEST_delete(long digestId) throws OpenSSLException {
-        NativeOpenSSLImplementation.DIGEST_delete(osslContext.getId(), digestId);
+        NativeOpenSSLImplementation.DIGEST_delete(this.osslContextId, digestId);
     }
 
     @Override

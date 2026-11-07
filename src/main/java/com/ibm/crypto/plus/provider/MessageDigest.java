@@ -65,6 +65,27 @@ abstract class MessageDigest extends MessageDigestSpi implements Cloneable {
         }
     }
 
+    // Optimization: Override engineDigest(byte[], int, int) to avoid allocating a temporary byte[]
+    // and copying when the caller provides a destination buffer.
+    @Override
+    protected int engineDigest(byte[] buf, int offset, int len) throws java.security.DigestException {
+        if (buf == null) {
+            throw new IllegalArgumentException("No output buffer given");
+        }
+        if (offset < 0 || len < 0 || offset > buf.length - len) {
+            throw new IllegalArgumentException("Buffer length too small or invalid offset/len");
+        }
+        int digestLen = engineGetDigestLength();
+        if (len < digestLen) {
+            throw new java.security.DigestException("partial digests not returned");
+        }
+        try {
+            return this.digest.digest(buf, offset, len);
+        } catch (Exception e) {
+            throw provider.providerException("Failure in engineDigest", e);
+        }
+    }
+
     @Override
     protected int engineGetDigestLength() {
         try {

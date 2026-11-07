@@ -81,6 +81,12 @@ final class NativeOpenSSLImplementation extends NativeImplementation {
                 loadFile = new File(osslPath, "lib" + OPENSSL_CORE_LIBRARY_NAME + "64.so.3");
             } else {
                 loadFile = new File(osslPath, "lib" + OPENSSL_CORE_LIBRARY_NAME + ".so");
+                if (!loadFile.exists()) {
+                    File subFile = new File(osslPath, "lib" + File.separator + "lib" + OPENSSL_CORE_LIBRARY_NAME + ".so");
+                    if (subFile.exists()) {
+                        loadFile = subFile;
+                    }
+                }
             }
             return loadFile;
         }

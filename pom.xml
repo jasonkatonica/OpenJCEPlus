@@ -279,6 +279,8 @@
                     <systemPropertyVariables>
                       <jgskit.library.path>${build.target.jgskitlib.dir}</jgskit.library.path>
                       <openjceplus.library.path>${build.target.ojplib.dir}</openjceplus.library.path>
+                      <ock.library.path>${ock.library.path}</ock.library.path>
+                      <openssl.library.path>${openssl.library.path}</openssl.library.path>
                     </systemPropertyVariables>
                     <includes>
                       <include>

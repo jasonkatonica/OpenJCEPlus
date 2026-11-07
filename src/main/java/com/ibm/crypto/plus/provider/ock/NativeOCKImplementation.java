@@ -166,6 +166,12 @@ final class NativeOCKImplementation extends NativeImplementation {
         }
 
         boolean ockLibraryPreloaded = loadIfExists(loadFile);
+        if (!ockLibraryPreloaded) {
+            File subFile = new File(ockPath, "jgsk_crypto" + File.separator + "lib" + OCK_CORE_LIBRARY_NAME + "_64.so");
+            if (subFile.exists()) {
+                ockLibraryPreloaded = loadIfExists(subFile);
+            }
+        }
         if ((ockLibraryPreloaded == false) && requirePreloadOCK) {
             throw new ProviderException("Could not load dependent ock library for os.name=" + osName
                         + ", os.arch=" + osArch);

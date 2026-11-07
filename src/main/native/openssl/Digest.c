@@ -131,7 +131,8 @@ cleanup:
     return digestCopyId;
 }
 
-static int DIGEST_update_internal(JNIEnv *env, EVP_MD_CTX *mdCtx, unsigned char *dataNative, int dataLen) {
+// Optimization: Static inline helper on hot path
+static inline int DIGEST_update_internal(JNIEnv *env, EVP_MD_CTX *mdCtx, unsigned char *dataNative, int dataLen) {
     int rc = 0;
 
     if (NULL == mdCtx) {
@@ -186,7 +187,8 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1up
 
     returnResult = DIGEST_update_internal(env, mdCtx, dataNative + offset, dataLen);
 
-    (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, 0);
+    /* Release critical array with JNI_ABORT because data buffer is read-only */
+    (*env)->ReleasePrimitiveArrayCritical(env, data, dataNative, JNI_ABORT);
 
     return (jint)returnResult;
 }
@@ -279,7 +281,8 @@ cleanup:
     return retDigestBytes;
 }
 
-static int
+// Optimization: Static inline helper on hot path
+static inline int
 DIGEST_digest_and_reset_internal(JNIEnv *env, jlong osslContextId, EVP_MD_CTX *mdCtx, unsigned char *digestBytesNative, unsigned int digestLen)
 {
     int rc = 0;

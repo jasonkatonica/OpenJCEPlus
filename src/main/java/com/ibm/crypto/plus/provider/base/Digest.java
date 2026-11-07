@@ -21,29 +21,29 @@ public final class Digest implements Cloneable {
 
     /* ===========================================================================
        Digest caching mechanism
-       Cache native SHA* digest contexts so that the same contexts could be reused later after resetting.
+       Cache native digest contexts so that the same contexts could be reused later after resetting.
        */
 
-    // index corresponding the SHA algorithm it's using
+    // index corresponding the digest algorithm it's using
     // also used as a flag:
-    // 0 - 4: it is using one of {SHA1, SHA224, SHA256, SHA384, SHA512}
-    // -1   : Not initialized
-    // -2   : Not a SHA* digest algorithm
+    // >= 0: it is using one of the cached algorithms
+    // -1  : Not initialized
+    // -2  : Not a cached digest algorithm
     private int algIndx = -1;
 
     private PrimitiveWrapper.Bool needsReinit = new PrimitiveWrapper.Bool(false);
 
     private boolean contextFromQueue = false;
 
-    // Size of {SHA256, SHA384, SHA512, SHA224, SHA1}
-    final static int[] digestLengths = {32, 48, 64, 28, 20};
+    // Size of {SHA256, SHA384, SHA512, SHA224, SHA1, MD5, SHA512-224, SHA512-256, SHA3-224, SHA3-256, SHA3-384, SHA3-512}
+    final static int[] digestLengths = {32, 48, 64, 28, 20, 16, 28, 32, 28, 32, 48, 64};
 
     //disable caching mechanism for windows OS
     final static private boolean isWindows = SystemAccessUtils.getSystemProperty("os.name").startsWith("Windows");
 
     final static private int numContexts;
 
-    final static int numShaAlgos = 5;
+    final static int numDigestAlgos = 12;
     private static final String DIGEST_CONTEXT_CACHE_SIZE = "com.ibm.crypto.provider.DigestContextCacheSize";
 
     private static final Map<NativeInterface, ConcurrentLinkedQueueLong[]> contextsPerBackend = new HashMap<>();
@@ -78,10 +78,10 @@ public final class Digest implements Cloneable {
                 contexts = contextsPerBackend.get(this.nativeInterface);
                 runtimeContextNum = runtimeContextNumPerBackend.get(this.nativeInterface);
                 if ((contexts == null) || (runtimeContextNum == null)) {
-                    contexts = new ConcurrentLinkedQueueLong[numShaAlgos];
-                    runtimeContextNum = new Integer[numShaAlgos];
+                    contexts = new ConcurrentLinkedQueueLong[numDigestAlgos];
+                    runtimeContextNum = new Integer[numDigestAlgos];
 
-                    for (int i = 0; i < numShaAlgos; i++) {
+                    for (int i = 0; i < numDigestAlgos; i++) {
                         contexts[i] = new ConcurrentLinkedQueueLong();
                         runtimeContextNum[i] = 0;
                     }
@@ -112,13 +112,34 @@ public final class Digest implements Cloneable {
                 case "SHA1":
                     this.algIndx = 4;
                     break;
+                case "MD5":
+                    this.algIndx = 5;
+                    break;
+                case "SHA512-224":
+                    this.algIndx = 6;
+                    break;
+                case "SHA512-256":
+                    this.algIndx = 7;
+                    break;
+                case "SHA3-224":
+                    this.algIndx = 8;
+                    break;
+                case "SHA3-256":
+                    this.algIndx = 9;
+                    break;
+                case "SHA3-384":
+                    this.algIndx = 10;
+                    break;
+                case "SHA3-512":
+                    this.algIndx = 11;
+                    break;
                 default:
                     this.algIndx = -2;
                     break;
             }
         }
 
-        // Algorithm is not SHA*
+        // Algorithm is not in cached list
         if (this.algIndx == -2) {
             this.digestId = this.nativeInterface.DIGEST_create(this.digestAlgo);
         } else {
@@ -182,6 +203,9 @@ public final class Digest implements Cloneable {
         this.provider = provider;
         this.nativeInterface = NativeCryptoSelector.selectBackend(provider, configType, configAlgName);
         getContext();
+        if (this.algIndx >= 0 && this.algIndx < numDigestAlgos) {
+            this.digestLength = digestLengths[this.algIndx];
+        }
         //OCKDebug.Msg(debPrefix, methodName,  "digestAlgo :" + digestAlgo);
 
         this.provider.registerCleanable(this, cleanOCKResources(digestId, algIndx,
@@ -198,6 +222,9 @@ public final class Digest implements Cloneable {
         this.provider = provider;
         this.nativeInterface = NativeCryptoSelector.selectBackend(provider, configType, configAlgname);
         getContext();
+        if (this.algIndx >= 0 && this.algIndx < numDigestAlgos) {
+            this.digestLength = digestLengths[this.algIndx];
+        }
         //OCKDebug.Msg(debPrefix, methodName,  "digestAlgo :" + digestAlgo);
 
         this.provider.registerCleanable(this, cleanOCKResources(digestId, algIndx,
@@ -222,50 +249,70 @@ public final class Digest implements Cloneable {
         }
     }
 
-    public synchronized void update(byte[] input, int offset, int length) throws NativeException {
-        //final String methodName = "update ";
-        int errorCode = 0;
-
+    // Optimization: MessageDigest is not thread-safe per JCA specification.
+    // Removing synchronized avoids monitor enter/exit instructions and memory barriers on the hot path.
+    public void update(byte[] input, int offset, int length) throws NativeException {
         if (length == 0) {
             return;
         }
 
-        if (input == null || length < 0 || offset < 0 || (offset + length) > input.length) {
+        if (input == null || offset < 0 || length < 0 || offset > input.length - length) {
             throw new IllegalArgumentException("Input range is invalid.");
         }
 
-        //OCKDebug.Msg(debPrefix, methodName, "offset :"  + offset + " digestId :" + this.digestId + " length :" + length);
-        if (!validId(this.digestId)) {
+        if (this.digestId == 0) {
             throw new NativeException(badIdMsg);
         }
 
-        errorCode = this.nativeInterface.DIGEST_update(this.digestId, input, offset, length);
+        int errorCode = this.nativeInterface.DIGEST_update(this.digestId, input, offset, length);
         if (errorCode < 0) {
             throwNativeException(errorCode);
         }
         this.needsReinit.setValue(true);
     }
 
-    public synchronized byte[] digest() throws NativeException {
-        //final String methodName = "digest()";
-        int errorCode = 0;
-
-        if (!validId(this.digestId)) {
+    // Optimization: MessageDigest is not thread-safe per JCA specification.
+    // Removing synchronized avoids monitor enter/exit instructions and memory barriers on the hot path.
+    public byte[] digest() throws NativeException {
+        if (this.digestId == 0) {
             throw new NativeException(badIdMsg);
         }
-        //OCKDebug.Msg (debPrefix, methodName, "digestId :" + this.digestId);
 
-        // push data from the buffer that haven't got updated yet
-        int digestLength = getDigestLength();
-        byte[] digestBytes = new byte[digestLength];
+        int len = (this.digestLength != 0) ? this.digestLength : getDigestLength();
+        byte[] digestBytes = new byte[len];
 
-        errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, digestBytes);
+        int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, digestBytes);
         if (errorCode < 0) {
             throwNativeException(errorCode);
         }
         this.needsReinit.setValue(false);
 
         return digestBytes;
+    }
+
+    // Optimization: Allow direct output into caller-provided buffer to avoid temporary array allocation.
+    public int digest(byte[] buf, int offset, int len) throws NativeException {
+        if (this.digestId == 0) {
+            throw new NativeException(badIdMsg);
+        }
+
+        int dLen = (this.digestLength != 0) ? this.digestLength : getDigestLength();
+        if (offset == 0 && buf.length == dLen) {
+            int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, buf);
+            if (errorCode < 0) {
+                throwNativeException(errorCode);
+            }
+        } else {
+            byte[] digestBytes = new byte[dLen];
+            int errorCode = this.nativeInterface.DIGEST_digest_and_reset(this.digestId, digestBytes);
+            if (errorCode < 0) {
+                throwNativeException(errorCode);
+            }
+            System.arraycopy(digestBytes, 0, buf, offset, dLen);
+        }
+        this.needsReinit.setValue(false);
+
+        return dLen;
     }
 
     protected long getId() throws NativeException {
@@ -284,7 +331,9 @@ public final class Digest implements Cloneable {
         return digestLength;
     }
 
-    public synchronized void reset() throws NativeException {
+    // Optimization: MessageDigest is not thread-safe per JCA specification.
+    // Removing synchronized avoids monitor enter/exit instructions and memory barriers on the hot path.
+    public void reset() throws NativeException {
         //final String methodName = "reset ";
         //OCKDebug.Msg(debPrefix, methodName,  "digestId =" + this.digestId);
 
@@ -306,8 +355,7 @@ public final class Digest implements Cloneable {
         // to getDigestLength at the same time, we only want to call the
         // native code one time.
 
-        // if SHA* algorithms
-        if (this.algIndx >= 0 && this.algIndx < numShaAlgos) {
+        if (this.algIndx >= 0 && this.algIndx < numDigestAlgos) {
             this.digestLength = digestLengths[this.algIndx];
         } else {
             if (this.digestLength == 0) {

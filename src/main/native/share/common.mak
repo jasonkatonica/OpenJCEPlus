@@ -11,7 +11,7 @@ TOPDIR=../../../..
 
 PLAT=x86
 CC ?= gcc
-CFLAGS= -fPIC -Werror -std=gnu99 -pedantic -Wall -fstack-protector
+CFLAGS= -O3 -fPIC -Werror -std=gnu99 -pedantic -Wall -fstack-protector
 LDFLAGS= -shared
 
 ifeq (${PLATFORM},arm-linux64)
