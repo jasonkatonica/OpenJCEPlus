@@ -173,3 +173,42 @@ After this change the Java/JNI layer is within ~10 ns of the native floor for SH
 - Avoid the library's `Final` + `Init` pair for fixed 16B..<=256B one-shot digests by using a one-shot `EVP_Q_digest`/`EVP_Digest` style call on a fresh stack context for tiny inputs (needs checking that it is not slower than the cached ctx; for OpenSSL 3.x `EVP_Digest` includes an implicit fetch, so likely slower unless the `EVP_MD*` is cached - would need a new native entry holding the `EVP_MD*`; and for OCK no equivalent known).
 - Replace `JNI` with a Panama/`Linker` downcall (JDK 22+) for tiny calls: removes JNI transition cost, but needs native-memory segments (copy) and the JDK baseline of the project must be checked; large refactor, uncertain on OpenJ9.
 - Plain-field `needsReinit` with the Cleaner reading it from the `Digest` weak/phantom-safe holder (< 1 ns, correctness risk).
+
+## Iteration 5
+
+### Hypothesis
+The remaining 16B cost is the native library's Final+Init pair. Candidates evaluated (Ideas NOT Yet Tried from iteration 4 and the task): (1) a one-shot `EVP_Digest`/`EVP_Q_digest` call for tiny inputs with a cached `EVP_MD*`; (2) replacing the in-place re-init (`EVP_DigestInit_ex2(ctx,NULL,NULL)`) after Final with `EVP_MD_CTX_copy_ex(ctx, pristineTemplate)`; (3) OCK: a cheaper reset/one-shot path in the ICC API, or less wrapper work; (4) Java side only if profiling still shows cost. Required win to keep a change: > 2% locally at 16B without hurting 2048B/32768B.
+
+### What was measured (aarch64 container, OpenSSL 3.5.8, ICC 8.5; `/tmp/h5/*.c`, plain C loops, 16B input, best of 5x2-3M iterations, ns/op)
+| Variant (MD5 / SHA-1 / SHA-256 / SHA-512) | ns/op |
+|---|---|
+| current: `Update + Final_ex + Init_ex2(ctx,NULL,NULL)` | 115 / 70 / 62 / 100 |
+| `Init_ex2(ctx,md)` instead of `(NULL,NULL)` | identical |
+| `Final_ex` with NO re-init (lower bound of any re-init trick) | 116 / 69 / 62 / 100 |
+| `Update + Final_ex + EVP_MD_CTX_copy_ex(ctx, tmpl)` | 111 / 66 / 57.5 / 100 |
+| `EVP_Digest()` one-shot with cached `EVP_MD*` | 146 / 105 / 97 / 151 (+30-50%) |
+| `EVP_Q_digest()` one-shot (implicit fetch) | 220-270 (2-4x slower) |
+| legacy `SHA256()`/`SHA512()` one-shot | 226 / 283 (slower, provider shim) |
+| `EVP_MD_CTX_new + Init + Update + Final + free` per op | 128-181 (much slower) |
+| low-level `SHA256_Init/Update/Final` (deprecated API, not usable through providers/FIPS) | 44 / 81 (SHA-256 / SHA-512), MD5 97, SHA-1 50 |
+| extra 16-64B memcpy of the digest (stack buf -> output) | +7-9 ns (we already copy once via `SetByteArrayRegion`; passing the Java array directly is not possible without a critical section which costs more) |
+
+Findings:
+- The in-place re-init (`Init_ex2(NULL,NULL)`) costs only ~0.5-1 ns on top of Final: Init is NOT the cost. Final itself (padding + one compression + provider dispatch) is ~85% of the 16B native time. Therefore the "avoid Final+Init pair" idea has no big upside: any scheme still needs one Final, and the Init part is already ~free. SHA-512 shows no gain at all from any variant.
+- One-shot `EVP_Digest()` (even with a cached `EVP_MD*`) is 30-50% SLOWER than the cached-context path because it allocates and frees a context per call; `EVP_Q_digest` is 2-4x slower because of the implicit fetch. Rejected.
+- `EVP_MD_CTX_copy_ex(ctx, template)` is the only variant that helped natively (3-5 ns for MD5/SHA-1/SHA-256, 0 for SHA-512): it skips the provider init path (dup of the small algorithm state instead). Prototype (extra per-digest `OSSLDigest {ctx, tmpl}` struct as `digestId`, template created in DIGEST_create/DIGEST_copy, freed in DIGEST_delete, reset via copy_ex in `DIGEST_updateDigestAndReset`/`digest_and_reset`/`DIGEST_reset`) was built into the real `libopenjceplus.so` and measured through the Java API (`update(16B); digest()`, JIT-warm, best of 3 runs, 3 alternating A/B pairs, `/tmp/h5/j/B.java`): MD5 121.5->118.8, SHA-1 75.7->76.5 (one run 73.2), SHA-256 66.6->63.9, SHA-512 125.4->125.3, SHA-512/224 124->124. Geomean of the 5 algorithms: +0.9% / -0.5% / +1.0% over the three pairs (about +0.5% average, individual runs were up to +2.6% when MD5 got lucky, and one run lost 15 ns on MD5 to noise). 2048B and 32768B unchanged (within +-1%). On Jenkins this is at most ~0.2% on the headline (16B is one third of the scores and the gain applies to 16B only). Below the 2% bar and it adds an allocation + a second native context per digest (and a more complicated clone/delete lifetime), so NOT kept; source reverted.
+- OCK (ICC) side: the ICC API (`icc_a.h`, `libjgsk8iccs_64.so` exports) offers no `EVP_Digest` one-shot, no `DigestInit_ex`, no `MD_CTX_reset`, only `ICC_EVP_MD_CTX_copy`, `_cleanup`, `_init`, `DigestInit/Update/Final`. Measured natively: `Update+Final+DigestInit(ctx,md)` = 131 / 70 / 67 / 143 ns (MD5/SHA-1/SHA-256/SHA-512); `ICC_EVP_DigestInit` alone is only ~6 ns; the template approach `ICC_EVP_MD_CTX_copy(work, tmpl)` is 30-40 ns SLOWER (165 / 104 / 99 / 184 ns) because ICC's copy allocates/duplicates the inner EVP state. So there is no cheaper reset for OCK: Init is already 6 ns of 70-143 ns, and the rest is Update+Final. No wrapper change possible (the wrapper has no lock/mutex or lookup on the hot path since iteration 1/2).
+- Java side: unchanged conclusion from iteration 4 (end-to-end Java API cost vs native floor on the OpenSSL backend: SHA-256 66.5 ns vs 62 ns native; SHA-512 125 ns vs 100 ns; MD5 121 vs 115; SHA-1 76 vs 70). Remaining Java+JNI overhead is 5-25 ns per op, with no removable piece found.
+
+### Exact change
+None in `src/`. The prototype was reverted (`git checkout src/main/native/openssl/Digest.c`); the tree is identical to iteration 4. Only this notes section is committed. No tests needed for notes-only change; native libs were rebuilt from the unchanged source to confirm the tree compiles (`-O3 -Werror`).
+
+### Learnings
+- At 16B the native cost is dominated by Update+Final of the library's compression function (one block); Init/reset is ~6-12 ns (<10%) in both OpenSSL and ICC. Any reset trick is bounded by that, and `EVP_MD_CTX_copy_ex(template)` realises only a third to a half of it for MD5/SHA-1/SHA-256 and nothing for SHA-512 (+0.5% end to end).
+- One-shot APIs (`EVP_Digest`, `EVP_Q_digest`, legacy `SHA256()`) are slower than the pooled, long-lived `EVP_MD_CTX` already used here; keep the pooled contexts.
+- The 16B per-op time of the Java API is within ~5% (SHA-256, MD5, SHA-1) to ~25% (SHA-512) of the pure native Update+Final+Init loop, so there is no remaining per-call lever at 16B that yields >2%. Together with iteration 3 (2048B/32768B are bound by the compression function, 20 of 30 scores per provider), the +40% headline target is not reachable without changing the native hash implementation (e.g. a faster ICC build for x86_64 SHA-2, or routing SHA-2 to the OpenSSL backend on x86_64) or reducing the JNI transition itself (Panama downcalls; still untested, needs native-memory copy and OpenJ9 support check).
+
+### Ideas NOT Yet Tried
+- Panama `Linker` downcalls (JDK 22+) with `Critical`-style linkage to remove the JNI transition (5-25 ns per op), only worthwhile if the project baseline allows JDK 22+ and the OpenJ9 build supports it.
+- Routing SHA-2 (and MD5/SHA-1) of the OCK provider to the OpenSSL backend on x86_64 (configuration/behavioural decision for the owners).
+- Measuring on real x86_64 (where the ICC SHA-2 gap is 26-36% at 2048B/32768B) whether ICC uses SHA-NI/AVX2.
