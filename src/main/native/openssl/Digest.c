@@ -435,12 +435,15 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1up
     /*
      * No separate GetArrayLength() crossing: SetByteArrayRegion bounds-checks
      * itself and throws ArrayIndexOutOfBoundsException if 'output' is too short.
+     *
+     * No ExceptionCheck() after it either: this is the last JNI call of the
+     * function, and a native method that returns with a pending exception has
+     * that exception thrown in the Java caller as soon as it returns, which
+     * makes the return value irrelevant in that case. Dropping the check saves
+     * one JNI function-table call per operation.
      */
     (*env)->SetByteArrayRegion(env, output, 0, (jsize)digestLen,
                                (const jbyte *)digestBuf);
-    if ((*env)->ExceptionCheck(env)) {
-        return -1;
-    }
 
     return (jint)digestLen;
 }
