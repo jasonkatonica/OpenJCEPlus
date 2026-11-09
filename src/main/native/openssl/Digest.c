@@ -334,37 +334,55 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1di
  * Class:     com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation
  * Method:    DIGEST_digest_and_reset
  * Signature: (J[B)V
+ *
+ * Optimization: the digest (at most EVP_MAX_MD_SIZE bytes, 16-64 bytes for the
+ * supported algorithms) is produced into a stack buffer and copied into the
+ * caller's output array with a single SetByteArrayRegion call, exactly like
+ * DIGEST_updateDigestAndReset. This replaces the previous
+ * GetPrimitiveArrayCritical/ReleasePrimitiveArrayCritical pair on the tiny
+ * output array (two JNI calls and a critical region held across
+ * Final + Init) with one JNI call. Final and re-init are unchanged, so the
+ * context is still fully reset after every successful digest.
  */
 JNIEXPORT jint JNICALL
 Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1digest_1and_1reset__JJ_3B(
     JNIEnv *env, jclass thisObj, jlong osslContextId, jlong digestId,
     jbyteArray digestBytes) {
 
-    EVP_MD_CTX    *mdCtx             = (EVP_MD_CTX *)((intptr_t)digestId);
-    unsigned char *digestBytesNative = NULL;
-    jboolean      isCopy             = 0;
-    int           returnResult       = 0;
-    unsigned int  digestLen          = 0;
+    EVP_MD_CTX    *mdCtx = (EVP_MD_CTX *)((intptr_t)digestId);
+    unsigned char  digestBuf[EVP_MAX_MD_SIZE];
+    unsigned int   digestLen = 0;
 
     if (NULL == digestBytes) {
         throwOSSLException(env, 0, "DIGEST_digest_and_reset: The specified data array is null");
         return 0;
     }
 
-    digestBytesNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, digestBytes, &isCopy));
-    if (digestBytesNative == NULL) {
-        throwOSSLException(env, 0, "DIGEST_digest_and_reset: GetPrimitiveArrayCritical failed");
-        goto cleanup;
+    if (NULL == mdCtx) {
+        throwOSSLException(env, 0, "DIGEST_digest_and_reset_internal: The specified mdCtx is null");
+        return 0;
     }
 
-    returnResult = DIGEST_digest_and_reset_internal(env, osslContextId, mdCtx, digestBytesNative, digestLen);
-
-cleanup:
-    if (digestBytesNative != NULL) {
-        (*env)->ReleasePrimitiveArrayCritical(env, digestBytes, digestBytesNative, 0);
+    if (1 != EVP_DigestFinal_ex(mdCtx, digestBuf, &digestLen)) {
+        throwOSSLException(env, 0, "DIGEST_digest_and_reset_internal: EVP_DigestFinal_ex failed");
+        return 0;
     }
 
-    return (jint)returnResult;
+    /* digest reset */
+    if (1 != EVP_DigestInit_ex2(mdCtx, NULL, NULL)) {
+        throwOSSLException(env, 0, "DIGEST_digest_and_reset_internal: EVP_DigestInit_ex2 failed");
+        return 0;
+    }
+
+    /*
+     * SetByteArrayRegion bounds-checks and throws
+     * ArrayIndexOutOfBoundsException if the output array is shorter than the
+     * digest; the exception is raised in the Java caller on return.
+     */
+    (*env)->SetByteArrayRegion(env, digestBytes, 0, (jsize)digestLen,
+                               (const jbyte *)digestBuf);
+
+    return 0;
 }
 
 //============================================================================

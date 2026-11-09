@@ -525,42 +525,56 @@ static inline int DIGEST_digest_and_reset_internal(
     return DIGEST_INTERNAL_SUCCESS;
 }
 
+/*
+ * Optimization: the digest (at most ICC_EVP_MAX_MD_SIZE bytes, 16-64 bytes for
+ * the supported algorithms) is produced into a stack buffer and copied into the
+ * caller's output array with a single SetByteArrayRegion call, exactly like
+ * DIGEST_updateDigestAndReset. This replaces the previous
+ * GetPrimitiveArrayCritical/ReleasePrimitiveArrayCritical pair on the tiny
+ * output array (two JNI calls and a critical region held across
+ * Final + Init) with one JNI call. Final and re-init are unchanged, so the
+ * context is still fully reset after every successful digest, and the return
+ * codes of the failure paths are the same as before.
+ */
 JNIEXPORT jint JNICALL
 Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_DIGEST_1digest_1and_1reset__JJ_3B(
     JNIEnv *env, jclass thisObj, jlong ockContextId, jlong digestId,
     jbyteArray digestBytes) {
 
-    ICC_CTX       *ockCtx            = (ICC_CTX *)((intptr_t)ockContextId);
-    OCKDigest     *ockDigest         = (OCKDigest *)((intptr_t)digestId);
-    unsigned char *digestBytesNative = NULL;
-    jboolean       isCopy            = 0;
-    int            returnResult      = 0;
+    ICC_CTX      *ockCtx    = (ICC_CTX *)((intptr_t)ockContextId);
+    OCKDigest    *ockDigest = (OCKDigest *)((intptr_t)digestId);
+    unsigned char digestBuf[ICC_EVP_MAX_MD_SIZE];
+    unsigned int  digestLen = 0;
 
     if ((ockDigest == NULL) || (digestBytes == NULL)) {
         throwOCKException(env, 0,
                           "Digest reset failed. The specified Digest identfier "
                           "or the digest bytes are incorrect.");
-        return returnResult;
+        return 0;
     }
 
-    digestBytesNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(
-        env, digestBytes, &isCopy));
-    if (digestBytesNative == NULL) {
-        throwOCKException(env, 0, "NULL from GetPrimitiveArrayCritical");
-    } else {
-        returnResult = DIGEST_digest_and_reset_internal(ockCtx, ockDigest,
-                                                        digestBytesNative);
-        if (DIGEST_INTERNAL_SUCCESS > returnResult) {
-            ockCheckStatus(ockCtx);
-        }
+    if (ICC_OSSL_SUCCESS != ICC_EVP_DigestFinal(ockCtx, ockDigest->mdCtx,
+                                                digestBuf, &digestLen)) {
+        ockCheckStatus(ockCtx);
+        return FAIL_DIGEST_FINAL;
     }
 
-    if (digestBytesNative != NULL) {
-        (*env)->ReleasePrimitiveArrayCritical(env, digestBytes,
-                                              digestBytesNative, 0);
+    /* digest reset */
+    if (ICC_OSSL_SUCCESS !=
+        ICC_EVP_DigestInit(ockCtx, ockDigest->mdCtx, ockDigest->md)) {
+        ockCheckStatus(ockCtx);
+        return FAIL_DIGEST_INIT;
     }
 
-    return (jint)returnResult;
+    /*
+     * SetByteArrayRegion bounds-checks and throws
+     * ArrayIndexOutOfBoundsException if the output array is shorter than the
+     * digest; the exception is raised in the Java caller on return.
+     */
+    (*env)->SetByteArrayRegion(env, digestBytes, 0, (jsize)digestLen,
+                               (const jbyte *)digestBuf);
+
+    return DIGEST_INTERNAL_SUCCESS;
 }
 
 //============================================================================
