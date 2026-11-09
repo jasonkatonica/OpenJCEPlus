@@ -167,12 +167,25 @@ Aggregate summary (geomean over the 10 methods, per payload size):
 - Result: NO_CHANGE (measured gain is within noise, as the local A/B predicted about +1% at 16B at most; no regression)
 - Notes: The redundant GetArrayLength was removed because SetByteArrayRegion already bounds-checks (followed by ExceptionCheck). Local A/B on aarch64 showed about +1.2% (OCK) and +0.7-1.0% (OpenSSL) at 16B only, nothing at 2048B/32768B. Analysis showed the Java/JNI layer is within ~10 ns of the native floor for SHA-256 and 30-50 ns for SHA-512 per update+digest op; the remaining cost is the native library Final+Init (e.g. Final+Init of an empty SHA-512 ctx is ~95 ns, SHA-256 ~40 ns). The other candidate ideas were checked and rejected with evidence: the result byte[] allocation is API-mandated (TLAB bump, not removable), a plain-field needsReinit would save <1 ns with correctness risk for the Cleaner, there is already only one JNI crossing per update(<=256B)+digest(), no FindClass/GetFieldID/GetMethodID on the hot path, the 256B inBuf is not zeroed, API dispatch/bounds checks are the minimum required, and EVP_DigestInit_ex vs _ex2 showed no difference.
 
+### Iteration 5: Native Final+Init alternatives evaluated (analysis only, NO code change)
+- Status: COMPLETE (not benchmarked on Jenkins: code identical to iteration 4)
+- Headline: unchanged from iteration 4 (OCK 254158.6 ops/s, OpenSSL 291946.7 ops/s); no new column in Score History.
+- Improvement vs baseline: OCK +10.07%, OpenSSL +8.81% (target +40% each)
+- Bob Shell UUID: a24a3c9b-1a27-42c0-8bb8-7f85572d8de0
+- Commit Hash: aa5889b8d01903794ded30577bbec3cb11c24bef (notes only)
+- GitHub Commit: https://github.com/jasonkatonica/OpenJCEPlus/commit/aa5889b8d01903794ded30577bbec3cb11c24bef
+- Files Changed: 1 (notes/optimization_notes.md)
+- Approach: evaluated (a) EVP_Digest / EVP_Q_digest one-shot with cached EVP_MD*, (b) EVP_MD_CTX_copy_ex(template) reset instead of Init_ex2, (c) ICC (OCK) cheaper reset/one-shot paths.
+- Result: NO_CHANGE. EVP_Digest one-shot is 30-50% slower than the pooled ctx; EVP_Q_digest 2-4x slower; copy_ex template reset is only ~+0.5% end to end through the Java API (below the 2% bar, adds allocation and lifetime complexity), reverted; ICC copy-based reset is 30-40 ns slower, ICC Init is only ~6 ns of 70-143 ns.
+- Notes: Init/reset is <10% of the 16B cost in both OpenSSL and ICC; Final (padding + one compression) dominates. Java+JNI overhead is 5-25 ns per op with no removable piece. Remaining untested ideas: Panama downcalls, routing SHA-2 of OCK to the OpenSSL backend on x86_64, investigating ICC CPU dispatch (SHA-NI/AVX2) on real x86_64. Conclusion: the +40% headline target is not reachable with Java/JNI changes in OpenJCEPlus; 20 of 30 scores per provider (2048B, 32768B) are bound by the native compression function.
+
 ## Best Performing State
 - Iteration: 4
 - Headline OCK: 254158.6, OpenSSL: 291946.7
 - Commit Hash: 1b6f7bf160f7acfc1fa785415e3e6a0827b0aed3
 - Build UUID: 152e81f4-266c-421c-a1d2-7f3284f738a6
 - Note: the improvement over iteration 2 (OCK +0.15%, OpenSSL +0.04%) is within noise.
+- Iteration 5 made no code change; code state equals iteration 4.
 
 ## Next Steps
-- Iteration 5: use a structurally different approach than JNI micro-trims, since iterations 3-4 showed the Java/JNI layer is near the native floor. Options from 'Ideas NOT Yet Tried' in notes/optimization_notes.md: (1) one-shot digest call for tiny inputs (<=256B) that avoids the library Final+Init pair, e.g. EVP_Digest/EVP_Q_digest style on a stack context with a cached EVP_MD* (must avoid the implicit fetch cost of OpenSSL 3.x; no known OCK equivalent); (2) caching of the EVP_MD in the native layer; (3) Panama (Linker) downcalls on JDK 22+ to remove the JNI transition cost (check feasibility: project JDK baseline, OpenJ9 support, native-memory copy cost); (4) any change that reduces native Final+Init cost per op, such as re-using contexts differently (e.g. EVP_MD_CTX_copy_ex from a pre-initialised template ctx instead of Final+Init). Measure each with a local native-floor harness first and only implement if it beats the current Final+Init cost.
+- Further progress requires an owner decision. Iteration 5 showed that the remaining Java/JNI and native Final+Init options give no meaningful gain (see Iteration 5), so the +40% target is not reachable with the current approach. The owner must choose one of: (1) lower the target; (2) accept the current result (OCK +10.07%, OpenSSL +8.81%); (3) authorize the larger options: Panama downcalls (JDK 22+, OpenJ9 support and native-memory copy cost to be checked), routing SHA-2 of the OCK provider to the OpenSSL backend on x86_64, or an ICC build/CPU-dispatch investigation (SHA-NI/AVX2) on real x86_64.
