@@ -49,3 +49,14 @@ else
 endif
 
 include ../share/common.mak
+
+# Optimization: on x86_64 Linux call the libcrypto EVP_* functions (EVP_DigestUpdate,
+# EVP_DigestFinal_ex, EVP_DigestInit_ex2, ...) directly through the GOT
+# ("call *sym@GOTPCREL(%rip)") instead of through a PLT stub ("call stub; jmp *GOT").
+# This removes one extra indirect jump per OpenSSL call on every digest operation.
+# CFLAGS is appended after the include because common.mak assigns it with "=".
+# Symbols are then bound when the library is loaded (GLOB_DAT) instead of lazily;
+# libcrypto is a DT_NEEDED dependency so nothing else changes.
+ifeq (${PLATFORM},x86-linux64)
+  CFLAGS += -fno-plt
+endif

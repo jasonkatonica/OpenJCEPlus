@@ -166,7 +166,6 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1up
 
     EVP_MD_CTX     *mdCtx       = (EVP_MD_CTX *)((intptr_t)digestId);
     unsigned char  *dataNative  = NULL;
-    jboolean       isCopy       = 0;
     int            returnResult = 0;
 
     if (NULL == data) {
@@ -179,7 +178,12 @@ Java_com_ibm_crypto_plus_provider_openssl_NativeOpenSSLImplementation_DIGEST_1up
         return 0;
     }
 
-    dataNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, data, &isCopy));
+    /*
+     * Optimization: the isCopy out-parameter was never read, so pass NULL
+     * (explicitly allowed by the JNI specification). This removes a stack
+     * slot and a store done by the VM on every large-payload update.
+     */
+    dataNative = (unsigned char *)((*env)->GetPrimitiveArrayCritical(env, data, NULL));
     if (NULL == dataNative) {
         throwOSSLException(env, 0, "DIGEST_update: GetPrimitiveArrayCritical failed");
         return 0;
