@@ -12,78 +12,90 @@
 - Baseline Build URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/java25/107/
 
 ## Score History (all individual results, ops/s)
-One row per individual result (benchmark method x payloadSize x provider). A new column is added after every iteration; Δ columns are vs the iteration 0 baseline and vs the previous iteration. Headline geomean rows are at the bottom. Iteration 3 made no code change and was not benchmarked (equals Iter 2).
+One row per individual result (benchmark method x payloadSize x provider). Every measured iteration has two columns: the raw score (ops/s) and its Δ vs the iteration 0 baseline, (iterN - baseline)/baseline*100. All deltas are ALWAYS against the baseline run (Iter 0), never against the previous iteration. Headline geomean rows (geomean of the 30 raw scores per provider) are at the bottom. Iterations 3 and 5 made no code change and were not benchmarked, so they have no columns.
 
-| Benchmark method | Payload | Provider | Iter 0 baseline | Iter 1 | Iter 2 | Iter 4 | Δ iter4 vs baseline | Δ iter4 vs iter2 | Iter 6 | Δ iter6 vs baseline | Δ iter6 vs iter4 | Iter 7 | Δ iter7 vs baseline | Δ iter7 vs iter6 |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| sha512UpdateDigest | 16 | OCK | 2325553 | 2478580 | 2560354 | 2576312 | +10.8% | +0.6% | 2608393 | +12.2% | +1.2% | 2596091 | +11.6% | -0.5% |
-| sha512UpdateDigest | 2048 | OCK | 189334 | 219266 | 218717 | 219201 | +15.8% | +0.2% | 218483 | +15.4% | -0.3% | 218567 | +15.4% | +0.0% |
-| sha512UpdateDigest | 32768 | OCK | 14931 | 15030 | 14937 | 15007 | +0.5% | +0.5% | 15026 | +0.6% | +0.1% | 14973 | +0.3% | -0.4% |
-| sha512SingleShotDigest | 16 | OCK | 2000677 | 2473122 | 2461462 | 2534667 | +26.7% | +3.0% | 2612073 | +30.6% | +3.1% | 2553652 | +27.6% | -2.2% |
-| sha512SingleShotDigest | 2048 | OCK | 217021 | 218848 | 218661 | 219390 | +1.1% | +0.3% | 219114 | +1.0% | -0.1% | 218811 | +0.8% | -0.1% |
-| sha512SingleShotDigest | 32768 | OCK | 14987 | 14971 | 15005 | 15024 | +0.2% | +0.1% | 15012 | +0.2% | -0.1% | 14820 | -1.1% | -1.3% |
-| md5SingleShotDigest | 16 | OCK | 4378990 | 4909901 | 5476106 | 5537735 | +26.5% | +1.1% | 5563329 | +27.0% | +0.5% | 5579036 | +27.4% | +0.3% |
-| md5SingleShotDigest | 2048 | OCK | 316468 | 321401 | 322400 | 322106 | +1.8% | -0.1% | 322011 | +1.8% | -0.0% | 320023 | +1.1% | -0.6% |
-| md5SingleShotDigest | 32768 | OCK | 21364 | 21528 | 21530 | 21513 | +0.7% | -0.1% | 21221 | -0.7% | -1.4% | 21303 | -0.3% | +0.4% |
-| sha512_224UpdateDigest | 16 | OCK | 2378458 | 2555090 | 2693502 | 2671610 | +12.3% | -0.8% | 2661515 | +11.9% | -0.4% | 2638940 | +11.0% | -0.8% |
-| sha512_224UpdateDigest | 2048 | OCK | 210824 | 219635 | 219715 | 219465 | +4.1% | -0.1% | 219580 | +4.2% | +0.1% | 218837 | +3.8% | -0.3% |
-| sha512_224UpdateDigest | 32768 | OCK | 12798 | 14992 | 15020 | 15026 | +17.4% | +0.0% | 14986 | +17.1% | -0.3% | 15007 | +17.3% | +0.1% |
-| sha512_256UpdateDigest | 16 | OCK | 2196947 | 2572674 | 2694286 | 2638127 | +20.1% | -2.1% | 2705321 | +23.1% | +2.5% | 2699714 | +22.9% | -0.2% |
-| sha512_256UpdateDigest | 2048 | OCK | 217790 | 219515 | 219305 | 219767 | +0.9% | +0.2% | 220018 | +1.0% | +0.1% | 220046 | +1.0% | +0.0% |
-| sha512_256UpdateDigest | 32768 | OCK | 14986 | 15026 | 15036 | 14986 | +0.0% | -0.3% | 15036 | +0.3% | +0.3% | 14968 | -0.1% | -0.5% |
-| md5UpdateDigest | 16 | OCK | 4346669 | 4826728 | 5550417 | 5480375 | +26.1% | -1.3% | 5507809 | +26.7% | +0.5% | 5537485 | +27.4% | +0.5% |
-| md5UpdateDigest | 2048 | OCK | 319816 | 321076 | 322481 | 322124 | +0.7% | -0.1% | 321328 | +0.5% | -0.2% | 319595 | -0.1% | -0.5% |
-| md5UpdateDigest | 32768 | OCK | 21372 | 21497 | 21497 | 21525 | +0.7% | +0.1% | 21492 | +0.6% | -0.2% | 18598 | -13.0% | -13.5% |
-| sha256UpdateDigest | 16 | OCK | 2722196 | 3438296 | 3676474 | 3691053 | +35.6% | +0.4% | 3684250 | +35.3% | -0.2% | 3703018 | +36.0% | +0.5% |
-| sha256UpdateDigest | 2048 | OCK | 176460 | 181265 | 181001 | 181851 | +3.1% | +0.5% | 180848 | +2.5% | -0.6% | 181567 | +2.9% | +0.4% |
-| sha256UpdateDigest | 32768 | OCK | 10241 | 11967 | 11970 | 11975 | +16.9% | +0.0% | 11977 | +17.0% | +0.0% | 11927 | +16.5% | -0.4% |
-| sha1SingleShotDigest | 16 | OCK | 4286429 | 4745368 | 5351120 | 5413551 | +26.3% | +1.2% | 5500714 | +28.3% | +1.6% | 5179146 | +20.8% | -5.8% |
-| sha1SingleShotDigest | 2048 | OCK | 361930 | 370026 | 370362 | 370524 | +2.4% | +0.0% | 370060 | +2.2% | -0.1% | 314076 | -13.2% | -15.1% |
-| sha1SingleShotDigest | 32768 | OCK | 25879 | 26511 | 26476 | 26538 | +2.5% | +0.2% | 26454 | +2.2% | -0.3% | 26515 | +2.5% | +0.2% |
-| sha1UpdateDigest | 16 | OCK | 4306765 | 4867678 | 5345373 | 5375425 | +24.8% | +0.6% | 5254295 | +22.0% | -2.3% | 5280465 | +22.6% | +0.5% |
-| sha1UpdateDigest | 2048 | OCK | 352969 | 369443 | 370259 | 370804 | +5.1% | +0.1% | 369822 | +4.8% | -0.3% | 372021 | +5.4% | +0.6% |
-| sha1UpdateDigest | 32768 | OCK | 23980 | 26553 | 26547 | 26547 | +10.7% | +0.0% | 26425 | +10.2% | -0.5% | 26456 | +10.3% | +0.1% |
-| sha256SingleShotDigest | 16 | OCK | 2979387 | 3448250 | 3648478 | 3665655 | +23.0% | +0.5% | 3620379 | +21.5% | -1.2% | 3725916 | +25.1% | +2.9% |
-| sha256SingleShotDigest | 2048 | OCK | 180572 | 181640 | 181507 | 181198 | +0.3% | -0.2% | 181432 | +0.5% | +0.1% | 181891 | +0.7% | +0.3% |
-| sha256SingleShotDigest | 32768 | OCK | 11927 | 11983 | 11994 | 11972 | +0.4% | -0.2% | 11978 | +0.4% | +0.1% | 11671 | -2.1% | -2.6% |
-| sha512UpdateDigest | 16 | OpenSSL | 2391988 | 2554807 | 2820343 | 2861006 | +19.6% | +1.4% | 2841367 | +18.8% | -0.7% | 2833569 | +18.5% | -0.3% |
-| sha512UpdateDigest | 2048 | OpenSSL | 285702 | 298257 | 297299 | 296112 | +3.6% | -0.4% | 296916 | +3.9% | +0.3% | 298716 | +4.6% | +0.6% |
-| sha512UpdateDigest | 32768 | OpenSSL | 20662 | 20731 | 20754 | 20720 | +0.3% | -0.2% | 20674 | +0.1% | -0.2% | 20689 | +0.1% | +0.1% |
-| sha512SingleShotDigest | 16 | OpenSSL | 2579267 | 2768196 | 2826857 | 2764887 | +7.2% | -2.2% | 2837987 | +10.0% | +2.6% | 2836241 | +10.0% | -0.1% |
-| sha512SingleShotDigest | 2048 | OpenSSL | 294728 | 298339 | 297356 | 297756 | +1.0% | +0.1% | 296366 | +0.6% | -0.5% | 293586 | -0.4% | -0.9% |
-| sha512SingleShotDigest | 32768 | OpenSSL | 20680 | 20764 | 20770 | 20784 | +0.5% | +0.1% | 20748 | +0.3% | -0.2% | 20680 | +0.0% | -0.3% |
-| md5SingleShotDigest | 16 | OpenSSL | 4349339 | 4904280 | 5287648 | 5296602 | +21.8% | +0.2% | 5359767 | +23.2% | +1.2% | 5344807 | +22.9% | -0.3% |
-| md5SingleShotDigest | 2048 | OpenSSL | 335274 | 337803 | 338837 | 338551 | +1.0% | -0.1% | 338948 | +1.1% | +0.1% | 336024 | +0.2% | -0.9% |
-| md5SingleShotDigest | 32768 | OpenSSL | 22577 | 22638 | 22638 | 22654 | +0.3% | +0.1% | 22679 | +0.5% | +0.1% | 22385 | -0.9% | -1.3% |
-| sha512_224UpdateDigest | 16 | OpenSSL | 2594220 | 2767051 | 2852481 | 2900991 | +11.8% | +1.7% | 2894288 | +11.6% | -0.2% | 2902493 | +11.9% | +0.3% |
-| sha512_224UpdateDigest | 2048 | OpenSSL | 295509 | 298150 | 297892 | 298756 | +1.1% | +0.3% | 297495 | +0.7% | -0.4% | 297101 | +0.5% | -0.1% |
-| sha512_224UpdateDigest | 32768 | OpenSSL | 18283 | 20743 | 20752 | 20744 | +13.5% | -0.0% | 20741 | +13.4% | -0.0% | 20697 | +13.2% | -0.2% |
-| sha512_256UpdateDigest | 16 | OpenSSL | 2629171 | 2801300 | 2897696 | 2883792 | +9.7% | -0.5% | 2916713 | +10.9% | +1.1% | 2870005 | +9.2% | -1.6% |
-| sha512_256UpdateDigest | 2048 | OpenSSL | 295265 | 296901 | 298706 | 297976 | +0.9% | -0.2% | 297424 | +0.7% | -0.2% | 298591 | +1.1% | +0.4% |
-| sha512_256UpdateDigest | 32768 | OpenSSL | 20650 | 20741 | 20747 | 20603 | -0.2% | -0.7% | 20746 | +0.5% | +0.7% | 20601 | -0.2% | -0.7% |
-| md5UpdateDigest | 16 | OpenSSL | 4333819 | 4845673 | 5244805 | 5295264 | +22.2% | +1.0% | 5373256 | +24.0% | +1.5% | 5284255 | +21.9% | -1.7% |
-| md5UpdateDigest | 2048 | OpenSSL | 333205 | 334457 | 338136 | 338945 | +1.7% | +0.2% | 338494 | +1.6% | -0.1% | 307326 | -7.8% | -9.2% |
-| md5UpdateDigest | 32768 | OpenSSL | 22463 | 22630 | 22615 | 22620 | +0.7% | +0.0% | 22649 | +0.8% | +0.1% | 19694 | -12.3% | -13.0% |
-| sha256UpdateDigest | 16 | OpenSSL | 2632624 | 3476853 | 3652157 | 3650081 | +38.6% | -0.1% | 3607676 | +37.0% | -1.2% | 3668188 | +39.3% | +1.7% |
-| sha256UpdateDigest | 2048 | OpenSSL | 206058 | 208009 | 209875 | 209937 | +1.9% | +0.0% | 208835 | +1.3% | -0.5% | 209395 | +1.6% | +0.3% |
-| sha256UpdateDigest | 32768 | OpenSSL | 11578 | 13937 | 13907 | 13931 | +20.3% | +0.2% | 13945 | +20.4% | +0.1% | 13858 | +19.7% | -0.6% |
-| sha1SingleShotDigest | 16 | OpenSSL | 4175881 | 4715926 | 5287499 | 5321688 | +27.4% | +0.6% | 5277913 | +26.4% | -0.8% | 4582805 | +9.7% | -13.2% |
-| sha1SingleShotDigest | 2048 | OpenSSL | 435973 | 443732 | 443808 | 443764 | +1.8% | -0.0% | 444003 | +1.8% | +0.1% | 369577 | -15.2% | -16.8% |
-| sha1SingleShotDigest | 32768 | OpenSSL | 30084 | 30529 | 30492 | 30575 | +1.6% | +0.3% | 30578 | +1.6% | +0.0% | 30134 | +0.2% | -1.5% |
-| sha1UpdateDigest | 16 | OpenSSL | 3992695 | 4561486 | 5191979 | 5221873 | +30.8% | +0.6% | 5246409 | +31.4% | +0.5% | 5214263 | +30.6% | -0.6% |
-| sha1UpdateDigest | 2048 | OpenSSL | 433131 | 442496 | 443836 | 443123 | +2.3% | -0.2% | 444744 | +2.7% | +0.4% | 434033 | +0.2% | -2.4% |
-| sha1UpdateDigest | 32768 | OpenSSL | 28256 | 30572 | 30525 | 30056 | +6.4% | -1.5% | 30448 | +7.8% | +1.3% | 30423 | +7.7% | -0.1% |
-| sha256SingleShotDigest | 16 | OpenSSL | 3059962 | 3492679 | 3678623 | 3684790 | +20.4% | +0.2% | 3641939 | +19.0% | -1.2% | 3657481 | +19.5% | +0.4% |
-| sha256SingleShotDigest | 2048 | OpenSSL | 208278 | 209229 | 208741 | 209985 | +0.8% | +0.6% | 209705 | +0.7% | -0.1% | 209532 | +0.6% | -0.1% |
-| sha256SingleShotDigest | 32768 | OpenSSL | 12685 | 13921 | 13964 | 13917 | +9.7% | -0.3% | 13902 | +9.6% | -0.1% | 13874 | +9.4% | -0.2% |
-| **HEADLINE geomean** | all | OCK | 230905.8 | 247801.6 | 253782.2 | 254158.6 | +10.07% | +0.15% | 254305.8 | +10.13% | +0.06% | 250890.3 | +8.7% | -1.3% |
-| **HEADLINE geomean** | all | OpenSSL | 268320.8 | 285058.0 | 291841.4 | 291946.7 | +8.81% | +0.04% | 292290.8 | +8.93% | +0.12% | 285902.3 | +6.6% | -2.2% |
+| Benchmark method | Params | Provider | Baseline raw (iter 0) | Iter 1 raw | Iter 1 Δ vs baseline | Iter 2 raw | Iter 2 Δ vs baseline | Iter 4 raw | Iter 4 Δ vs baseline | Iter 6 raw | Iter 6 Δ vs baseline | Iter 7 raw | Iter 7 Δ vs baseline | Iter 8 raw | Iter 8 Δ vs baseline |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| sha512UpdateDigest | 16 | OCK | 2325553 | 2478580 | +6.6% | 2560354 | +10.1% | 2576312 | +10.8% | 2608393 | +12.2% | 2596091 | +11.6% | 2569370 | +10.5% |
+| sha512UpdateDigest | 2048 | OCK | 189334 | 219266 | +15.8% | 218717 | +15.5% | 219201 | +15.8% | 218483 | +15.4% | 218567 | +15.4% | 214187 | +13.1% |
+| sha512UpdateDigest | 32768 | OCK | 14931 | 15030 | +0.7% | 14937 | +0.0% | 15007 | +0.5% | 15026 | +0.6% | 14973 | +0.3% | 13190 | -11.7% |
+| sha512SingleShotDigest | 16 | OCK | 2000677 | 2473122 | +23.6% | 2461462 | +23.0% | 2534667 | +26.7% | 2612073 | +30.6% | 2553652 | +27.6% | 2581365 | +29.0% |
+| sha512SingleShotDigest | 2048 | OCK | 217021 | 218848 | +0.8% | 218661 | +0.8% | 219390 | +1.1% | 219114 | +1.0% | 218811 | +0.8% | 214065 | -1.4% |
+| sha512SingleShotDigest | 32768 | OCK | 14987 | 14971 | -0.1% | 15005 | +0.1% | 15024 | +0.2% | 15012 | +0.2% | 14820 | -1.1% | 12689 | -15.3% |
+| md5SingleShotDigest | 16 | OCK | 4378990 | 4909901 | +12.1% | 5476106 | +25.1% | 5537735 | +26.5% | 5563329 | +27.0% | 5579036 | +27.4% | 5013087 | +14.5% |
+| md5SingleShotDigest | 2048 | OCK | 316468 | 321401 | +1.6% | 322400 | +1.9% | 322106 | +1.8% | 322011 | +1.8% | 320023 | +1.1% | 321215 | +1.5% |
+| md5SingleShotDigest | 32768 | OCK | 21364 | 21528 | +0.8% | 21530 | +0.8% | 21513 | +0.7% | 21221 | -0.7% | 21303 | -0.3% | 18832 | -11.9% |
+| sha512_224UpdateDigest | 16 | OCK | 2378458 | 2555090 | +7.4% | 2693502 | +13.2% | 2671610 | +12.3% | 2661515 | +11.9% | 2638940 | +11.0% | 2510230 | +5.5% |
+| sha512_224UpdateDigest | 2048 | OCK | 210824 | 219635 | +4.2% | 219715 | +4.2% | 219465 | +4.1% | 219580 | +4.2% | 218837 | +3.8% | 206981 | -1.8% |
+| sha512_224UpdateDigest | 32768 | OCK | 12798 | 14992 | +17.1% | 15020 | +17.4% | 15026 | +17.4% | 14986 | +17.1% | 15007 | +17.3% | 13546 | +5.8% |
+| sha512_256UpdateDigest | 16 | OCK | 2196947 | 2572674 | +17.1% | 2694286 | +22.6% | 2638127 | +20.1% | 2705321 | +23.1% | 2699714 | +22.9% | 2564233 | +16.7% |
+| sha512_256UpdateDigest | 2048 | OCK | 217790 | 219515 | +0.8% | 219305 | +0.7% | 219767 | +0.9% | 220018 | +1.0% | 220046 | +1.0% | 181354 | -16.7% |
+| sha512_256UpdateDigest | 32768 | OCK | 14986 | 15026 | +0.3% | 15036 | +0.3% | 14986 | +0.0% | 15036 | +0.3% | 14968 | -0.1% | 14843 | -1.0% |
+| md5UpdateDigest | 16 | OCK | 4346669 | 4826728 | +11.0% | 5550417 | +27.7% | 5480375 | +26.1% | 5507809 | +26.7% | 5537485 | +27.4% | 5499641 | +26.5% |
+| md5UpdateDigest | 2048 | OCK | 319816 | 321076 | +0.4% | 322481 | +0.8% | 322124 | +0.7% | 321328 | +0.5% | 319595 | -0.1% | 321410 | +0.5% |
+| md5UpdateDigest | 32768 | OCK | 21372 | 21497 | +0.6% | 21497 | +0.6% | 21525 | +0.7% | 21492 | +0.6% | 18598 | -13.0% | 18737 | -12.3% |
+| sha256UpdateDigest | 16 | OCK | 2722196 | 3438296 | +26.3% | 3676474 | +35.1% | 3691053 | +35.6% | 3684250 | +35.3% | 3703018 | +36.0% | 3381437 | +24.2% |
+| sha256UpdateDigest | 2048 | OCK | 176460 | 181265 | +2.7% | 181001 | +2.6% | 181851 | +3.1% | 180848 | +2.5% | 181567 | +2.9% | 158778 | -10.0% |
+| sha256UpdateDigest | 32768 | OCK | 10241 | 11967 | +16.9% | 11970 | +16.9% | 11975 | +16.9% | 11977 | +17.0% | 11927 | +16.5% | 11650 | +13.8% |
+| sha1SingleShotDigest | 16 | OCK | 4286429 | 4745368 | +10.7% | 5351120 | +24.8% | 5413551 | +26.3% | 5500714 | +28.3% | 5179146 | +20.8% | 5449615 | +27.1% |
+| sha1SingleShotDigest | 2048 | OCK | 361930 | 370026 | +2.2% | 370362 | +2.3% | 370524 | +2.4% | 370060 | +2.2% | 314076 | -13.2% | 368721 | +1.9% |
+| sha1SingleShotDigest | 32768 | OCK | 25879 | 26511 | +2.4% | 26476 | +2.3% | 26538 | +2.5% | 26454 | +2.2% | 26515 | +2.5% | 25859 | -0.1% |
+| sha1UpdateDigest | 16 | OCK | 4306765 | 4867678 | +13.0% | 5345373 | +24.1% | 5375425 | +24.8% | 5254295 | +22.0% | 5280465 | +22.6% | 4516985 | +4.9% |
+| sha1UpdateDigest | 2048 | OCK | 352969 | 369443 | +4.7% | 370259 | +4.9% | 370804 | +5.1% | 369822 | +4.8% | 372021 | +5.4% | 330796 | -6.3% |
+| sha1UpdateDigest | 32768 | OCK | 23980 | 26553 | +10.7% | 26547 | +10.7% | 26547 | +10.7% | 26425 | +10.2% | 26456 | +10.3% | 22503 | -6.2% |
+| sha256SingleShotDigest | 16 | OCK | 2979387 | 3448250 | +15.7% | 3648478 | +22.5% | 3665655 | +23.0% | 3620379 | +21.5% | 3725916 | +25.1% | 3544340 | +19.0% |
+| sha256SingleShotDigest | 2048 | OCK | 180572 | 181640 | +0.6% | 181507 | +0.5% | 181198 | +0.3% | 181432 | +0.5% | 181891 | +0.7% | 167482 | -7.2% |
+| sha256SingleShotDigest | 32768 | OCK | 11927 | 11983 | +0.5% | 11994 | +0.6% | 11972 | +0.4% | 11978 | +0.4% | 11671 | -2.1% | 10397 | -12.8% |
+| sha512UpdateDigest | 16 | OpenSSL | 2391988 | 2554807 | +6.8% | 2820343 | +17.9% | 2861006 | +19.6% | 2841367 | +18.8% | 2833569 | +18.5% | 2868328 | +19.9% |
+| sha512UpdateDigest | 2048 | OpenSSL | 285702 | 298257 | +4.4% | 297299 | +4.1% | 296112 | +3.6% | 296916 | +3.9% | 298716 | +4.6% | 257242 | -10.0% |
+| sha512UpdateDigest | 32768 | OpenSSL | 20662 | 20731 | +0.3% | 20754 | +0.4% | 20720 | +0.3% | 20674 | +0.1% | 20689 | +0.1% | 18407 | -10.9% |
+| sha512SingleShotDigest | 16 | OpenSSL | 2579267 | 2768196 | +7.3% | 2826857 | +9.6% | 2764887 | +7.2% | 2837987 | +10.0% | 2836241 | +10.0% | 2388116 | -7.4% |
+| sha512SingleShotDigest | 2048 | OpenSSL | 294728 | 298339 | +1.2% | 297356 | +0.9% | 297756 | +1.0% | 296366 | +0.6% | 293586 | -0.4% | 264402 | -10.3% |
+| sha512SingleShotDigest | 32768 | OpenSSL | 20680 | 20764 | +0.4% | 20770 | +0.4% | 20784 | +0.5% | 20748 | +0.3% | 20680 | +0.0% | 17721 | -14.3% |
+| md5SingleShotDigest | 16 | OpenSSL | 4349339 | 4904280 | +12.8% | 5287648 | +21.6% | 5296602 | +21.8% | 5359767 | +23.2% | 5344807 | +22.9% | 5411285 | +24.4% |
+| md5SingleShotDigest | 2048 | OpenSSL | 335274 | 337803 | +0.8% | 338837 | +1.1% | 338551 | +1.0% | 338948 | +1.1% | 336024 | +0.2% | 320635 | -4.4% |
+| md5SingleShotDigest | 32768 | OpenSSL | 22577 | 22638 | +0.3% | 22638 | +0.3% | 22654 | +0.3% | 22679 | +0.5% | 22385 | -0.9% | 19925 | -11.7% |
+| sha512_224UpdateDigest | 16 | OpenSSL | 2594220 | 2767051 | +6.7% | 2852481 | +10.0% | 2900991 | +11.8% | 2894288 | +11.6% | 2902493 | +11.9% | 2709822 | +4.5% |
+| sha512_224UpdateDigest | 2048 | OpenSSL | 295509 | 298150 | +0.9% | 297892 | +0.8% | 298756 | +1.1% | 297495 | +0.7% | 297101 | +0.5% | 297400 | +0.6% |
+| sha512_224UpdateDigest | 32768 | OpenSSL | 18283 | 20743 | +13.5% | 20752 | +13.5% | 20744 | +13.5% | 20741 | +13.4% | 20697 | +13.2% | 19262 | +5.4% |
+| sha512_256UpdateDigest | 16 | OpenSSL | 2629171 | 2801300 | +6.5% | 2897696 | +10.2% | 2883792 | +9.7% | 2916713 | +10.9% | 2870005 | +9.2% | 2509324 | -4.6% |
+| sha512_256UpdateDigest | 2048 | OpenSSL | 295265 | 296901 | +0.6% | 298706 | +1.2% | 297976 | +0.9% | 297424 | +0.7% | 298591 | +1.1% | 254750 | -13.7% |
+| sha512_256UpdateDigest | 32768 | OpenSSL | 20650 | 20741 | +0.4% | 20747 | +0.5% | 20603 | -0.2% | 20746 | +0.5% | 20601 | -0.2% | 20663 | +0.1% |
+| md5UpdateDigest | 16 | OpenSSL | 4333819 | 4845673 | +11.8% | 5244805 | +21.0% | 5295264 | +22.2% | 5373256 | +24.0% | 5284255 | +21.9% | 5307470 | +22.5% |
+| md5UpdateDigest | 2048 | OpenSSL | 333205 | 334457 | +0.4% | 338136 | +1.5% | 338945 | +1.7% | 338494 | +1.6% | 307326 | -7.8% | 292394 | -12.2% |
+| md5UpdateDigest | 32768 | OpenSSL | 22463 | 22630 | +0.7% | 22615 | +0.7% | 22620 | +0.7% | 22649 | +0.8% | 19694 | -12.3% | 19357 | -13.8% |
+| sha256UpdateDigest | 16 | OpenSSL | 2632624 | 3476853 | +32.1% | 3652157 | +38.7% | 3650081 | +38.6% | 3607676 | +37.0% | 3668188 | +39.3% | 3273892 | +24.4% |
+| sha256UpdateDigest | 2048 | OpenSSL | 206058 | 208009 | +0.9% | 209875 | +1.9% | 209937 | +1.9% | 208835 | +1.3% | 209395 | +1.6% | 177674 | -13.8% |
+| sha256UpdateDigest | 32768 | OpenSSL | 11578 | 13937 | +20.4% | 13907 | +20.1% | 13931 | +20.3% | 13945 | +20.4% | 13858 | +19.7% | 13883 | +19.9% |
+| sha1SingleShotDigest | 16 | OpenSSL | 4175881 | 4715926 | +12.9% | 5287499 | +26.6% | 5321688 | +27.4% | 5277913 | +26.4% | 4582805 | +9.7% | 5247207 | +25.7% |
+| sha1SingleShotDigest | 2048 | OpenSSL | 435973 | 443732 | +1.8% | 443808 | +1.8% | 443764 | +1.8% | 444003 | +1.8% | 369577 | -15.2% | 432847 | -0.7% |
+| sha1SingleShotDigest | 32768 | OpenSSL | 30084 | 30529 | +1.5% | 30492 | +1.4% | 30575 | +1.6% | 30578 | +1.6% | 30134 | +0.2% | 25808 | -14.2% |
+| sha1UpdateDigest | 16 | OpenSSL | 3992695 | 4561486 | +14.2% | 5191979 | +30.0% | 5221873 | +30.8% | 5246409 | +31.4% | 5214263 | +30.6% | 4699911 | +17.7% |
+| sha1UpdateDigest | 2048 | OpenSSL | 433131 | 442496 | +2.2% | 443836 | +2.5% | 443123 | +2.3% | 444744 | +2.7% | 434033 | +0.2% | 376305 | -13.1% |
+| sha1UpdateDigest | 32768 | OpenSSL | 28256 | 30572 | +8.2% | 30525 | +8.0% | 30056 | +6.4% | 30448 | +7.8% | 30423 | +7.7% | 29089 | +2.9% |
+| sha256SingleShotDigest | 16 | OpenSSL | 3059962 | 3492679 | +14.1% | 3678623 | +20.2% | 3684790 | +20.4% | 3641939 | +19.0% | 3657481 | +19.5% | 3453681 | +12.9% |
+| sha256SingleShotDigest | 2048 | OpenSSL | 208278 | 209229 | +0.5% | 208741 | +0.2% | 209985 | +0.8% | 209705 | +0.7% | 209532 | +0.6% | 202921 | -2.6% |
+| sha256SingleShotDigest | 32768 | OpenSSL | 12685 | 13921 | +9.7% | 13964 | +10.1% | 13917 | +9.7% | 13902 | +9.6% | 13874 | +9.4% | 12906 | +1.7% |
+| **HEADLINE geomean** | all | OCK | 230905.8 | 247801.6 | +7.3% | 253782.2 | +9.9% | 254158.6 | +10.1% | 254305.8 | +10.1% | 250890.3 | +8.7% | 236664.5 | +2.5% |
+| **HEADLINE geomean** | all | OpenSSL | 268320.8 | 285058.0 | +6.2% | 291841.4 | +8.8% | 291946.7 | +8.8% | 292290.8 | +8.9% | 285902.3 | +6.6% | 268183.5 | -0.1% |
 
-Aggregate summary (geomean over the 10 methods, per payload size):
-- OCK: 16B +23.0% (-0.5%); 2048B +1.6% (-1.7%); 32768B +2.6% (-1.9%)
-- OpenSSL: 16B +19.0% (-1.6%); 2048B -1.6% (-3.1%); 32768B +3.3% (-1.9%)
+### Aggregates vs baseline (geomean of raw scores)
+Geomean Δ vs baseline over the 10 methods of each payload size (ALL = headline over the 30 scores):
 
-Iteration 5 made no code change and was not benchmarked (equals Iter 4). Iteration 6 is Jenkins build #111. Iteration 7 is Jenkins build #113 (re-run); build #112 of the same code was discarded because of extreme noise (headline OCK 242603 / OpenSSL 276303, many scoreErrors of 10-100% of the score).
+| Provider | Payload | Iter 1 Δ vs baseline | Iter 2 Δ vs baseline | Iter 4 Δ vs baseline | Iter 6 Δ vs baseline | Iter 7 Δ vs baseline | Iter 8 Δ vs baseline |
+|---|---|---|---|---|---|---|---|
+| OCK | 16B | +14.2% | +22.6% | +23.0% | +23.7% | +23.0% | +17.5% |
+| OCK | 2048B | +3.3% | +3.3% | +3.4% | +3.3% | +1.6% | -2.9% |
+| OCK | 32768B | +4.8% | +4.8% | +4.8% | +4.6% | +2.6% | -5.6% |
+| OCK | ALL | +7.3% | +9.9% | +10.1% | +10.1% | +8.7% | +2.5% |
+| OpenSSL | 16B | +12.3% | +20.3% | +20.6% | +20.9% | +19.0% | +13.4% |
+| OpenSSL | 2048B | +1.3% | +1.6% | +1.6% | +1.5% | -1.6% | -8.2% |
+| OpenSSL | 32768B | +5.3% | +5.3% | +5.1% | +5.3% | +3.3% | -4.1% |
+| OpenSSL | ALL | +6.2% | +8.8% | +8.8% | +8.9% | +6.6% | -0.1% |
+
+Jenkins builds per column: Iter 1 #108, Iter 2 #109, Iter 4 #110, Iter 6 #111, Iter 7 #113 re-run [#112 discarded, noisy: headline OCK 242603 / OpenSSL 276303, many scoreErrors of 10-100% of the score], Iter 8 #114. Iterations 3 and 5 made no code change and were not benchmarked.
+
+Iteration 8 (#114) is flagged UNRELIABLE: the whole machine/run was about 6-9% slower than the other runs, including the OCK backend which the iteration 8 change did not touch (OCK geomean -6.9% vs iter 6 although only OpenSSL native build flags changed); a re-run is pending.
 
 ## Optimization Parameters
 - Repository: OPENJCEPLUS
@@ -91,7 +103,7 @@ Iteration 5 made no code change and was not benchmarked (equals Iter 4). Iterati
 - Max Iterations: 10
 - Regression Threshold: 1% drop of headline score vs best-so-far (per provider)
 - Note: baseline has large noise (scoreError up to +-50% on some 16B/2048B cases); judge on the headline geomean and on payloadSize 16 (JNI/call overhead dominated) vs 32768 (native dominated) separately.
-- Reporting convention: Every iteration records (a) all 60 individual scores plus delta vs baseline and vs previous iteration in Score History / the iteration entry, and (b) the headline geomean per provider.
+- Reporting convention: Every iteration records (a) all 60 individual scores plus delta vs baseline in Score History / the iteration entry, and (b) the headline geomean per provider.
 
 ## Iteration History
 
@@ -215,6 +227,18 @@ Iteration 5 made no code change and was not benchmarked (equals Iter 4). Iterati
 - Result: NO_CHANGE (neutral within noise). Code kept because it strictly removes work and is correct (targeted tests and checkstyle pass); no restoration performed. Regression rule note: the geomean drop exceeds the 1% threshold only because of noisy rows; the median shows no change.
 - Notes: the large-payload scores are bound by the native compression function; no remaining removable work on that path in Java or JNI.
 
+### Iteration 8: OpenSSL backend only - build with -fno-plt on x86-linux64 and drop unused isCopy out-parameter in DIGEST_update
+- Status: COMPLETE, measurement flagged UNRELIABLE (re-run pending)
+- Headline (build #114): OCK 236664.5 ops/s (+2.5% vs baseline), OpenSSL 268183.5 ops/s (-0.1% vs baseline)
+- Bob Shell UUID: 1da37568-b561-4c60-aafc-7c2fa604afba
+- Commit Hash: b25613c1aba8cfbb5977dba8561a2437883fb343 (code commit touching src/main/native/openssl/openjceplus.mak and src/main/native/openssl/Digest.c; the follow-up commit 600076083d9805c6cd3e1df64066339c1468da03 only corrects notes/optimization_notes.md)
+- GitHub Commit: https://github.com/jasonkatonica/OpenJCEPlus/commit/b25613c1aba8cfbb5977dba8561a2437883fb343
+- Build UUID: 9e7e8b7f-d486-4600-8e54-542e8f9f600a (build #114)
+- Build URL: https://hyc-runtimes-jenkins.swg-devops.com/job/SecurityPerformancePipeline/job/java25/114/
+- Approach: -fno-plt (the Jenkins console log confirms it is in the OpenSSL compile lines and not in the OCK ones) removes one PLT indirection per libcrypto call; see 'Iteration 8' in notes/optimization_notes.md.
+- Result: INCONCLUSIVE. The OCK control (unchanged backend) also dropped, so the run is not comparable with #111/#113.
+- Notes: re-run on Jenkins before deciding whether to keep or restore iteration 6 code state.
+
 ## Best Performing State
 - Iteration: 6
 - Headline OCK: 254305.8, OpenSSL: 292290.8
@@ -222,8 +246,9 @@ Iteration 5 made no code change and was not benchmarked (equals Iter 4). Iterati
 - Build UUID: b5ceafef-b7da-40de-ad3d-8f2432f16584
 - Note: the improvement over iterations 2 and 4 is within noise; iteration 6 code is a strict superset of iteration 4 code.
 - Iteration 5 made no code change; code state equals iteration 4.
-- Current code state = iteration 7 (commit 356ba8c87fea09578d3261fd7a6644d1e933046b); performance of iterations 4, 6 and 7 is equal within run-to-run noise (about +-2% on the headline).
+- Current code state = iteration 8 (commit b25613c1aba8cfbb5977dba8561a2437883fb343); performance of iterations 4, 6 and 7 is equal within run-to-run noise (about +-2% on the headline); iteration 8 is not yet judged (unreliable run, re-run pending).
 
 ## Next Steps
-- Iteration 8: only options left are structural and need an owner decision (Panama critical downcall prototype for one algorithm; routing OCK SHA-2 to the OpenSSL backend on x86_64; ICC CPU-dispatch investigation). Without that, remaining iterations can only be analysis.
+- Iteration 8 needs a Jenkins re-run for a clean comparison; then decide keep vs restore.
+- Remaining options beyond that are structural and need an owner decision (Panama critical downcall prototype for one algorithm; routing OCK SHA-2 to the OpenSSL backend on x86_64; ICC CPU-dispatch investigation). Without that, remaining iterations can only be analysis.
 - The +40% target is not reachable with Java/JNI changes alone (20 of 30 scores per provider are bound by the native compression function; see iterations 3, 5 and 6). Further progress requires an owner decision: (1) lower the target; (2) accept the current result (OCK +10.13%, OpenSSL +8.93%); (3) authorize the larger options: Panama downcalls (JDK 22+, OpenJ9 support and native-memory copy cost to be checked), routing SHA-2 of the OCK provider to the OpenSSL backend on x86_64, or an ICC build/CPU-dispatch investigation (SHA-NI/AVX2) on real x86_64.
