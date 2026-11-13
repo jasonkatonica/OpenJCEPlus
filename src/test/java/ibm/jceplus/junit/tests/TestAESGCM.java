@@ -19,6 +19,7 @@ import java.security.NoSuchProviderException;
 import java.security.SecureRandom;
 import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
+import javax.crypto.AEADBadTagException;
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
@@ -30,6 +31,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.RC2ParameterSpec;
 import javax.crypto.spec.RC5ParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -38,6 +40,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.Parameter;
 import org.junit.jupiter.params.ParameterizedClass;
 import org.junit.jupiter.params.provider.MethodSource;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -1099,6 +1104,127 @@ public class TestAESGCM extends BaseTest {
             fail("Retying with larger buffer should have worked  with a larger buffer");
         }
 
+    }
+
+    // Native GCM code always writes a full 16 byte tag even if a shorter tag was requested.
+    // A tag array sized to the truncated length would be overrun. Verify the results match
+    // SunJCE for truncated tags, for one shot and update/doFinal encryption, and that bytes
+    // after the result in the output array are untouched.
+    @Test
+    public void testAES_GCM_truncated_tags() throws Exception {
+        int[] tagBits = {96, 104, 112, 120, 128};
+        int[] textLens = {0, 1, 15, 16, 17, 1000, 4096, 4097, 9000};
+        byte[] aad = new byte[13];
+        Arrays.fill(aad, (byte) 0x41);
+        for (int tagBit : tagBits) {
+            for (int textLen : textLens) {
+                gcmCompareWithSunJCE(12, aad, textLen, tagBit, false);
+                gcmCompareWithSunJCE(12, aad, textLen, tagBit, true);
+            }
+        }
+    }
+
+    // The fast JNI path keeps iv, aad, key, tag, mode and an 80 byte parameter block in a
+    // single 1024 byte buffer. Sweep iv + aad + key across that limit; any overrun of the
+    // parameter buffer shows up as corrupt output or a crash.
+    @Test
+    public void testAES_GCM_parameter_buffer_boundary() throws Exception {
+        int ivLen = 12;
+        int keyLen = key.getEncoded().length;
+        int boundaryAad = 1024 - ivLen - keyLen;
+        for (int aadLen = boundaryAad - 160; aadLen <= boundaryAad + 8; aadLen++) {
+            byte[] aad = new byte[aadLen];
+            Arrays.fill(aad, (byte) 0x42);
+            gcmCompareWithSunJCE(ivLen, aad, 64, 128, false);
+            gcmCompareWithSunJCE(ivLen, aad, 5000, 128, false);
+        }
+    }
+
+    // Decrypt input shorter than the tag must fail cleanly, not be read out of bounds.
+    // Without a prior update the cipher rejects the input itself; after an update the
+    // check is made in the GCM layer and surfaces as the cause of the AEADBadTagException.
+    @Test
+    public void testAES_GCM_decrypt_input_shorter_than_tag() throws Exception {
+        final String tooShortMsg = "Input too short - not enough bytes for the tag";
+        final String wrappedMsg = "Unable to perform engine doFinal; "
+                + "Possibly a bad tag or bad padding or illegalBlockSize";
+        byte[] iv = new byte[12];
+        for (int tagBit : new int[] {96, 104, 112, 120, 128}) {
+            for (int len = 0; len < tagBit / 8; len++) {
+                byte[] input = new byte[len];
+                String desc = "Input of " + len + " bytes with " + tagBit + " bit tag";
+
+                // One shot doFinal
+                Cipher c = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
+                c.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(tagBit, iv));
+                try {
+                    c.doFinal(input);
+                    fail("Expected AEADBadTagException. " + desc);
+                } catch (AEADBadTagException e) {
+                    assertEquals(tooShortMsg, e.getMessage(), desc);
+                }
+
+                // update followed by doFinal. One byte is buffered by update (an empty
+                // update never reaches the provider), so the total seen by doFinal is
+                // still len bytes, which is shorter than the tag.
+                if (len > 0) {
+                    c = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
+                    c.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(tagBit, iv));
+                    c.update(new byte[1]);
+                    try {
+                        c.doFinal(new byte[len - 1]);
+                        fail("Expected AEADBadTagException. " + desc);
+                    } catch (AEADBadTagException e) {
+                        assertEquals(wrappedMsg, e.getMessage(), desc);
+                        assertNotNull(e.getCause(), "Missing cause. " + desc);
+                        assertEquals(tooShortMsg, e.getCause().getMessage(), desc);
+                    }
+                }
+            }
+        }
+    }
+
+    private void gcmCompareWithSunJCE(int ivLen, byte[] aad, int textLen, int tagBits,
+            boolean useUpdate) throws Exception {
+        byte[] iv = new byte[ivLen];
+        Arrays.fill(iv, (byte) 0x43);
+        byte[] plain = new byte[textLen];
+        Arrays.fill(plain, (byte) 0x44);
+        SecretKeySpec keySpec = new SecretKeySpec(key.getEncoded(), "AES");
+        GCMParameterSpec spec = new GCMParameterSpec(tagBits, iv);
+        String desc = "keyLen=" + keySpec.getEncoded().length + " ivLen=" + ivLen + " aadLen="
+                + aad.length + " textLen=" + textLen + " tagBits=" + tagBits + " update="
+                + useUpdate;
+
+        Cipher ref = Cipher.getInstance("AES/GCM/NoPadding", "SunJCE");
+        ref.init(Cipher.ENCRYPT_MODE, keySpec, spec);
+        ref.updateAAD(aad);
+        byte[] expected = ref.doFinal(plain);
+
+        // Guard bytes after the result detect an overrun of the output area.
+        byte[] guarded = new byte[expected.length + 32];
+        Arrays.fill(guarded, (byte) 0x5A);
+
+        Cipher enc = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
+        enc.init(Cipher.ENCRYPT_MODE, keySpec, spec);
+        enc.updateAAD(aad);
+        int written;
+        if (useUpdate) {
+            int half = textLen / 2;
+            written = enc.update(plain, 0, half, guarded, 0);
+            written += enc.doFinal(plain, half, textLen - half, guarded, written);
+        } else {
+            written = enc.doFinal(plain, 0, textLen, guarded, 0);
+        }
+        assertArrayEquals(expected, Arrays.copyOf(guarded, written), "Encrypt mismatch " + desc);
+        for (int i = written; i < guarded.length; i++) {
+            assertTrue(guarded[i] == (byte) 0x5A, "Output guard byte overwritten " + desc);
+        }
+
+        Cipher dec = Cipher.getInstance("AES/GCM/NoPadding", getProviderName());
+        dec.init(Cipher.DECRYPT_MODE, keySpec, spec);
+        dec.updateAAD(aad);
+        assertArrayEquals(plain, dec.doFinal(expected), "Decrypt mismatch " + desc);
     }
 
     //Respecify parameters twice and it should fail.
