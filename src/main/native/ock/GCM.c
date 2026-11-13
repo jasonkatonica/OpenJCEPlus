@@ -1498,9 +1498,7 @@ Java_com_ibm_crypto_plus_provider_ock_NativeOCKImplementation_do_1GCM_1encryptFa
 
     // Copy tag
     tag = parameters + ivLen + aadLen + keyLen;
-    // The tag destination can overlap the parameter block source (e.g. 256 bit
-    // key with a 16 byte tag), so memmove must be used instead of memcpy.
-    memmove(tag, parm_block + 16, tagLen);  // Add tag to output
+    memcpy(tag, parm_block + 16, tagLen);  // Add tag to output
 
     if (input != NULL) {
         (*env)->ReleasePrimitiveArrayCritical(env, inputJ, input, 0);

@@ -108,15 +108,6 @@ public final class GCMCipher {
     private static final int FastJNIOutputBufferSize = 1024 * 2 * 2 + 16; //Add Tag length for encryption
     private static final int FastJNIParameterBufferSize = 1024;
 
-    // OpenSSL/ICC always writes a full 16 byte tag on encrypt, regardless of the
-    // requested (truncated) tag length.
-    private static final int AES_GCM_MAX_TAG_SIZE = 16;
-
-    // Worst case space needed in the parameter buffer in addition to iv + aad + key:
-    // full tag, 8 byte mode and the 80 byte parameter block used by the hardware path.
-    private static final int FastJNIParameterOverhead = AES_GCM_MAX_TAG_SIZE + 8
-            + parameterBlockSize;
-
     // AES-GCM constants in Bytes
     private static final int AES_GCM_MIN_KEY_SIZE = 16;
     private static final int AES_GCM_MIN_IV_SIZE = 1;
@@ -173,11 +164,6 @@ public final class GCMCipher {
             throw new IllegalArgumentException("Output range is invalid");
         }
 
-        // The tag is the last tagLen bytes of the input; reject input too short to hold it.
-        if (inputLen < tagLen) {
-            throw new NativeException("Input too short - not enough bytes for the tag");
-        }
-
         // if Encrypting, the output buffer size should be cipherSize + TAG
         // if Decrypting, the output buffer size should be cipherSize - TAG
         int len = getOutputSizeLegacy(inputLen, false /*isEncrypt*/, tagLen);
@@ -227,8 +213,7 @@ public final class GCMCipher {
             GCMHardwareFunctionPtr = actualHardwareSupport;
         }
 
-        if (iv.length + key.length + aadLen + FastJNIParameterOverhead <= FastJNIParameterBufferSize
-                && !disableGCMAcceleration
+        if (iv.length + key.length + aadLen <= FastJNIParameterBufferSize && !disableGCMAcceleration
                 && (inputLen <= FastJNIInputBufferSize || GCMHardwareFunctionPtr != -1)) {
             FastJNIBuffer parameters = GCMCipher.parameterBuffer.get();
             parameters.put(0, iv, 0, iv.length);
@@ -362,7 +347,7 @@ public final class GCMCipher {
             GCMHardwareFunctionPtr = actualHardwareSupport;
         }
 
-        if (iv.length + key.length + aadLen + FastJNIParameterOverhead <= FastJNIParameterBufferSize
+        if (iv.length + key.length + aadLen + tagLen <= FastJNIParameterBufferSize
                 && (inputLen <= FastJNIInputBufferSize || GCMHardwareFunctionPtr != -1)) {
             FastJNIBuffer parameters = GCMCipher.parameterBuffer.get();
             parameters.put(0, iv, 0, ivLen);
@@ -390,8 +375,7 @@ public final class GCMCipher {
 
             outLen = inputLen + tagLen;
         } else {
-            // Native code writes a full 16 byte tag, so the buffer must be at least that big
-            byte[] tag = new byte[Math.max(tagLen, AES_GCM_MAX_TAG_SIZE)];
+            byte[] tag = new byte[tagLen];
 
             //OCKDebug.Msg (debPrefix, methodName,   "key.length :" + key.length + " iv.length :" + iv.length + " inputOffset :" + inputOffset);
             //OCKDebug.Msg (debPrefix, methodName," inputLen :" + inputLen + " aadLen :" + aadLen + " tagLen " + tagLen);
@@ -448,12 +432,6 @@ public final class GCMCipher {
 
         if ((output == null) || (outputOffset < 0) || (outputOffset > output.length)) {
             throw new IllegalArgumentException("Output range is invalid");
-        }
-
-        // The tag is the last tagLen bytes of the input; native code reads it from
-        // data + dataLen - tagLen, so reject input that is too short to hold it.
-        if (inputLen < tagLen) {
-            throw new NativeException("Input too short - not enough bytes for the tag");
         }
 
         // if Encrypting, the output buffer size should be cipherSize + TAG
@@ -710,8 +688,7 @@ public final class GCMCipher {
         long gcmCtx = getGCMContext(true, key.length, this.provider, this.nativeInterface);
         //OCKDebug.Msg (debPrefix, methodName, "gcmCtx :" + String.valueOf(gcmCtx));
 
-        // Native code writes a full 16 byte tag, so the buffer must be at least that big
-        byte[] tag = new byte[Math.max(tagLen, AES_GCM_MAX_TAG_SIZE)];
+        byte[] tag = new byte[tagLen];
 
         //OCKDebug.Msg (debPrefix, methodName, "key.length :" + key.length + " iv.length :" + iv.length + " inputOffset :" + inputOffset);
         //OCKDebug.Msg (debPrefix, methodName, " inputLen :" + inputLen + " aadLen :" + aadLen + " tagLen " + tagLen);
