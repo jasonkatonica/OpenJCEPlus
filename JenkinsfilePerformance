@@ -20,6 +20,7 @@ import groovy.transform.Field;
 @Field OPENJCEPLUS_REPO
 @Field OPENJCEPLUS_BRANCH
 @Field JAVA_VERSION
+@Field JAVA_VENDOR
 @Field JAVA_RELEASE
 @Field OCK_RELEASE
 @Field OCK_FULL_URL
@@ -222,7 +223,7 @@ def run(platform) {
                     }
 
                     withCredentials([usernamePassword(credentialsId: '7c1c2c28-650f-49e0-afd1-ca6b60479546', passwordVariable: 'ARTIFACTORY_PASSWORD', usernameVariable: 'ARTIFACTORY_USERNAME')]) {
-                        externalLibrary.getJava(hardware, software)
+                        externalLibrary.getJava(hardware, software, JAVA_VENDOR)
                     }
                     echo "Java fetched"
                     externalLibrary.getBinaries(hardware, software)
@@ -336,12 +337,18 @@ pipeline {
             The OpenJCEPlus branch to be used. When not specified this will default to the branch scanned by this multibranch pipeline.')
         string(name: 'JAVA_VERSION', defaultValue: '26', description: '\
             Specify the Java version your branch uses to build.')
+        choice(name: 'JAVA_VENDOR', choices: ['semeru', 'temurin'], description: '\
+            Specify the Java vendor to build and run the performance tests with.<br> \
+            semeru: IBM Semeru Runtime (OpenJ9). This is the default.<br> \
+            temurin: Eclipse Temurin (HotSpot).<br> \
+            NOTE: temurin is not available on z/OS.')
         string(name: 'JAVA_RELEASE', defaultValue: '', description: '\
             Indicate a specific Java release that you want to use to build your branch.<br> \
             If left empty, the default release for the chosen version will be used.<br> \
             <br><b>Option 1: Specify a release version</b><br> \
-            Specify the full name of the release.<br> \
-            (i.e., jdk-&ltjdk version&gt_openj9-&ltopenj9 version&gt => eg., jdk-21.0.2+13_openj9-0.43.0)<br> \
+            Specify the full name of the release, matching the selected JAVA_VENDOR.<br> \
+            (i.e., semeru: jdk-&ltjdk version&gt_openj9-&ltopenj9 version&gt => eg., jdk-21.0.2+13_openj9-0.43.0)<br> \
+            (i.e., temurin: jdk-&ltjdk version&gt => eg., jdk-21.0.2+13)<br> \
             <br><b>Option 2: Specify an Artifactory URL</b><br> \
             Provide a full URL to a Java build hosted on na.artifactory.swg-devops.com.<br> \
             The URL must contain "na.artifactory.swg-devops.com" or the build will fail.<br> \
@@ -482,6 +489,7 @@ pipeline {
                         OPENJCEPLUS_REPO="${params.OPENJCEPLUS_REPO}"
                         OPENJCEPLUS_BRANCH="${params.OPENJCEPLUS_BRANCH}"
                         JAVA_VERSION="${params.JAVA_VERSION}"
+                        JAVA_VENDOR="${params.JAVA_VENDOR}"
                         JAVA_RELEASE="${params.JAVA_RELEASE}"
                         OCK_RELEASE="${params.OCK_RELEASE}"
                         OCK_FULL_URL="${params.OCK_FULL_URL}"

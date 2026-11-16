@@ -145,34 +145,54 @@ def getJavaWorkaroundUrl(artifactoryPath, hardware, software, javaRelease) {
 }
 
 /*
- * Constructs the appropriate Semeru JDK download URL based on the Java version,
+ * Constructs the appropriate JDK download URL based on the Java vendor, Java version,
  * hardware platform, and software OS. Supports both latest GA releases and
  * specific version releases using the AdoptOpenJDK API.
+ *
+ * Supported vendors:
+ *   semeru (default) - IBM Semeru Runtime (OpenJ9)
+ *   temurin          - Eclipse Temurin (HotSpot)
  */
-def getJavaDownloadUrl(javaVersion, hardware, software, javaRelease) {
+def getJavaDownloadUrl(javaVersion, hardware, software, javaRelease, javaVendor = "semeru") {
     def java_link = ""
+
+    // Map the vendor to the JVM implementation and vendor names used by the API.
+    def jvm_impl = ""
+    def api_vendor = ""
+    if (javaVendor == "semeru") {
+        jvm_impl = "openj9"
+        api_vendor = "ibm"
+    } else if (javaVendor == "temurin") {
+        jvm_impl = "hotspot"
+        api_vendor = "eclipse"
+        if (software == "zos") {
+            error("Java vendor temurin is not supported on z/OS.")
+        }
+    } else {
+        error("Unsupported Java vendor '${javaVendor}'. Supported vendors are: semeru, temurin.")
+    }
 
     if (javaRelease == "") {
         // Use latest GA version
-        java_link = "https://api.adoptopenjdk.net/v3/binary/latest/${javaVersion}/ga/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
+        java_link = "https://api.adoptopenjdk.net/v3/binary/latest/${javaVersion}/ga/${software}/${hardware}/jdk/${jvm_impl}/normal/${api_vendor}?project=jdk"
         if (software == "zos") {
             java_link = "https://na.artifactory.swg-devops.com/artifactory/sys-rt-generic-local/hyc-runtimes-jenkins.swg-devops.com/Build_JDK25_s390x_zos_Nightly/461/ibm-semeru-certified-jdk_s390x_zos_25.0.5.0-20260916-010846.pax.Z"
         }
     } else {
         // Use specific version
         def java_release_link = javaRelease.replace("+", "%2B")
-        java_link = "https://api.adoptopenjdk.net/v3/binary/version/${java_release_link}/${software}/${hardware}/jdk/openj9/normal/ibm?project=jdk"
+        java_link = "https://api.adoptopenjdk.net/v3/binary/version/${java_release_link}/${software}/${hardware}/jdk/${jvm_impl}/normal/${api_vendor}?project=jdk"
     }
 
     return java_link
 }
 
 /*
- * Figure out the proper URL, get the Semeru JDK,
- * extract it and rename the containing folder to
- * be used later on.
+ * Figure out the proper URL, get the JDK (Semeru by default,
+ * or Temurin when javaVendor is "temurin"), extract it and
+ * rename the containing folder to be used later on.
  */
-def getJava(hardware, software) {
+def getJava(hardware, software, javaVendor = "semeru") {
     def extension = "tar.gz"
     if (software == "windows") {
         extension = "zip"
@@ -194,8 +214,8 @@ def getJava(hardware, software) {
         error("JAVA_RELEASE contains a URL that is not from na.artifactory.swg-devops.com. Only Artifactory URLs are supported.")
     } else {
         // JAVA_RELEASE is a version string or empty - use the API
-        java_link = getJavaDownloadUrl(JAVA_VERSION, hardware, software, JAVA_RELEASE)
-        echo "Using AdoptOpenJDK API URL: ${java_link}"
+        java_link = getJavaDownloadUrl(JAVA_VERSION, hardware, software, JAVA_RELEASE, javaVendor)
+        echo "Using AdoptOpenJDK API URL (${javaVendor}): ${java_link}"
     }
 
     // Determine file extension based on platform
